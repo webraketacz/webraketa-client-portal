@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+import { getSupabaseBrowserClient } from "@/app/lib/supabase";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,6 +38,8 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+
+    const supabase = getSupabaseBrowserClient();
 
     // ✅ registrace + redirect URL pro potvrzení emailu
     const { data, error } = await supabase.auth.signUp({

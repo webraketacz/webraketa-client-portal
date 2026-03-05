@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+import { getSupabaseBrowserClient } from "@/app/lib/supabase";
 
 export default function AuthConfirmClient() {
   const router = useRouter();
@@ -11,6 +11,8 @@ export default function AuthConfirmClient() {
   const [message, setMessage] = useState<string>("Ověřuji registraci…");
 
   useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+
     const token_hash = params.get("token_hash");
     const type = params.get("type"); // typicky "signup"
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+import { getSupabaseBrowserClient } from "@/app/lib/supabase";
 
 type ProfileRow = {
   id: string;
@@ -68,6 +68,8 @@ export default function OnboardingPage() {
       setLoading(true);
       setError(null);
       setInfo(null);
+
+      const supabase = getSupabaseBrowserClient();
 
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
@@ -169,6 +171,8 @@ export default function OnboardingPage() {
   }, [router]);
 
   async function savePartial(nextStep?: number) {
+    const supabase = getSupabaseBrowserClient();
+
     try {
       setSaving(true);
       setError(null);
@@ -216,6 +220,7 @@ export default function OnboardingPage() {
   }
 
   async function logout() {
+    const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     router.push("/login");
   }
