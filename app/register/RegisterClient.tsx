@@ -39,14 +39,10 @@ export default function RegisterClient() {
 
     const supabase = getSupabaseBrowserClient();
 
-    // ✅ registrace + redirect URL pro potvrzení emailu
+    // ✅ DEMO registrace bez potvrzování emailu (Confirm email musí být vypnuté v Supabase)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        // po potvrzení emailu se uživatel přesměruje sem:
-        emailRedirectTo: `${window.location.origin}/onboarding`,
-      },
     });
 
     if (error) {
@@ -80,15 +76,8 @@ export default function RegisterClient() {
 
     setLoading(false);
 
-    // ✅ Pokud máš v Supabase zapnuté potvrzení emailu, session nebude hned
-    if (!data.session) {
-      setInfo(
-        `Registrace vytvořena. Poslali jsme potvrzení na ${email}. Po potvrzení budete pokračovat do onboardingu.`
-      );
-      return;
-    }
-
-    router.push(`/onboarding`);
+    // ✅ DEMO: rovnou na onboarding
+    router.push("/onboarding");
     router.refresh();
   };
 
@@ -194,8 +183,7 @@ export default function RegisterClient() {
                 <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 backdrop-blur-xl">
                   <h2 className="text-2xl font-semibold text-white">Vytvořit účet</h2>
                   <p className="mt-2 text-sm text-zinc-400">
-                    Zadejte email a heslo. Pokud je vyžadováno potvrzení, pošleme vám odkaz do
-                    emailu.
+                    Zadejte email a heslo. DEMO režim: po registraci půjdete rovnou do onboardingu.
                   </p>
 
                   <form onSubmit={onSubmit} className="mt-6 space-y-5">
@@ -267,7 +255,7 @@ export default function RegisterClient() {
                       ) : (
                         <>
                           <span className="font-medium text-zinc-300">Tip:</span>{" "}
-                          Pokud vám nepřijde email, zkontrolujte spam nebo napište na{" "}
+                          Pokud se něco pokazí, napište na{" "}
                           <a
                             href="mailto:podpora@webraketa.cz"
                             className="font-medium text-white/90 underline decoration-white/20 underline-offset-4 hover:decoration-white/50"
