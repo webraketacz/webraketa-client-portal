@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "./lib/supabase";
 
 export default function Home() {
-  const [status, setStatus] = useState('Loading...')
+  const [status, setStatus] = useState("Loading...");
 
   useEffect(() => {
-    const run = async () => {
-      const { data, error } = await supabase.auth.getSession()
+    const supabase = getSupabaseBrowserClient();
+
+    supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
-        setStatus('ERROR: ' + error.message)
-        console.error(error)
-        return
+        setStatus(`Error: ${error.message}`);
+        return;
       }
-      console.log('session:', data.session)
-      setStatus(data.session ? '✅ Přihlášen' : '❌ Nepřihlášen')
-    }
-    run()
-  }, [])
+      setStatus(data.session ? "Logged in ✅" : "Not logged in ❌");
+    });
+  }, []);
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Webraketa Client Portal</h1>
-      <p>Auth status: {status}</p>
+    <main className="min-h-dvh bg-zinc-950 text-white flex items-center justify-center p-10">
+      <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 backdrop-blur-xl">
+        <h1 className="text-2xl font-semibold">Webraketa Client Portal</h1>
+        <p className="mt-3 text-zinc-300">{status}</p>
+      </div>
     </main>
-  )
+  );
 }
