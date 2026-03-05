@@ -39,44 +39,57 @@ export default function RegisterClient() {
 
     const supabase = getSupabaseBrowserClient();
 
-    // ✅ DEMO registrace bez potvrzování emailu (Confirm email musí být vypnuté v Supabase)
-    const { data, error } = await supabase.auth.signUp({
+    // ✅ DEMO registrace bez potvrzování emailu
+    // (i kdyby Confirm email bylo omylem zapnuté, níže to vyřešíme auto-loginem)
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    if (error) {
+    if (signUpError) {
       setLoading(false);
-      setError(error.message);
+      setError(signUpError.message);
       return;
     }
 
-    // ✅ pokud už máme user id, uložíme výběr balíčku do profiles
-    const userId = data.user?.id;
+    // ✅ DEMO: hned přihlásit, aby vznikla session (jinak onboarding -> login)
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (userId) {
-      const { error: upsertError } = await supabase.from("profiles").upsert(
-        {
-          id: userId,
-          email,
-          plan,
-          billing_type: billing,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
+    if (signInError || !signInData.session) {
+      setLoading(false);
+      setError(signInError?.message ?? "Nepodařilo se přihlásit po registraci.");
+      return;
+    }
+
+    // ✅ user id bereme ze session (nejjistější)
+    const userId = signInData.session.user.id;
+
+    // ✅ uložíme výběr balíčku do profiles
+    const { error: upsertError } = await supabase.from("profiles").upsert(
+      {
+        id: userId,
+        email,
+        plan,
+        billing_type: billing,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (upsertError) {
+      console.error("profiles upsert error:", upsertError);
+      setInfo(
+        "Účet je vytvořen, ale nepodařilo se uložit vybraný balíček. Napište prosím na podpora@webraketa.cz."
       );
-
-      if (upsertError) {
-        console.error("profiles upsert error:", upsertError);
-        setInfo(
-          "Účet je vytvořen, ale nepodařilo se uložit vybraný balíček. Napište prosím na podpora@webraketa.cz."
-        );
-      }
     }
 
     setLoading(false);
 
-    // ✅ DEMO: rovnou na onboarding
+    // ✅ DEMO: rovnou na onboarding (session už existuje)
     router.push("/onboarding");
     router.refresh();
   };
