@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
-export default function AuthConfirmPage() {
+function AuthConfirmContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
@@ -12,7 +15,7 @@ export default function AuthConfirmPage() {
 
   useEffect(() => {
     const token_hash = params.get("token_hash");
-    const type = params.get("type"); // typicky "signup"
+    const type = params.get("type");
 
     if (!token_hash || !type) {
       setStatus("error");
@@ -39,7 +42,6 @@ export default function AuthConfirmPage() {
         return;
       }
 
-      // fallback
       setStatus("ok");
       setMessage("E-mail ověřen. Přesměrovávám…");
       router.replace("/onboarding");
@@ -62,5 +64,13 @@ export default function AuthConfirmPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AuthConfirmPage() {
+  return (
+    <Suspense fallback={<div className="text-white p-10">Ověřuji…</div>}>
+      <AuthConfirmContent />
+    </Suspense>
   );
 }
