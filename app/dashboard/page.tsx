@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@iconify/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
@@ -44,11 +45,11 @@ export default function Dashboard() {
                 <span className="text-sm text-zinc-300 font-medium group-hover:text-white transition-colors">
                   Redesign webu TechStart
                 </span>
-                <iconify-icon
+                <Icon
                   icon="solar:alt-arrow-down-linear"
-                  class="text-zinc-600 group-hover:text-zinc-400 transition-colors"
-                  width="12"
-                ></iconify-icon>
+                  className="text-zinc-600 group-hover:text-zinc-400 transition-colors"
+                  width={12}
+                />
               </div>
             </div>
             <p className="mt-2 text-zinc-500 text-sm md:text-base max-w-md">
@@ -76,11 +77,11 @@ export default function Dashboard() {
               aria-label="Odhlásit"
               title="Odhlásit"
             >
-              <iconify-icon
+              <Icon
                 icon="solar:logout-2-linear"
-                class="text-zinc-400 group-hover:text-white transition-colors"
-                width="20"
-              ></iconify-icon>
+                className="text-zinc-400 group-hover:text-white transition-colors"
+                width={20}
+              />
             </button>
           </div>
         </header>
@@ -120,7 +121,7 @@ export default function Dashboard() {
 
             <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 to-violet-500/5 border border-blue-500/20 p-6 md:p-8 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <iconify-icon icon="solar:code-circle-bold" width="80"></iconify-icon>
+                <Icon icon="solar:code-circle-bold" width={80} />
               </div>
               <div className="relative z-10">
                 <h4 className="text-blue-400 text-xs font-semibold uppercase tracking-widest mb-2">
@@ -153,7 +154,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-6 gap-6 relative z-10">
               <div className="flex md:flex-col items-center gap-4 md:gap-4 group cursor-default">
                 <div className="h-8 w-8 rounded-full bg-zinc-900 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-[0_0_10px_-2px_rgba(16,185,129,0.2)]">
-                  <iconify-icon icon="solar:check-circle-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:check-circle-linear" width={18} />
                 </div>
                 <div className="text-left md:text-center">
                   <p className="text-sm font-medium text-zinc-300">Objednávka</p>
@@ -165,7 +166,7 @@ export default function Dashboard() {
 
               <div className="flex md:flex-col items-center gap-4 md:gap-4 group cursor-default">
                 <div className="h-8 w-8 rounded-full bg-zinc-900 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-[0_0_10px_-2px_rgba(16,185,129,0.2)]">
-                  <iconify-icon icon="solar:bill-check-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:bill-check-linear" width={18} />
                 </div>
                 <div className="text-left md:text-center">
                   <p className="text-sm font-medium text-zinc-300">Platba</p>
@@ -177,7 +178,7 @@ export default function Dashboard() {
 
               <div className="flex md:flex-col items-center gap-4 md:gap-4 group cursor-default">
                 <div className="h-8 w-8 rounded-full bg-zinc-900 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-[0_0_10px_-2px_rgba(16,185,129,0.2)]">
-                  <iconify-icon icon="solar:folder-check-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:folder-check-linear" width={18} />
                 </div>
                 <div className="text-left md:text-center">
                   <p className="text-sm font-medium text-zinc-300">Podklady</p>
@@ -191,7 +192,7 @@ export default function Dashboard() {
                 <div className="relative">
                   <div className="absolute inset-0 bg-blue-500/30 rounded-full blur animate-pulse"></div>
                   <div className="h-8 w-8 relative rounded-full bg-zinc-900 border border-blue-500 text-blue-400 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(59,130,246,0.4)]">
-                    <iconify-icon icon="solar:code-circle-linear" width="18"></iconify-icon>
+                    <Icon icon="solar:code-circle-linear" width={18} />
                   </div>
                 </div>
                 <div className="text-left md:text-center">
@@ -204,7 +205,7 @@ export default function Dashboard() {
 
               <div className="flex md:flex-col items-center gap-4 md:gap-4 opacity-50">
                 <div className="h-8 w-8 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-600 flex items-center justify-center">
-                  <iconify-icon icon="solar:smartphone-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:smartphone-linear" width={18} />
                 </div>
                 <div className="text-left md:text-center">
                   <p className="text-sm font-medium text-zinc-500">Testování</p>
@@ -216,7 +217,7 @@ export default function Dashboard() {
 
               <div className="flex md:flex-col items-center gap-4 md:gap-4 opacity-50">
                 <div className="h-8 w-8 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-600 flex items-center justify-center">
-                  <iconify-icon icon="solar:rocket-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:rocket-linear" width={18} />
                 </div>
                 <div className="text-left md:text-center">
                   <p className="text-sm font-medium text-zinc-500">Spuštění</p>
@@ -234,7 +235,7 @@ export default function Dashboard() {
           <div className="lg:col-span-2 glass-card rounded-3xl p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                <iconify-icon icon="solar:cloud-upload-linear" class="text-violet-400"></iconify-icon>
+                <Icon icon="solar:cloud-upload-linear" className="text-violet-400" />
                 Podklady pro váš web
               </h3>
               <span className="text-xs text-zinc-500 border border-white/5 bg-white/5 px-2 py-1 rounded-md">
@@ -249,11 +250,11 @@ export default function Dashboard() {
 
             <div className="border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-800/30 hover:border-violet-500/30 transition-all rounded-2xl p-8 text-center cursor-pointer group mb-8">
               <div className="h-12 w-12 mx-auto bg-zinc-800 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                <iconify-icon
+                <Icon
                   icon="solar:add-folder-linear"
-                  class="text-zinc-400 group-hover:text-violet-400 transition-colors"
-                  width="24"
-                ></iconify-icon>
+                  className="text-zinc-400 group-hover:text-violet-400 transition-colors"
+                  width={24}
+                />
               </div>
               <p className="text-sm text-zinc-300 font-medium">
                 Klikněte pro nahrání nebo přetáhněte soubory
@@ -271,7 +272,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-white/5 hover:border-white/10 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                    <iconify-icon icon="solar:file-text-linear" width="20"></iconify-icon>
+                    <Icon icon="solar:file-text-linear" width={20} />
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -289,14 +290,14 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <button className="text-zinc-600 hover:text-red-400 transition-colors p-2">
-                  <iconify-icon icon="solar:trash-bin-trash-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:trash-bin-trash-linear" width={18} />
                 </button>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-white/5 hover:border-white/10 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center">
-                    <iconify-icon icon="solar:gallery-linear" width="20"></iconify-icon>
+                    <Icon icon="solar:gallery-linear" width={20} />
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -314,7 +315,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <button className="text-zinc-600 hover:text-red-400 transition-colors p-2">
-                  <iconify-icon icon="solar:trash-bin-trash-linear" width="18"></iconify-icon>
+                  <Icon icon="solar:trash-bin-trash-linear" width={18} />
                 </button>
               </div>
             </div>
@@ -324,11 +325,11 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="glass-card rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
               <div className="absolute top-0 right-0 p-3 opacity-20">
-                <iconify-icon icon="solar:laptop-minimalistic-linear" width="100"></iconify-icon>
+                <Icon icon="solar:laptop-minimalistic-linear" width={100} />
               </div>
 
               <div className="h-14 w-14 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-4 text-zinc-500">
-                <iconify-icon icon="solar:lock-password-linear" width="24"></iconify-icon>
+                <Icon icon="solar:lock-password-linear" width={24} />
               </div>
 
               <h3 className="text-lg font-medium text-white mb-2">Vývojová verze</h3>
@@ -342,7 +343,7 @@ export default function Dashboard() {
                 className="w-full py-3 px-4 rounded-xl border border-white/5 bg-zinc-800 text-zinc-500 font-medium text-sm cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span>Přístup uzamčen</span>
-                <iconify-icon icon="solar:lock-keyhole-linear"></iconify-icon>
+                <Icon icon="solar:lock-keyhole-linear" width={18} />
               </button>
             </div>
 
@@ -350,18 +351,18 @@ export default function Dashboard() {
               <button className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors text-left group">
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center">
-                    <iconify-icon icon="solar:card-linear" width="16"></iconify-icon>
+                    <Icon icon="solar:card-linear" width={16} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">Stav fakturace</p>
                     <p className="text-xs text-zinc-500">Zálohová faktura uhrazena</p>
                   </div>
                 </div>
-                <iconify-icon
+                <Icon
                   icon="solar:alt-arrow-down-linear"
-                  class="text-zinc-500 group-hover:text-white transition-colors"
-                  width="18"
-                ></iconify-icon>
+                  className="text-zinc-500 group-hover:text-white transition-colors"
+                  width={18}
+                />
               </button>
             </div>
 
@@ -377,7 +378,7 @@ export default function Dashboard() {
                 className="text-xs text-zinc-300 hover:text-white flex items-center gap-1 transition-colors"
               >
                 podpora@webraketa.cz
-                <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
+                <Icon icon="solar:arrow-right-linear" width={16} />
               </a>
             </div>
           </div>
