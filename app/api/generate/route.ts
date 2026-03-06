@@ -36,12 +36,19 @@ STRICT RULES:
 - Use professional Czech copywriting, not lorem ipsum
 - Make the page responsive
 - The website should feel like a real 2025 commercial landing page
+- Use multiple rich sections with proper visual composition
+- Add large background glows, gradients, split layouts, layered cards, and premium CTA blocks where suitable
+- Avoid plain text stacked without containers
+- Ensure all links and buttons are styled with Tailwind classes
+- Use max-width containers and section spacing consistently
+- Make the result look polished inside an iframe preview
 
 DESIGN EXPECTATIONS:
-- sticky or elegant navbar
-- visually strong hero section
-- section for services/features in cards
+- elegant or sticky navbar
+- visually strong hero section with badge, heading, subheading, CTA buttons
+- services/features in premium cards
 - benefits / why choose us section
+- showcase / gallery / process section
 - testimonials or references section
 - contact section with form
 - polished footer
@@ -51,8 +58,9 @@ DESIGN EXPECTATIONS:
 TECHNICAL:
 - No external JS frameworks
 - Tailwind CDN only
-- If images are needed, use elegant placeholder images from https://images.unsplash.com or simple decorative gradients
+- If images are needed, use elegant placeholder images from https://images.unsplash.com
 - Ensure the HTML renders correctly in iframe srcDoc
+- Use real Tailwind classes everywhere, not plain HTML
 `;
 
 function cleanHtmlOutput(raw: string) {
@@ -82,7 +90,7 @@ function ensureHtmlDocument(html: string) {
   <title>Generated Website</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-zinc-950 text-white">
+<body class="min-h-screen bg-zinc-950 text-white">
 ${html}
 </body>
 </html>`;
@@ -101,12 +109,17 @@ function getBusinessStyleHints(prompt: string) {
 BUSINESS STYLE HINTS:
 - premium automotive dark style
 - black / zinc / charcoal background
-- accent colors violet, blue, electric blue or orange
-- bold headline
+- accent colors blue, violet, cyan or orange
+- bold hero with strong headline
 - premium service studio aesthetic
 - glossy modern cards
-- strong CTA section for booking service
-- use sections for services, process, testimonials, gallery, contact
+- bold stats strip
+- services section in cards
+- process timeline
+- testimonials
+- gallery with premium image cards
+- booking CTA section
+- use language suitable for a high-end autoservis brand
 `;
   }
 
@@ -119,11 +132,11 @@ BUSINESS STYLE HINTS:
     return `
 BUSINESS STYLE HINTS:
 - elegant hospitality style
-- rich imagery
 - warm premium atmosphere
-- CTA for reservation
-- menu highlights
-- testimonials and contact section
+- full-width hero image
+- menu highlights in cards
+- reservation CTA
+- refined typography
 `;
   }
 
@@ -136,10 +149,10 @@ BUSINESS STYLE HINTS:
 BUSINESS STYLE HINTS:
 - premium real estate style
 - luxurious layout
-- high-end typography
+- upscale typography
 - trust-building stats
-- property highlights
-- clear lead generation CTA
+- premium property cards
+- strong lead generation CTA
 `;
   }
 
@@ -161,14 +174,15 @@ CLIENT DESCRIPTION:
 ${userPrompt}
 
 REQUIRED PAGE STRUCTURE:
-1. modern navbar
-2. premium hero section with headline, supporting text, 2 CTA buttons
-3. services/features section using beautiful cards
+1. premium navbar
+2. hero section with badge, large headline, supporting text, 2 CTA buttons, visual side composition
+3. services/features section using beautiful premium cards
 4. benefits / why choose us section
-5. gallery / showcase / process section
+5. showcase / gallery / process section
 6. testimonials / references section
-7. contact section with form and contact info
-8. footer
+7. contact section with styled form and contact info
+8. CTA banner before footer
+9. polished footer
 
 VISUAL REQUIREMENTS:
 - modern premium look
@@ -184,6 +198,10 @@ VISUAL REQUIREMENTS:
 - beautiful cards
 - consistent spacing
 - production-quality visual finish
+- use max-w-7xl containers
+- use bg gradients, glow effects, layered cards, visual depth
+- avoid plain lists without card styling
+- use strong section backgrounds and separation
 
 NEGATIVE REQUIREMENTS:
 - do not create raw simple HTML
@@ -192,6 +210,7 @@ NEGATIVE REQUIREMENTS:
 - do not create one giant icon as the main visual
 - do not create weak spacing
 - do not create amateur-looking layout
+- do not return mostly plain text blocks
 
 ${getBusinessStyleHints(userPrompt)}
 

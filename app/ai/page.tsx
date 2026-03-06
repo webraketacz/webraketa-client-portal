@@ -8,7 +8,7 @@ const GENERATION_STEPS = [
   { progress: 32, status: "Navrhuji strukturu sekcí..." },
   { progress: 48, status: "Generuji HTML layout..." },
   { progress: 64, status: "Aplikuji Tailwind styly..." },
-  { progress: 78, status: "Ladím CTA a vizuální hierarchy..." },
+  { progress: 78, status: "Ladím CTA a vizuální hierarchii..." },
   { progress: 89, status: "Připravuji finální náhled..." },
   { progress: 94, status: "Dokončuji výstup..." },
 ];
@@ -33,7 +33,7 @@ function wrapHtmlDocument(html: string) {
   <title>AI Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-zinc-950 text-white">
+<body class="min-h-screen bg-zinc-950 text-white">
 ${html}
 </body>
 </html>`;
@@ -139,13 +139,13 @@ export default function AiPage() {
 
   return (
     <div className="min-h-dvh bg-zinc-950 text-zinc-100">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto max-w-7xl px-6 py-10">
         <h1 className="text-2xl font-semibold">AI Web Generator (DEMO)</h1>
         <p className="mt-2 text-zinc-400">
           Zadej popis webu a AI vygeneruje HTML + Tailwind.
         </p>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-6">
             <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
               Popis webu
@@ -197,7 +197,7 @@ export default function AiPage() {
 
             <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black">
               {loading ? (
-                <div className="flex h-[520px] flex-col">
+                <div className="flex h-[720px] flex-col">
                   <div className="border-b border-white/10 px-4 py-3 text-sm text-zinc-400">
                     AI právě generuje náhled webu...
                   </div>
@@ -212,12 +212,12 @@ export default function AiPage() {
                 <iframe
                   key={iframeKey}
                   title="preview"
-                  className="h-[520px] w-full"
+                  className="h-[720px] w-full bg-white"
                   srcDoc={html}
-                  sandbox="allow-same-origin"
+                  sandbox="allow-scripts allow-same-origin"
                 />
               ) : (
-                <div className="flex h-[520px] items-center justify-center text-zinc-500">
+                <div className="flex h-[720px] items-center justify-center text-zinc-500">
                   Zatím nic…
                 </div>
               )}
@@ -231,7 +231,7 @@ export default function AiPage() {
                 <textarea
                   readOnly
                   value={html}
-                  className="mt-2 h-40 w-full rounded-2xl border border-white/10 bg-zinc-950/40 p-4 text-xs text-zinc-100"
+                  className="mt-2 h-56 w-full rounded-2xl border border-white/10 bg-zinc-950/40 p-4 text-xs text-zinc-100"
                 />
               </>
             )}
