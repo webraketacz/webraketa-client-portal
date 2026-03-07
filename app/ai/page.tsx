@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const GENERATION_STEPS = [
-  { progress: 8, status: "Čtu zadání klienta..." },
-  { progress: 18, status: "Analyzuji typ webu..." },
-  { progress: 32, status: "Navrhuji strukturu sekcí..." },
-  { progress: 48, status: "Generuji HTML layout..." },
-  { progress: 64, status: "Aplikuji Tailwind styly..." },
-  { progress: 78, status: "Ladím CTA a vizuální hierarchii..." },
-  { progress: 89, status: "Připravuji finální náhled..." },
-  { progress: 94, status: "Dokončuji výstup..." },
+const STATUS_MESSAGES = [
+  "Čtu zadání klienta...",
+  "Analyzuji typ webu...",
+  "Navrhuji strukturu sekcí...",
+  "Generuji HTML layout...",
+  "Aplikuji Tailwind styly...",
+  "Ladím CTA a vizuální hierarchii...",
+  "Připravuji finální náhled...",
+  "Dokončuji výstup...",
 ];
 
 function wrapHtmlDocument(html: string) {
@@ -39,6 +39,18 @@ ${html}
 </html>`;
 }
 
+function slugifyFilename(input: string) {
+  return (
+    input
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "generated-website"
+  );
+}
+
 export default function AiPage() {
   const [prompt, setPrompt] = useState("");
   const [html, setHtml] = useState("");
@@ -49,51 +61,112 @@ export default function AiPage() {
   const [status, setStatus] = useState("Připraveno");
   const [liveOutput, setLiveOutput] = useState("");
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const stepIndexRef = useRef(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statusIndexRef = useRef(0);
 
   const iframeKey = useMemo(() => `${Date.now()}-${html.length}`, [html]);
 
   useEffect(() => {
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
     };
   }, []);
 
-  const startFakeProgress = () => {
-    stepIndexRef.current = 0;
-    setProgress(5);
-    setStatus("Spouštím AI generování...");
-    setLiveOutput("");
+  const resetIntervals = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
 
-    intervalRef.current = setInterval(() => {
-      const step = GENERATION_STEPS[stepIndexRef.current];
-
-      if (!step) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        return;
-      }
-
-      setProgress((prev) => Math.max(prev, step.progress));
-      setStatus(step.status);
-
-      setLiveOutput((prev) => {
-        const nextLine = `• ${step.status}\n`;
-        return prev + nextLine;
-      });
-
-      stepIndexRef.current += 1;
-    }, 900);
+    if (statusIntervalRef.current) {
+      clearInterval(statusIntervalRef.current);
+      statusIntervalRef.current = null;
+    }
   };
 
-  const stopFakeProgress = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+  const startSmoothProgress = () => {
+    resetIntervals();
+
+    statusIndexRef.current = 0;
+    setProgress(1);
+    setStatus("Spouštím AI generování...");
+    setLiveOutput("• Spouštím AI generování...\n");
+
+    // Plynulý progress až do 95 %
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 95) return prev;
+
+        let increment = 0;
+
+        if (prev < 20) increment = 2.4;
+        else if (prev < 40) increment = 1.8;
+        else if (prev < 60) increment = 1.3;
+        else if (prev < 80) increment = 0.85;
+        else increment = 0.35;
+
+        const next = Math.min(prev + increment, 95);
+        return Number(next.toFixed(1));
+      });
+    }, 350);
+
+    // Rotace statusů
+    statusIntervalRef.current = setInterval(() => {
+      const message = STATUS_MESSAGES[statusIndexRef.current % STATUS_MESSAGES.length];
+      setStatus(message);
+      setLiveOutput((prev) => {
+        const nextLine = `• ${message}\n`;
+        return prev.includes(nextLine) ? prev : prev + nextLine;
+      });
+      statusIndexRef.current += 1;
+    }, 1800);
+  };
+
+  const finishProgress = async () => {
+    resetIntervals();
+
+    setStatus("Dokončuji výstup...");
+    setLiveOutput((prev) => prev + "• Dokončuji výstup...\n");
+
+    await new Promise<void>((resolve) => {
+      const finishInterval = setInterval(() => {
+        setProgress((prev) => {
+          const next = Math.min(prev + 2.5, 100);
+          if (next >= 100) {
+            clearInterval(finishInterval);
+            resolve();
+          }
+          return Number(next.toFixed(1));
+        });
+      }, 40);
+    });
+
+    setStatus("Hotovo");
+    setLiveOutput((prev) => prev + "• Web úspěšně vygenerován.\n");
+  };
+
+  const downloadHtml = () => {
+    if (!html) return;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const filename = `${slugifyFilename(prompt || "generated-website")}.html`;
+
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+  };
+
+  const copyHtml = async () => {
+    if (!html) return;
+    await navigator.clipboard.writeText(html);
   };
 
   const onGenerate = async () => {
@@ -104,7 +177,7 @@ export default function AiPage() {
     setStatus("Spouštím AI generování...");
     setLiveOutput("");
 
-    startFakeProgress();
+    startSmoothProgress();
 
     try {
       const res = await fetch("/api/generate", {
@@ -119,21 +192,19 @@ export default function AiPage() {
         throw new Error(data?.error ?? "Request failed");
       }
 
-      stopFakeProgress();
-      setProgress(100);
-      setStatus("Hotovo");
-      setLiveOutput((prev) => prev + "• Web úspěšně vygenerován.\n");
+      const wrappedHtml = wrapHtmlDocument(data.html);
+      setHtml(wrappedHtml);
 
-      setHtml(wrapHtmlDocument(data.html));
+      await finishProgress();
     } catch (e: any) {
-      stopFakeProgress();
+      resetIntervals();
       setError(e.message ?? "Generování se nepodařilo");
       setStatus("Generování se nepodařilo");
       setLiveOutput((prev) => prev + "• Došlo k chybě při generování.\n");
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 350);
+      }, 250);
     }
   };
 
@@ -175,12 +246,12 @@ export default function AiPage() {
                     )}
                     <span>{status}</span>
                   </div>
-                  <span>{progress}%</span>
+                  <span>{Math.round(progress)}%</span>
                 </div>
 
                 <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -191,8 +262,27 @@ export default function AiPage() {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Náhled
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                Náhled
+              </div>
+
+              {html && !loading && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={copyHtml}
+                    className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white transition hover:bg-white/[0.10]"
+                  >
+                    Kopírovat HTML
+                  </button>
+                  <button
+                    onClick={downloadHtml}
+                    className="rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-95"
+                  >
+                    Export HTML
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black">
