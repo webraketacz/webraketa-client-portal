@@ -1,51 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-const MESSAGES = [
-  "Analyzujeme vaše zadání...",
-  "Připravujeme strukturu webu...",
-  "Ladíme podklady pro první návrh...",
-  "Zakládáme pracovní prostor pro váš web...",
-  "Připravujeme klientskou zónu a další kroky...",
-];
 
 export default function PreparingPage() {
   const router = useRouter();
 
-  const [progress, setProgress] = useState(6);
-  const [messageIndex, setMessageIndex] = useState(0);
-
   useEffect(() => {
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) return 100;
-
-        let increment = 0;
-
-        if (prev < 30) increment = 4;
-        else if (prev < 55) increment = 3;
-        else if (prev < 75) increment = 2;
-        else if (prev < 90) increment = 1.2;
-        else increment = 0.6;
-
-        return Math.min(prev + increment, 100);
-      });
-    }, 220);
-
-    const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % MESSAGES.length);
-    }, 2200);
-
     const redirectTimeout = setTimeout(() => {
       router.push("/dashboard");
       router.refresh();
-    }, 9500);
+    }, 60000);
 
     return () => {
-      clearInterval(progressInterval);
-      clearInterval(messageInterval);
       clearTimeout(redirectTimeout);
     };
   }, [router]);
@@ -53,11 +20,8 @@ export default function PreparingPage() {
   return (
     <div className="min-h-dvh bg-zinc-950 text-zinc-100 antialiased">
       <div className="relative min-h-dvh overflow-hidden">
-        {/* Glow */}
         <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/20 blur-[6rem]" />
         <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-full bg-blue-600/15 blur-[7rem]" />
-
-        {/* Grid */}
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]" />
 
         <div className="relative z-10 mx-auto flex min-h-dvh max-w-7xl items-center px-6 py-12">
@@ -69,52 +33,76 @@ export default function PreparingPage() {
                 PŘÍPRAVA NÁVRHU WEBU
               </div>
 
-              <h1 className="mt-6 text-4xl font-semibold leading-tight text-white md:text-5xl">
-                Váš web se nyní připravuje
+              <div className="mt-8 flex items-center gap-4">
+                <div className="relative flex h-14 w-14 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-violet-500/20 blur-md animate-pulse" />
+                  <div className="h-10 w-10 rounded-full border-2 border-violet-400/40 border-t-violet-400 animate-spin" />
+                </div>
+
+                <div>
+                  <div className="text-sm uppercase tracking-[0.18em] text-zinc-500">
+                    Stav zakázky
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-white">
+                    Váš web se připravuje
+                  </div>
+                </div>
+              </div>
+
+              <h1 className="mt-8 text-4xl font-semibold leading-tight text-white md:text-5xl">
+                Děkujeme, vaše zadání jsme úspěšně přijali
               </h1>
 
               <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
-                Jakmile bude hotový první návrh webu, obdržíte oznámení. V mezičase můžete
-                pokračovat do klientské zóny, kde uvidíte průběh prací a všechny důležité
-                informace.
+                Náš tým nyní připravuje první návrh vašeho webu. Jakmile bude návrh hotový,
+                obdržíte oznámení a vše uvidíte ve své klientské zóně.
               </p>
 
-              <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/40 p-5">
-                <div className="mb-3 flex items-center justify-between text-sm text-zinc-400">
-                  <span>{MESSAGES[messageIndex]}</span>
-                  <span>{Math.round(progress)}%</span>
+              <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/40 p-6">
+                <div className="text-sm font-medium text-white">
+                  Co se bude dít teď:
                 </div>
 
-                <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-
-                <div className="mt-4 flex items-center gap-3 text-sm text-zinc-500">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-                  <span>Připravujeme váš pracovní prostor a první návrh.</span>
+                <div className="mt-4 space-y-3 text-sm leading-7 text-zinc-400">
+                  <p>
+                    • Náš tým projde vaše zadání, podklady a preferovaný styl.
+                  </p>
+                  <p>
+                    • Připravíme první návrh webu, obvykle do 48 hodin.
+                  </p>
+                  <p>
+                    • Jakmile bude návrh připraven, dostanete oznámení.
+                  </p>
+                  <p>
+                    • Pokud budeme potřebovat doplnit informace, spojíme se s vámi telefonicky.
+                  </p>
                 </div>
               </div>
 
               <div className="mt-8 grid gap-4 md:grid-cols-2">
                 <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="text-xs uppercase tracking-wide text-zinc-500">
-                    Oznámení o návrhu
+                    Telefonický kontakt
                   </div>
                   <div className="mt-2 text-base font-medium text-white">
-                    Jakmile bude návrh připravený, dáme vám vědět.
+                    777 777 777
                   </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">
+                    Pokud s vámi budeme potřebovat projít detaily, ozveme se vám z tohoto čísla.
+                  </p>
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="text-xs uppercase tracking-wide text-zinc-500">
-                    Pokud budeme něco potřebovat
+                    Klientská zóna
                   </div>
                   <div className="mt-2 text-base font-medium text-white">
-                    Zavoláme vám z čísla 777 777 777
+                    Přehled prací a další kroky
                   </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">
+                    V mezičase můžete pokračovat do klientské zóny, kde uvidíte průběh prací a vše
+                    důležité.
+                  </p>
                 </div>
               </div>
 
@@ -136,6 +124,10 @@ export default function PreparingPage() {
                   Kontaktovat podporu
                 </a>
               </div>
+
+              <p className="mt-5 text-xs text-zinc-500">
+                Automatické přesměrování do klientské zóny proběhne přibližně za 1 minutu.
+              </p>
             </div>
 
             {/* Right */}
@@ -197,8 +189,8 @@ export default function PreparingPage() {
                         Ověření platební karty
                       </div>
                       <p className="mt-1 text-sm leading-6 text-zinc-400">
-                        Jakmile potvrdíte náš návrh, bude potřeba ověřit platební kartu pro další
-                        pokračování služby.
+                        Ověření platební karty proběhne před tímto krokem, jakmile bude potřeba
+                        navázat na další fázi služby.
                       </p>
                     </div>
                   </div>
@@ -217,6 +209,16 @@ export default function PreparingPage() {
                   <div>Email: podpora@webraketa.cz</div>
                   <div>Telefon: 777 777 777</div>
                 </div>
+              </div>
+
+              <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                <div className="text-xs uppercase tracking-wide text-zinc-500">
+                  Důležité
+                </div>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                  Tato obrazovka slouží jako potvrzení, že jsme vaše zadání přijali. Návrh webu
+                  nebude vygenerován okamžitě — připravuje ho náš tým.
+                </p>
               </div>
             </div>
           </div>
