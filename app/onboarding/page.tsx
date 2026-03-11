@@ -71,6 +71,7 @@ export default function OnboardingPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [improvingText, setImprovingText] = useState(false);
 
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
@@ -78,14 +79,12 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 
-  // původní data
   const [business, setBusiness] = useState("");
   const [domain, setDomain] = useState("");
   const [domainOwned, setDomainOwned] = useState<boolean | null>(null);
   const [websiteDesc, setWebsiteDesc] = useState("");
   const [materialsNote, setMaterialsNote] = useState("");
 
-  // nové UI state
   const [selectedPlan, setSelectedPlan] = useState("start");
   const [selectedBilling, setSelectedBilling] = useState("subscription");
   const [planExpanded, setPlanExpanded] = useState(false);
@@ -297,18 +296,43 @@ export default function OnboardingPage() {
     router.refresh();
   }
 
-  function improveDescriptionDemo() {
+  async function improveDescriptionDemo() {
     if (!websiteDesc.trim()) {
       setInfo("Nejdřív napište alespoň základní popis webu.");
       return;
     }
 
-    const improved = `Chceme vytvořit moderní a důvěryhodný web pro značku ${
-      businessType.trim() || business.trim() || "podnikání klienta"
-    }. Web by měl působit profesionálně, přehledně a přesvědčivě. Důraz je na jasnou prezentaci služeb, silné call-to-action prvky, kontakt a vizuální styl "${preferredStyle || "moderní"}". Podklady od klienta: ${websiteDesc.trim()}`;
+    try {
+      setImprovingText(true);
+      setError(null);
+      setInfo(null);
 
-    setWebsiteDesc(improved);
-    setInfo("Popis byl vylepšen pomocí AI demo logiky ✅");
+      const res = await fetch("/api/improve-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: websiteDesc,
+          businessType,
+          preferredStyle,
+          brandColors,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error ?? "Nepodařilo se vylepšit text.");
+      }
+
+      setWebsiteDesc(data.text);
+      setInfo("Popis byl vylepšen pomocí AI ✅");
+    } catch (e: any) {
+      setError(e?.message ?? "Nepodařilo se vylepšit text.");
+    } finally {
+      setImprovingText(false);
+    }
   }
 
   function handleLogoFiles(files: FileList | null) {
@@ -747,9 +771,10 @@ export default function OnboardingPage() {
                         <button
                           type="button"
                           onClick={improveDescriptionDemo}
-                          className="mt-4 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95"
+                          disabled={improvingText}
+                          className="mt-4 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Vylepšit s AI
+                          {improvingText ? "AI vylepšuje..." : "Vylepšit s AI"}
                         </button>
                       </div>
                     </div>
@@ -907,12 +932,13 @@ export default function OnboardingPage() {
                       type="button"
                       onClick={async () => {
                         await savePartial();
-                        goToZone();
+                        router.push("/preparing");
+                        router.refresh();
                       }}
                       disabled={saving}
                       className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Dokončit a jít do zóny
+                      Dokončit a pokračovat
                     </button>
                   )}
                 </div>
