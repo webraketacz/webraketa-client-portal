@@ -160,21 +160,32 @@ export default function DashboardPage() {
       <aside className="space-y-8">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-            Aktuální projekt
+            Souhrn projektu
           </div>
-          <h3 className="mt-2 text-2xl font-semibold text-white">Webraketa klientská zóna</h3>
 
-          <p className="mt-3 text-sm leading-7 text-zinc-400">
-            Hlavní aktivní projekt, na kterém nyní pracujeme. Všechny další připravené projekty
-            najdete níže.
+          <p className="mt-4 text-sm leading-7 text-zinc-400">
+            Hlavní aktivní zakázka je nyní ve fázi přípravy prvního návrhu. Jakmile bude návrh hotový,
+            objeví se v sekci Návrh webu.
           </p>
 
-          <div className="mt-6 rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
-            <div className="text-xs uppercase tracking-wide text-zinc-500">Balíček</div>
-            <div className="mt-2 text-base font-medium text-white">START</div>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Základní balíček pro rychlé spuštění webu a přehled zakázky v klientské zóně.
-            </p>
+          <div className="mt-6 space-y-4">
+            <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
+              <div className="text-xs uppercase tracking-wide text-zinc-500">Aktuální stav</div>
+              <div className="mt-2 text-base font-medium text-white">Příprava prvního návrhu</div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
+              <div className="text-xs uppercase tracking-wide text-zinc-500">Termín návrhu</div>
+              <div className="mt-2 text-base font-medium text-white">Do 48 hodin</div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
+              <div className="text-xs uppercase tracking-wide text-zinc-500">Balíček</div>
+              <div className="mt-2 text-base font-medium text-white">START</div>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Základní balíček pro rychlé spuštění webu a přehled zakázky v klientské zóně.
+              </p>
+            </div>
           </div>
         </div>
 
