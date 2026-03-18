@@ -1,14 +1,274 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase";
+
+function RocketIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M14.5 4.5c1.9-.6 3.9-.6 5.8-.2.4 1.9.4 3.9-.2 5.8-.6 2-1.7 3.8-3.2 5.3l-3.2 3.2a3 3 0 0 1-4.2 0l-4-4a3 3 0 0 1 0-4.2l3.2-3.2c1.5-1.5 3.3-2.6 5.3-3.2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M14.5 9.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <path
+        d="M8.5 15.5 6 18c-.7.7-1.8 1-2.8.8.2-1 .5-2.1 1.2-2.8l2.5-2.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.5 8.5 18 6c.7-.7 1-1.8.8-2.8-1-.2-2.1.1-2.8.8l-2.5 2.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+function MailIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M4 7.5l8 5 8-5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.5 6.5h13A1.5 1.5 0 0 1 20 8v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        opacity="0.9"
+      />
+    </svg>
+  );
+}
+
+function LockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M7 11V8.5a5 5 0 0 1 10 0V11"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.5 11h11A1.5 1.5 0 0 1 19 12.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        opacity="0.9"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M5 12.5 9.5 17 19 7.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M5 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M13 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ArrowLeftIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M15 18l-6-6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 10v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 7.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SpinnerIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M20 12a8 8 0 1 1-2.34-5.66"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function WindowCardA() {
+  return (
+    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+      </div>
+      <div className="mb-2 h-16 w-full rounded-lg bg-indigo-500/20" />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="h-20 rounded bg-white/5" />
+        <div className="h-20 rounded bg-white/5" />
+        <div className="h-20 rounded bg-white/5" />
+        <div className="h-20 rounded bg-white/5" />
+      </div>
+    </div>
+  );
+}
+
+function WindowCardB() {
+  return (
+    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+      </div>
+      <div className="flex gap-2">
+        <div className="h-32 w-1/4 rounded bg-white/5" />
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="h-8 rounded bg-white/5" />
+          <div className="flex gap-2">
+            <div className="h-10 flex-1 rounded bg-purple-500/20" />
+            <div className="h-10 flex-1 rounded bg-fuchsia-500/20" />
+          </div>
+          <div className="h-10 rounded bg-white/5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WindowCardC() {
+  return (
+    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+      </div>
+      <div className="mb-3 h-4 w-1/3 rounded bg-white/10" />
+      <div className="mb-2 flex h-20 items-end gap-1">
+        <div className="h-1/3 w-1/6 rounded-t bg-indigo-500/40" />
+        <div className="h-2/3 w-1/6 rounded-t bg-indigo-500/40" />
+        <div className="h-1/2 w-1/6 rounded-t bg-indigo-500/40" />
+        <div className="h-[90%] w-1/6 rounded-t bg-indigo-500/40" />
+        <div className="h-3/4 w-1/6 rounded-t bg-indigo-500/40" />
+        <div className="h-full w-1/6 rounded-t bg-indigo-500/40" />
+      </div>
+      <div className="h-8 rounded bg-white/5" />
+    </div>
+  );
+}
+
+function WindowCardD() {
+  return (
+    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-full bg-slate-700" />
+      </div>
+      <div className="mb-3 flex items-center gap-2">
+        <div className="h-6 w-6 rounded-full bg-blue-500/20" />
+        <div className="h-3 w-16 rounded bg-white/10" />
+        <div className="ml-auto flex gap-1">
+          <div className="h-2 w-6 rounded bg-white/5" />
+          <div className="h-2 w-6 rounded bg-white/5" />
+        </div>
+      </div>
+      <div className="mb-2 h-24 w-full rounded-lg bg-blue-500/20" />
+      <div className="mb-1 h-3 w-3/4 rounded bg-white/5" />
+      <div className="h-3 w-1/2 rounded bg-white/5" />
+    </div>
+  );
+}
+
+function Column({
+  direction = "up",
+  pt = "",
+}: {
+  direction?: "up" | "down";
+  pt?: string;
+}) {
+  const animation =
+    direction === "up" ? "animate-scroll-y-up" : "animate-scroll-y-down";
+
+  return (
+    <div className={`flex w-48 flex-col gap-4 sm:w-64 sm:gap-6 ${animation} ${pt}`}>
+      <WindowCardA />
+      <WindowCardB />
+      <WindowCardC />
+      <WindowCardD />
+      <WindowCardA />
+      <WindowCardB />
+      <WindowCardC />
+      <WindowCardD />
+    </div>
+  );
+}
+
+const inputBaseStyle: React.CSSProperties = {
+  backgroundColor: "rgba(2, 6, 23, 0.72)",
+  WebkitBoxShadow: "0 0 0 1000px rgba(2, 6, 23, 0.72) inset",
+  boxShadow:
+    "0 0 0 1000px rgba(2, 6, 23, 0.72) inset, inset 0 1px 0 rgba(255,255,255,0.04)",
+  WebkitTextFillColor: "#ffffff",
+  color: "#ffffff",
+  appearance: "none",
+  WebkitAppearance: "none",
+  MozAppearance: "none",
+};
 
 export default function RegisterClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentYear = new Date().getFullYear();
 
-  // ✅ PLAN / BILLING z URL: /register?plan=start&billing=subscription
   const plan = searchParams.get("plan") ?? "start";
   const billing = searchParams.get("billing") ?? "subscription";
 
@@ -39,9 +299,7 @@ export default function RegisterClient() {
 
     const supabase = getSupabaseBrowserClient();
 
-    // ✅ DEMO registrace bez potvrzování emailu
-    // (i kdyby Confirm email bylo omylem zapnuté, níže to vyřešíme auto-loginem)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -52,7 +310,6 @@ export default function RegisterClient() {
       return;
     }
 
-    // ✅ DEMO: hned přihlásit, aby vznikla session (jinak onboarding -> login)
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
         email,
@@ -65,10 +322,8 @@ export default function RegisterClient() {
       return;
     }
 
-    // ✅ user id bereme ze session (nejjistější)
     const userId = signInData.session.user.id;
 
-    // ✅ uložíme výběr balíčku do profiles
     const { error: upsertError } = await supabase.from("profiles").upsert(
       {
         id: userId,
@@ -88,218 +343,328 @@ export default function RegisterClient() {
     }
 
     setLoading(false);
-
-    // ✅ DEMO: rovnou na onboarding (session už existuje)
     router.push("/onboarding");
     router.refresh();
   };
 
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-200 antialiased">
-      <div className="relative min-h-dvh overflow-hidden">
-        <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/20 blur-[6rem]" />
-        <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-full bg-blue-600/15 blur-[7rem]" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]" />
+    <>
+      <div
+        className="min-h-dvh bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500 selection:text-white"
+        style={{
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'",
+        }}
+      >
+        <div className="relative min-h-dvh overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#0f172a,#312e81,#581c87,#1e3a8a,#0f172a)]" />
 
-        <header className="relative z-10">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur-xl">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="opacity-90"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 2L20 7V17L12 22L4 17V7L12 2Z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    opacity="0.9"
-                  />
-                  <path
-                    d="M12 6.5L16.5 9.1V14.9L12 17.5L7.5 14.9V9.1L12 6.5Z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    opacity="0.55"
-                  />
-                </svg>
-              </div>
-
-              <div className="flex flex-col leading-tight">
-                <span className="text-sm font-semibold text-white">Webraketa.cz</span>
-                <span className="text-xs text-zinc-400">Klientská zóna</span>
-              </div>
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden [perspective:1000px] opacity-40 sm:opacity-60">
+            <div className="absolute top-1/2 left-1/2 flex w-[150%] -translate-x-1/2 -translate-y-1/2 gap-4 [transform:rotateX(20deg)_rotateZ(-20deg)_scale(1.5)] sm:gap-6">
+              <Column direction="up" />
+              <Column direction="down" pt="pt-12" />
+              <Column direction="up" pt="pt-24" />
+              <Column direction="down" pt="pt-8" />
+              <Column direction="up" pt="pt-16" />
             </div>
-
-            <a
-              href="https://webraketa.cz"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="opacity-90"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M15 18L9 12L15 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Zpět na homepage
-            </a>
           </div>
-        </header>
 
-        <main className="relative z-10">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-14 lg:grid-cols-12 lg:py-20">
-            <section className="lg:col-span-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-xl">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
-                KLIENTSKÁ ZÓNA
-              </div>
+          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/40 to-slate-950/90" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.5)_100%)]" />
 
-              <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                Registrace do klientské zóny
-              </h1>
+          <main className="relative z-10 flex min-h-dvh flex-col items-center justify-center p-6">
+            <div className="w-full">
+              <section className="max-w-full lg:col-span-6">
+                <div className="mx-auto w-full max-w-md">
+                  <div className="mb-8 flex justify-center">
+                    <Link href="/" className="group inline-flex items-center gap-2.5">
+                      <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
+                        <RocketIcon className="h-[22px] w-[22px]" />
+                      </span>
+                      <span className="text-lg font-semibold tracking-tight text-white">
+                        Webraketa<span className="text-indigo-400">.cz</span>
+                      </span>
+                    </Link>
+                  </div>
 
-              <p className="mt-4 max-w-xl text-zinc-400">
-                Vytvořte si účet a získáte přístup k přehledu zakázky, podkladům a dalším
-                funkcím.
-              </p>
+                  <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-indigo-500/5 backdrop-blur-xl sm:p-8">
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent" />
+                    <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[28rem] -translate-x-1/2 rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-2xl" />
 
-              <div className="mt-6 max-w-xl rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-xl">
-                <div className="text-xs uppercase tracking-wide text-zinc-400">
-                  Vybraný balíček
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-sm font-medium text-white/90">
-                    {plan.toUpperCase()}
-                  </span>
-                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-sm font-medium text-white/70">
-                    {billing === "subscription" ? "Měsíční předplatné" : "Jednorázově"}
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            <section className="lg:col-span-6">
-              <div className="mx-auto w-full max-w-md">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 backdrop-blur-xl">
-                  <h2 className="text-2xl font-semibold text-white">Vytvořit účet</h2>
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Zadejte email a heslo. DEMO režim: po registraci půjdete rovnou do onboardingu.
-                  </p>
-
-                  <form onSubmit={onSubmit} className="mt-6 space-y-5">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                        Email
-                      </label>
-                      <div className="relative mt-2">
-                        <input
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="vas@email.cz"
-                          type="email"
-                          autoComplete="email"
-                          required
-                          className="w-full rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
+                    <div className="relative">
+                      <div className="mb-6">
+                        <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                          Vytvořit účet
+                        </h2>
+                        <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+                          Zaregistrujte se a pokračujte rovnou do onboardingu.
+                        </p>
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                        Heslo
-                      </label>
-                      <div className="relative mt-2">
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          autoComplete="new-password"
-                          required
-                          className="w-full rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
+                      <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="text-[0.625rem] font-semibold uppercase tracking-wider text-slate-500">
+                          Vybraný balíček
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-white">
+                            {plan.toUpperCase()}
+                          </span>
+                          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-slate-300">
+                            {billing === "subscription"
+                              ? "Měsíční předplatné"
+                              : "Jednorázově"}
+                          </span>
+                        </div>
                       </div>
-                      <p className="mt-2 text-xs text-zinc-500">Minimálně 6 znaků.</p>
-                    </div>
 
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                        Potvrzení hesla
-                      </label>
-                      <div className="relative mt-2">
-                        <input
-                          type="password"
-                          value={password2}
-                          onChange={(e) => setPassword2(e.target.value)}
-                          placeholder="••••••••"
-                          autoComplete="new-password"
-                          required
-                          className="w-full rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-violet-500 to-blue-500 py-3 font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {loading ? "Vytvářím účet…" : "Vytvořit účet"}
-                    </button>
-
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-400">
-                      {error ? (
-                        <span className="text-red-300">{error}</span>
-                      ) : info ? (
-                        <span className="text-emerald-300">{info}</span>
-                      ) : (
-                        <>
-                          <span className="font-medium text-zinc-300">Tip:</span>{" "}
-                          Pokud se něco pokazí, napište na{" "}
-                          <a
-                            href="mailto:podpora@webraketa.cz"
-                            className="font-medium text-white/90 underline decoration-white/20 underline-offset-4 hover:decoration-white/50"
+                      <form onSubmit={onSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="email"
+                            className="block text-xs font-semibold uppercase tracking-wide text-slate-400"
                           >
-                            podpora@webraketa.cz
-                          </a>
-                          .
-                        </>
-                      )}
-                    </div>
+                            Email
+                          </label>
+                          <div className="relative">
+                            <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-slate-400">
+                              <MailIcon className="h-[18px] w-[18px]" />
+                            </span>
+                            <input
+                              id="email"
+                              name="email"
+                              type="email"
+                              autoComplete="email"
+                              placeholder="vas@email.cz"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              required
+                              style={inputBaseStyle}
+                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                          </div>
+                        </div>
 
-                    <div className="text-sm text-zinc-400">
-                      Už máte účet?{" "}
-                      <a
-                        href="/login"
-                        className="font-medium text-white/90 underline decoration-white/20 underline-offset-4 hover:decoration-white/50"
-                      >
-                        Přihlásit se
-                      </a>
-                    </div>
-                  </form>
-                </div>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="password"
+                            className="block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                          >
+                            Heslo
+                          </label>
+                          <div className="relative">
+                            <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-slate-400">
+                              <LockIcon className="h-[18px] w-[18px]" />
+                            </span>
+                            <input
+                              id="password"
+                              name="password"
+                              type="password"
+                              autoComplete="new-password"
+                              placeholder="••••••••"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              required
+                              style={inputBaseStyle}
+                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                            />
+                          </div>
+                          <p className="text-[0.625rem] text-slate-500">
+                            Minimálně 6 znaků.
+                          </p>
+                        </div>
 
-                <div className="mt-6 text-center text-xs text-zinc-500">
-                  © 2026 Webraketa.cz · Všechna práva vyhrazena
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="password2"
+                            className="block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                          >
+                            Potvrzení hesla
+                          </label>
+                          <div className="relative">
+                            <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-slate-400">
+                              <CheckIcon className="h-[18px] w-[18px]" />
+                            </span>
+                            <input
+                              id="password2"
+                              name="password2"
+                              type="password"
+                              autoComplete="new-password"
+                              placeholder="••••••••"
+                              value={password2}
+                              onChange={(e) => setPassword2(e.target.value)}
+                              required
+                              style={inputBaseStyle}
+                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-1">
+                          <button
+                            type="submit"
+                            disabled={loading}
+                            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500" />
+                            <span
+                              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+                              style={{
+                                background:
+                                  "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%)",
+                              }}
+                            />
+                            <span className="relative flex items-center gap-2">
+                              {loading && (
+                                <SpinnerIcon className="h-[18px] w-[18px] animate-spin" />
+                              )}
+                              <span>{loading ? "Vytvářím účet…" : "Vytvořit účet"}</span>
+                              <ArrowRightIcon className="relative h-[18px] w-[18px] transition-transform group-hover:translate-x-0.5" />
+                            </span>
+                          </button>
+
+                          {error && (
+                            <p className="mt-3 text-xs font-medium text-red-300/90">
+                              {error}
+                            </p>
+                          )}
+
+                          {!error && (
+                            <div className="mt-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3 text-[0.625rem] text-slate-500">
+                              <div className="flex items-start gap-2">
+                                <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                                <p>
+                                  {info ? (
+                                    <span className="text-emerald-300">{info}</span>
+                                  ) : (
+                                    <>
+                                      Pokud se něco pokazí, napište na{" "}
+                                      <a
+                                        href="mailto:podpora@webraketa.cz"
+                                        className="text-slate-300 underline underline-offset-4 decoration-white/20 hover:decoration-white/50"
+                                      >
+                                        podpora@webraketa.cz
+                                      </a>
+                                      .
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </form>
+
+                      <div className="mt-6 space-y-4 border-t border-white/5 pt-6">
+                        <div className="flex flex-col gap-2 text-sm">
+                          <Link
+                            href="/login"
+                            className="w-fit text-xs font-medium text-indigo-300 transition-colors hover:text-white"
+                          >
+                            Už máte účet? Přihlásit se
+                          </Link>
+
+                          <p className="text-xs text-slate-500">
+                            Registrací souhlasíte s pokračováním do klientské zóny a
+                            onboardingu.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[0.625rem] text-slate-600">
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                            Zabezpečeno
+                          </span>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                            Klientská zóna Webraketa
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex justify-center">
+                    <Link
+                      href="/"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
+                    >
+                      <ArrowLeftIcon className="h-4 w-4 text-slate-300" />
+                      Zpět na homepage
+                    </Link>
+                  </div>
+
+                  <div className="mt-6 text-center text-[0.625rem] font-medium text-slate-600">
+                    © {currentYear} Webraketa.cz • Všechna práva vyhrazena
+                  </div>
                 </div>
-              </div>
-            </section>
-          </div>
-        </main>
+              </section>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+
+      <style jsx global>{`
+        @keyframes gradient-xy {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        .animate-gradient-xy {
+          background-size: 400% 400%;
+          animation: gradient-xy 15s ease infinite;
+        }
+
+        @keyframes scroll-y-up {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-50%);
+          }
+        }
+
+        @keyframes scroll-y-down {
+          0% {
+            transform: translateY(-50%);
+          }
+          100% {
+            transform: translateY(0);
+          }
+        }
+
+        .animate-scroll-y-up {
+          animation: scroll-y-up 50s linear infinite;
+        }
+
+        .animate-scroll-y-down {
+          animation: scroll-y-down 50s linear infinite;
+        }
+
+        input,
+        textarea,
+        select {
+          color-scheme: dark;
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-text-fill-color: #ffffff !important;
+          -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.72) inset !important;
+          box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.72) inset !important;
+          caret-color: #ffffff !important;
+          transition: background-color 9999s ease-in-out 0s;
+          border-radius: 1rem;
+        }
+      `}</style>
+    </>
   );
 }
