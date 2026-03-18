@@ -425,7 +425,8 @@ export default function LoginPage() {
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               required
-                              className="w-full rounded-2xl border border-white/10 bg-slate-950/50 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                              style={{ backgroundColor: "rgba(2, 6, 23, 0.5)" }}
+                              className="w-full appearance-none rounded-2xl border border-white/10 !bg-slate-950/50 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors focus:!bg-slate-950/60 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                             />
                           </div>
                         </div>
@@ -450,7 +451,8 @@ export default function LoginPage() {
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               required
-                              className="w-full rounded-2xl border border-white/10 bg-slate-950/50 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                              style={{ backgroundColor: "rgba(2, 6, 23, 0.5)" }}
+                              className="w-full appearance-none rounded-2xl border border-white/10 !bg-slate-950/50 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors focus:!bg-slate-950/60 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
                             />
                           </div>
                         </div>
@@ -612,6 +614,18 @@ export default function LoginPage() {
 
         .animate-scroll-y-down {
           animation: scroll-y-down 50s linear infinite;
+        }
+
+        input,
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-text-fill-color: white !important;
+          -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.5) inset !important;
+          box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.5) inset !important;
+          transition: background-color 9999s ease-in-out 0s;
+          caret-color: white !important;
         }
       `}</style>
     </>
