@@ -7,12 +7,7 @@ import { getSupabaseBrowserClient } from "@/app/lib/supabase";
 
 function RocketIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M14.5 4.5c1.9-.6 3.9-.6 5.8-.2.4 1.9.4 3.9-.2 5.8-.6 2-1.7 3.8-3.2 5.3l-3.2 3.2a3 3 0 0 1-4.2 0l-4-4a3 3 0 0 1 0-4.2l3.2-3.2c1.5-1.5 3.3-2.6 5.3-3.2Z"
         stroke="currentColor"
@@ -20,12 +15,7 @@ function RocketIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M14.5 9.5h.01"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
+      <path d="M14.5 9.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
       <path
         d="M8.5 15.5 6 18c-.7.7-1.8 1-2.8.8.2-1 .5-2.1 1.2-2.8l2.5-2.5"
         stroke="currentColor"
@@ -47,12 +37,7 @@ function RocketIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function MailIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M4 7.5l8 5 8-5"
         stroke="currentColor"
@@ -64,7 +49,7 @@ function MailIcon(props: React.SVGProps<SVGSVGElement>) {
         d="M5.5 6.5h13A1.5 1.5 0 0 1 20 8v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
         stroke="currentColor"
         strokeWidth="1.8"
-        opacity="0.8"
+        opacity="0.9"
       />
     </svg>
   );
@@ -72,12 +57,7 @@ function MailIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function LockIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M7 11V8.5a5 5 0 0 1 10 0V11"
         stroke="currentColor"
@@ -88,7 +68,7 @@ function LockIcon(props: React.SVGProps<SVGSVGElement>) {
         d="M6.5 11h11A1.5 1.5 0 0 1 19 12.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11Z"
         stroke="currentColor"
         strokeWidth="1.8"
-        opacity="0.85"
+        opacity="0.9"
       />
     </svg>
   );
@@ -96,18 +76,8 @@ function LockIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <path
-        d="M5 12h12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M5 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path
         d="M13 6l6 6-6 6"
         stroke="currentColor"
@@ -121,12 +91,7 @@ function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function ArrowLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M15 18l-6-6 6-6"
         stroke="currentColor"
@@ -140,37 +105,17 @@ function ArrowLeftIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M12 10v6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 7.5h.01"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
+      <path d="M12 10v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 7.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
     </svg>
   );
 }
 
 function SpinnerIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M20 12a8 8 0 1 1-2.34-5.66"
         stroke="currentColor"
@@ -316,6 +261,18 @@ function Column({
   );
 }
 
+const inputBaseStyle: React.CSSProperties = {
+  backgroundColor: "rgba(2, 6, 23, 0.72)",
+  WebkitBoxShadow: "0 0 0 1000px rgba(2, 6, 23, 0.72) inset",
+  boxShadow:
+    "0 0 0 1000px rgba(2, 6, 23, 0.72) inset, inset 0 1px 0 rgba(255,255,255,0.04)",
+  WebkitTextFillColor: "#ffffff",
+  color: "#ffffff",
+  appearance: "none",
+  WebkitAppearance: "none",
+  MozAppearance: "none",
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
@@ -413,7 +370,7 @@ export default function LoginPage() {
                             Email
                           </label>
                           <div className="relative">
-                            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+                            <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-slate-400">
                               <MailIcon className="h-[18px] w-[18px]" />
                             </span>
                             <input
@@ -425,8 +382,8 @@ export default function LoginPage() {
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               required
-                              style={{ backgroundColor: "rgba(2, 6, 23, 0.5)" }}
-                              className="w-full appearance-none rounded-2xl border border-white/10 !bg-slate-950/50 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors focus:!bg-slate-950/60 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                              style={inputBaseStyle}
+                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                             />
                           </div>
                         </div>
@@ -439,7 +396,7 @@ export default function LoginPage() {
                             Heslo
                           </label>
                           <div className="relative">
-                            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+                            <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-slate-400">
                               <LockIcon className="h-[18px] w-[18px]" />
                             </span>
                             <input
@@ -451,8 +408,8 @@ export default function LoginPage() {
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               required
-                              style={{ backgroundColor: "rgba(2, 6, 23, 0.5)" }}
-                              className="w-full appearance-none rounded-2xl border border-white/10 !bg-slate-950/50 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors focus:!bg-slate-950/60 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                              style={inputBaseStyle}
+                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
                             />
                           </div>
                         </div>
@@ -489,7 +446,7 @@ export default function LoginPage() {
                           {!error && (
                             <div className="mt-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3 text-[0.625rem] text-slate-500">
                               <div className="flex items-start gap-2">
-                                <InfoIcon className="mt-0.5 h-4 w-4 text-slate-500" />
+                                <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                                 <p>
                                   Přihlaste se stejnými údaji, které jste dostali od{" "}
                                   <span className="text-slate-300">Webraketa.cz</span>.
@@ -617,15 +574,21 @@ export default function LoginPage() {
         }
 
         input,
+        textarea,
+        select {
+          color-scheme: dark;
+        }
+
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
-          -webkit-text-fill-color: white !important;
-          -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.5) inset !important;
-          box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.5) inset !important;
+          -webkit-text-fill-color: #ffffff !important;
+          -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.72) inset !important;
+          box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.72) inset !important;
+          caret-color: #ffffff !important;
           transition: background-color 9999s ease-in-out 0s;
-          caret-color: white !important;
+          border-radius: 1rem;
         }
       `}</style>
     </>
