@@ -4,7 +4,6 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 let _client: SupabaseClient | null = null;
 
 export function getSupabaseBrowserClient(): SupabaseClient {
-  // Zabráníme běhu na serveru (prerender/build)
   if (typeof window === "undefined") {
     throw new Error("Supabase browser client called on the server.");
   }
@@ -17,6 +16,12 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   if (!supabaseUrl) throw new Error("NEXT_PUBLIC_SUPABASE_URL is required.");
   if (!supabaseAnonKey) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is required.");
 
-  _client = createClient(supabaseUrl, supabaseAnonKey);
+  _client = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      flowType: "pkce",
+      detectSessionInUrl: true,
+    },
+  });
+
   return _client;
 }
