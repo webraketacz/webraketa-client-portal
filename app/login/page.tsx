@@ -17,7 +17,7 @@ function RocketLogoIcon(props: React.SVGProps<SVGSVGElement>) {
       />
       <path d="M14.5 9.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
       <path
-        d="M8.5 15.5 6 18c-.7.7-1.8 1-2.8.8.2-1 .5-2.1 1.2-2.8l2.5-2.5"
+        d="M8.5 15.5 6 18c-.7.7-1.8.8-2.8.8.2-1 .5-2.1 1.2-2.8l2.5-2.5"
         stroke="currentColor"
         strokeWidth="1.7"
         strokeLinecap="round"
@@ -246,6 +246,26 @@ export default function LoginPage() {
     }
   };
 
+  const onGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+
+    const supabase = getSupabaseBrowserClient();
+    const origin = window.location.origin;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback?next=/dashboard`,
+      },
+    });
+
+    if (error) {
+      setLoading(false);
+      setError(error.message);
+    }
+  };
+
   return (
     <>
       <div
@@ -444,6 +464,7 @@ export default function LoginPage() {
 
                           <button
                             type="button"
+                            onClick={onGoogleSignIn}
                             className="group relative flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                           >
                             <GoogleIcon className="h-[18px] w-[18px]" />
