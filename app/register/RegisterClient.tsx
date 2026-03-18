@@ -141,6 +141,29 @@ function SpinnerIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M21.805 10.023H12v3.955h5.617a4.807 4.807 0 0 1-2.086 3.155v2.62h3.37c1.972-1.816 3.104-4.493 3.104-7.687 0-.68-.061-1.334-.2-2.043Z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 22c2.808 0 5.16-.93 6.88-2.52l-3.37-2.62c-.936.63-2.134 1.01-3.51 1.01-2.697 0-4.98-1.821-5.797-4.27H2.72v2.703A10.39 10.39 0 0 0 12 22Z"
+        fill="#34A853"
+      />
+      <path
+        d="M6.203 13.6A6.24 6.24 0 0 1 5.88 11.99c0-.56.098-1.104.323-1.61V7.677H2.72A10.007 10.007 0 0 0 2 11.99c0 1.605.385 3.125 1.08 4.313L6.203 13.6Z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 6.11c1.53 0 2.904.526 3.985 1.56l2.99-2.99C17.155 2.99 14.803 2 12 2A10.39 10.39 0 0 0 2.72 7.677L6.203 10.38C7.02 7.931 9.303 6.11 12 6.11Z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
+}
+
 function WindowCardA() {
   return (
     <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
@@ -362,6 +385,33 @@ export default function RegisterClient() {
     router.refresh();
   };
 
+  const onGoogleRegister = async () => {
+    setError(null);
+    setInfo(null);
+    setLoading(true);
+
+    const supabase = getSupabaseBrowserClient();
+    const origin = window.location.origin;
+
+    const redirectTo =
+      `${origin}/auth/callback` +
+      `?next=/onboarding` +
+      `&plan=${encodeURIComponent(plan)}` +
+      `&billing=${encodeURIComponent(billing)}`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      setLoading(false);
+      setError(error.message);
+    }
+  };
+
   return (
     <>
       <div
@@ -562,6 +612,25 @@ export default function RegisterClient() {
                               </div>
                             </div>
                           )}
+                        </div>
+
+                        <div>
+                          <div className="mb-5 flex items-center">
+                            <div className="flex-grow border-t border-white/10" />
+                            <span className="mx-4 text-[0.625rem] font-semibold uppercase tracking-wider text-slate-500">
+                              Nebo
+                            </span>
+                            <div className="flex-grow border-t border-white/10" />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={onGoogleRegister}
+                            className="group relative flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          >
+                            <GoogleIcon className="h-[18px] w-[18px]" />
+                            Registrovat se pomocí Google
+                          </button>
                         </div>
                       </form>
 
