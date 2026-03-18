@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase";
+
+export const dynamic = "force-dynamic";
 
 const VALID_PLANS = new Set(["start", "pro", "premium", "enterprise"]);
 const VALID_BILLING = new Set(["monthly", "yearly"]);
 
-export default function AuthCallbackPage() {
+function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("Dokončuji přihlášení...");
@@ -21,6 +23,7 @@ export default function AuthCallbackPage() {
     () => (VALID_PLANS.has(planParam) ? planParam : null),
     [planParam]
   );
+
   const safeBilling = useMemo(
     () => (VALID_BILLING.has(billingParam) ? billingParam : null),
     [billingParam]
@@ -90,5 +93,21 @@ export default function AuthCallbackPage() {
         {message}
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm text-slate-300 backdrop-blur-xl">
+            Dokončuji přihlášení...
+          </div>
+        </div>
+      }
+    >
+      <AuthCallbackInner />
+    </Suspense>
   );
 }
