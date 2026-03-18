@@ -36,347 +36,373 @@ export default function LoginPage() {
     }
   };
 
+  const cards = [
+    { h: 180, cls: "w-[220px] rotate-[-14deg]" },
+    { h: 140, cls: "w-[190px] rotate-[10deg]" },
+    { h: 220, cls: "w-[260px] rotate-[-8deg]" },
+    { h: 160, cls: "w-[210px] rotate-[16deg]" },
+    { h: 200, cls: "w-[240px] rotate-[-12deg]" },
+    { h: 150, cls: "w-[180px] rotate-[8deg]" },
+  ];
+
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-200 antialiased">
-      {/* Background */}
-      <div className="relative min-h-dvh overflow-hidden">
-        {/* Glow */}
-        <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/20 blur-[6rem]" />
-        <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-full bg-blue-600/15 blur-[7rem]" />
+    <>
+      <div
+        className="min-h-dvh bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500 selection:text-white"
+        style={{
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+        }}
+      >
+        <div className="relative min-h-dvh overflow-hidden">
+          {/* animated gradient bg */}
+          <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#0f172a,#312e81,#581c87,#1e3a8a,#0f172a)]" />
 
-        {/* Grid */}
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]" />
+          {/* overlay */}
+          <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
 
-        {/* Header */}
-        <header className="relative z-10">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur-xl">
-                {/* icon */}
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="opacity-90"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 2L20 7V17L12 22L4 17V7L12 2Z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    opacity="0.9"
-                  />
-                  <path
-                    d="M12 6.5L16.5 9.1V14.9L12 17.5L7.5 14.9V9.1L12 6.5Z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    opacity="0.55"
-                  />
-                </svg>
-              </div>
+          {/* grid */}
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[size:56px_56px]" />
 
-              <div className="flex flex-col leading-tight">
-                <span className="text-sm font-semibold text-white">Webraketa.cz</span>
-                <span className="text-xs text-zinc-400">Klientská zóna</span>
+          {/* floating cards background */}
+          <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden opacity-30">
+            <div className="absolute left-[12%] top-[-10%] hidden h-[140%] md:block">
+              <div className="animate-scroll-y-up flex flex-col gap-8">
+                {[...cards, ...cards].map((card, i) => (
+                  <div
+                    key={`left-${i}`}
+                    className={`rounded-[28px] border border-white/10 bg-indigo-950/30 shadow-[0_10px_80px_rgba(0,0,0,0.35)] backdrop-blur-[2px] ${card.cls}`}
+                    style={{ height: `${card.h}px` }}
+                  >
+                    <div className="p-4">
+                      <div className="mb-4 flex items-center gap-2 opacity-70">
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                      </div>
+                      <div className="space-y-3">
+                        <div className="h-3 w-2/3 rounded-full bg-white/10" />
+                        <div className="h-3 w-1/2 rounded-full bg-white/10" />
+                        <div className="mt-5 h-16 rounded-2xl bg-white/5" />
+                        <div className="grid grid-cols-3 gap-2 pt-2">
+                          <div className="h-8 rounded-xl bg-white/5" />
+                          <div className="h-8 rounded-xl bg-white/5" />
+                          <div className="h-8 rounded-xl bg-white/5" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <a
-              href="https://webraketa.cz"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="opacity-90"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M15 18L9 12L15 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Zpět na homepage
-            </a>
+            <div className="absolute right-[10%] top-[-15%] hidden h-[145%] md:block">
+              <div className="animate-scroll-y-down flex flex-col gap-8">
+                {[...cards, ...cards].map((card, i) => (
+                  <div
+                    key={`right-${i}`}
+                    className={`rounded-[28px] border border-white/10 bg-indigo-950/30 shadow-[0_10px_80px_rgba(0,0,0,0.35)] backdrop-blur-[2px] ${card.cls}`}
+                    style={{ height: `${card.h}px` }}
+                  >
+                    <div className="p-4">
+                      <div className="mb-4 flex items-center gap-2 opacity-70">
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                      </div>
+                      <div className="space-y-3">
+                        <div className="h-3 w-2/3 rounded-full bg-white/10" />
+                        <div className="h-3 w-1/2 rounded-full bg-white/10" />
+                        <div className="mt-5 h-16 rounded-2xl bg-white/5" />
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <div className="h-8 rounded-xl bg-white/5" />
+                          <div className="h-8 rounded-xl bg-white/5" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </header>
 
-        <main className="relative z-10">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-14 lg:grid-cols-12 lg:py-20">
-            {/* LEFT */}
-            <section className="lg:col-span-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-xl">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
-                KLIENTSKÁ ZÓNA
-              </div>
-
-              <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                Přihlášení do klientské zóny
-              </h1>
-
-              <p className="mt-4 max-w-xl text-zinc-400">
-                Zadejte přihlašovací údaje a pokračujte do dashboardu.
-              </p>
-
-              <div className="mt-10 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-xl">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        className="opacity-90"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12 1.8l8 3.2v6.6c0 5.1-3.4 9.6-8 10.6-4.6-1-8-5.5-8-10.6V5l8-3.2Z"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                        />
-                        <path
-                          d="M9.6 12.1l1.7 1.8 3.4-3.8"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          opacity="0.9"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-white">Bezpečné přihlášení</div>
-                      <p className="mt-1 text-sm text-zinc-400">
-                        Šifrovaný přenos, moderní zabezpečení a čisté rozhraní.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-xl">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        className="opacity-90"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M7 7h10v10H7V7Z"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                          opacity="0.9"
-                        />
-                        <path
-                          d="M4 4h6M4 4v6M20 4h-6M20 4v6M4 20h6M4 20v-6M20 20h-6M20 20v-6"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                          strokeLinecap="round"
-                          opacity="0.55"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-white">Vše na jednom místě</div>
-                      <p className="mt-1 text-sm text-zinc-400">
-                        Stav zakázky, fakturace a komunikace přehledně v dashboardu.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* RIGHT CARD */}
-            <section className="lg:col-span-6">
-              <div className="mx-auto w-full max-w-md">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 backdrop-blur-xl">
-                  <h2 className="text-2xl font-semibold text-white">Vítejte zpět</h2>
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Přihlaste se a pokračujte tam, kde jste skončili.
-                  </p>
-
-                  <form onSubmit={onSubmit} className="mt-6 space-y-5">
-                    {/* EMAIL */}
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                        Email
-                      </label>
-
-                      <div className="relative mt-2">
-                        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M4 7.5l8 5 8-5"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M5.5 6.5h13A1.5 1.5 0 0 1 20 8v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              opacity="0.8"
-                            />
-                          </svg>
-                        </div>
-
-                        <input
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="vas@email.cz"
-                          type="email"
-                          autoComplete="email"
-                          required
-                          className="w-full rounded-xl border border-white/10 bg-zinc-950/40 px-10 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
-                      </div>
-                    </div>
-
-                    {/* PASSWORD */}
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                        Heslo
-                      </label>
-
-                      <div className="relative mt-2">
-                        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M7 11V8.5a5 5 0 0 1 10 0V11"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                            />
-                            <path
-                              d="M6.5 11h11A1.5 1.5 0 0 1 19 12.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11Z"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              opacity="0.85"
-                            />
-                            <path
-                              d="M12 15v2"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              opacity="0.85"
-                            />
-                          </svg>
-                        </div>
-
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          autoComplete="current-password"
-                          required
-                          className="w-full rounded-xl border border-white/10 bg-zinc-950/40 px-10 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
-                      </div>
-                    </div>
-
-                    {/* BUTTON */}
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-violet-500 to-blue-500 py-3 font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
+          <main className="relative z-10 flex min-h-dvh items-center justify-center px-6 py-10">
+            <div className="w-full max-w-md">
+              {/* logo */}
+              <div className="mb-6 flex justify-center">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="text-white opacity-90"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <span className="relative inline-flex items-center justify-center gap-2">
-                        {loading ? "Přihlašuji…" : "Přihlásit"}
+                      <path
+                        d="M12 2L20 7V17L12 22L4 17V7L12 2Z"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        opacity="0.9"
+                      />
+                      <path
+                        d="M12 6.5L16.5 9.1V14.9L12 17.5L7.5 14.9V9.1L12 6.5Z"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        opacity="0.55"
+                      />
+                    </svg>
+                  </div>
+
+                  <div className="leading-tight">
+                    <div className="text-[18px] font-semibold text-white">
+                      Webraketa<span className="text-indigo-300">.cz</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* card */}
+              <div className="rounded-[34px] border border-white/10 bg-white/[0.08] p-8 shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+                <h1 className="text-4xl font-semibold tracking-tight text-white">
+                  Vítejte zpět
+                </h1>
+
+                <p className="mt-3 text-lg text-slate-300/75">
+                  Přihlaste se a pokračujte tam, kde jste skončili.
+                </p>
+
+                <form onSubmit={onSubmit} className="mt-8 space-y-6">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.14em] text-slate-300/70">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400/70">
                         <svg
                           width="18"
                           height="18"
                           viewBox="0 0 24 24"
                           fill="none"
-                          className="opacity-90 transition group-hover:translate-x-0.5"
                           xmlns="http://www.w3.org/2000/svg"
                         >
                           <path
-                            d="M5 12h12"
+                            d="M4 7.5l8 5 8-5"
                             stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M13 6l6 6-6 6"
-                            stroke="currentColor"
-                            strokeWidth="2"
+                            strokeWidth="1.8"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
+                          <path
+                            d="M5.5 6.5h13A1.5 1.5 0 0 1 20 8v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            opacity="0.8"
+                          />
                         </svg>
-                      </span>
-                    </button>
+                      </div>
 
-                    {/* INFO / ERROR BOX */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-400">
-                      {error ? (
-                        <span className="text-red-300">{error}</span>
-                      ) : (
-                        <>
-                          <span className="font-medium text-zinc-300">Tip:</span>{" "}
-                          Přihlaste se stejnými údaji, které jste dostali od Webraketa.cz.
-                        </>
-                      )}
+                      <input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="vas@email.cz"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        className="h-14 w-full rounded-2xl border border-white/10 bg-slate-950/45 pl-12 pr-4 text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/40 focus:ring-2 focus:ring-indigo-400/20"
+                      />
                     </div>
+                  </div>
 
-                    {/* FORGOT */}
-                    <div className="text-sm text-zinc-400">
-                      Zapomněli jste heslo?{" "}
-                      <a
-                        href="mailto:podpora@webraketa.cz"
-                        className="font-medium text-white/90 underline decoration-white/20 underline-offset-4 hover:decoration-white/50"
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.14em] text-slate-300/70">
+                      Heslo
+                    </label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400/70">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M7 11V8.5a5 5 0 0 1 10 0V11"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M6.5 11h11A1.5 1.5 0 0 1 19 12.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11Z"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            opacity="0.85"
+                          />
+                          <path
+                            d="M12 15v2"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            opacity="0.85"
+                          />
+                        </svg>
+                      </div>
+
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                        required
+                        className="h-14 w-full rounded-2xl border border-white/10 bg-slate-950/45 pl-12 pr-4 text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/40 focus:ring-2 focus:ring-indigo-400/20"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="group relative h-14 w-full overflow-hidden rounded-full bg-gradient-to-r from-indigo-400 via-violet-500 to-blue-500 text-base font-semibold text-white shadow-[0_12px_36px_rgba(99,102,241,0.35)] transition hover:scale-[0.995] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <span className="relative inline-flex items-center justify-center gap-2">
+                      {loading ? "Přihlašuji..." : "Přihlásit"}
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="transition group-hover:translate-x-0.5"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        podpora@webraketa.cz
-                      </a>
-                    </div>
+                        <path
+                          d="M5 12h12"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M13 6l6 6-6 6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
 
-                    {/* FOOTER MINI */}
-                    <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
-                        Zabezpečeno
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400/70" />
-                        Klientská zóna Webraketa
-                      </div>
-                    </div>
-                  </form>
-                </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300/70">
+                    {error ? (
+                      <span className="text-red-300">{error}</span>
+                    ) : (
+                      <>
+                        <span className="font-medium text-slate-200">Tip:</span>{" "}
+                        Přihlaste se stejnými údaji, které jste dostali od
+                        Webraketa.cz.
+                      </>
+                    )}
+                  </div>
 
-                <div className="mt-6 text-center text-xs text-zinc-500">
-                  © 2026 Webraketa.cz · Všechna práva vyhrazena
-                </div>
+                  <div className="border-t border-white/10 pt-5 text-sm text-slate-300/70">
+                    Zapomněli jste heslo?
+                    <br />
+                    Nemáte účet? Kontaktujte podporu:{" "}
+                    <a
+                      href="mailto:podpora@webraketa.cz"
+                      className="font-medium text-white underline decoration-white/20 underline-offset-4 transition hover:decoration-white/50"
+                    >
+                      podpora@webraketa.cz
+                    </a>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 text-xs text-slate-400/70">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
+                      Zabezpečeno
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-400/80" />
+                      Klientská zóna Webraketa
+                    </div>
+                  </div>
+                </form>
               </div>
-            </section>
-          </div>
-        </main>
+
+              <div className="mt-7 flex justify-center">
+                <a
+                  href="https://webraketa.cz"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.1]"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15 18L9 12L15 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Zpět na homepage
+                </a>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+
+      <style jsx global>{`
+        @keyframes gradient-xy {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        .animate-gradient-xy {
+          background-size: 400% 400%;
+          animation: gradient-xy 16s ease infinite;
+        }
+
+        @keyframes scroll-y-up {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-50%);
+          }
+        }
+
+        @keyframes scroll-y-down {
+          0% {
+            transform: translateY(-50%);
+          }
+          100% {
+            transform: translateY(0);
+          }
+        }
+
+        .animate-scroll-y-up {
+          animation: scroll-y-up 52s linear infinite;
+        }
+
+        .animate-scroll-y-down {
+          animation: scroll-y-down 52s linear infinite;
+        }
+      `}</style>
+    </>
   );
 }
