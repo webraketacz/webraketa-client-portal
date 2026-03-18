@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase";
 
-function RocketIcon(props: React.SVGProps<SVGSVGElement>) {
+function RocketLogoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
@@ -30,6 +30,28 @@ function RocketIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeLinecap="round"
         strokeLinejoin="round"
         opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+function MiniRocket(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M13.8 4.8c1.4-.4 2.8-.4 4.1-.1.3 1.3.3 2.7-.1 4.1-.4 1.4-1.2 2.7-2.3 3.8l-2.3 2.3a2.1 2.1 0 0 1-3 0l-2.8-2.8a2.1 2.1 0 0 1 0-3l2.3-2.3c1.1-1.1 2.4-1.9 4.1-2.3Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M13.7 8.5h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path
+        d="M8.3 14.2 6.4 16c-.5.5-1.2.7-1.9.6.1-.7.3-1.4.8-1.9l1.8-1.9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -150,32 +172,29 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function BackgroundRocket({
-  className = "",
-  delay = "0s",
-  duration = "18s",
-  size = 42,
+function FlyingRocket({
+  className,
+  delay,
+  duration,
+  trailWidth = 140,
 }: {
-  className?: string;
-  delay?: string;
-  duration?: string;
-  size?: number;
+  className: string;
+  delay: string;
+  duration: string;
+  trailWidth?: number;
 }) {
   return (
-    <div
-      className={`pointer-events-none absolute text-indigo-400/70 ${className}`}
-      style={{
-        animationDelay: delay,
-        animationDuration: duration,
-      }}
-    >
+    <div className={`pointer-events-none absolute ${className}`}>
       <div
-        className="relative animate-rocket-launch"
-        style={{ width: size, height: size }}
+        className="relative animate-flight-diagonal"
+        style={{ animationDelay: delay, animationDuration: duration }}
       >
-        <div className="absolute left-1/2 top-1/2 h-24 w-[2px] -translate-x-1/2 translate-y-4 bg-gradient-to-t from-cyan-400/0 via-cyan-400/35 to-fuchsia-400/0 blur-[1px]" />
-        <div className="absolute left-1/2 top-1/2 h-16 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/10 blur-xl" />
-        <RocketIcon className="relative z-10 h-full w-full drop-shadow-[0_0_12px_rgba(129,140,248,0.45)]" />
+        <div
+          className="absolute left-1/2 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-cyan-400/0 via-indigo-400/30 to-fuchsia-400/0 blur-[1px]"
+          style={{ width: trailWidth, transform: "translate(-95%, -50%)" }}
+        />
+        <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/8 blur-xl" />
+        <MiniRocket className="relative h-7 w-7 text-indigo-300/55 drop-shadow-[0_0_8px_rgba(129,140,248,0.18)]" />
       </div>
     </div>
   );
@@ -239,33 +258,56 @@ export default function LoginPage() {
         <div className="relative min-h-dvh overflow-hidden">
           <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#020617,#1e1b4b,#3b0764,#1d4ed8,#020617)]" />
 
-          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(129,140,248,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(129,140,248,0.08)_1px,transparent_1px)] bg-[size:72px_72px]" />
-
-          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(129,140,248,0.08)_0%,transparent_45%)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(129,140,248,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(129,140,248,0.045)_1px,transparent_1px)] bg-[size:72px_72px]" />
 
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-            <div className="absolute left-[8%] top-[8%] h-2 w-2 rounded-full bg-fuchsia-400/30 blur-[1px]" />
-            <div className="absolute left-[22%] top-[30%] h-2 w-2 rounded-full bg-indigo-400/30 blur-[1px]" />
-            <div className="absolute left-[78%] top-[18%] h-2 w-2 rounded-full bg-cyan-400/30 blur-[1px]" />
-            <div className="absolute left-[84%] top-[68%] h-2 w-2 rounded-full bg-fuchsia-400/30 blur-[1px]" />
-            <div className="absolute left-[12%] top-[72%] h-2 w-2 rounded-full bg-indigo-400/30 blur-[1px]" />
-            <div className="absolute left-[62%] top-[82%] h-2 w-2 rounded-full bg-cyan-400/30 blur-[1px]" />
-
             <div className="absolute inset-0 opacity-70">
-              <BackgroundRocket className="left-[10%] top-[68%] rotate-[18deg]" delay="0s" duration="18s" size={42} />
-              <BackgroundRocket className="left-[24%] top-[40%] rotate-[10deg]" delay="4s" duration="20s" size={34} />
-              <BackgroundRocket className="left-[72%] top-[55%] rotate-[-14deg]" delay="8s" duration="22s" size={40} />
-              <BackgroundRocket className="left-[84%] top-[22%] rotate-[-20deg]" delay="2s" duration="19s" size={30} />
-              <BackgroundRocket className="left-[58%] top-[78%] rotate-[12deg]" delay="6s" duration="24s" size={36} />
+              <FlyingRocket
+                className="left-[8%] top-[72%] rotate-[-28deg]"
+                delay="0s"
+                duration="14s"
+                trailWidth={150}
+              />
+              <FlyingRocket
+                className="left-[18%] top-[35%] rotate-[-28deg]"
+                delay="4s"
+                duration="17s"
+                trailWidth={120}
+              />
+              <FlyingRocket
+                className="left-[58%] top-[78%] rotate-[-28deg]"
+                delay="9s"
+                duration="16s"
+                trailWidth={150}
+              />
+              <FlyingRocket
+                className="left-[76%] top-[30%] rotate-[-28deg]"
+                delay="2s"
+                duration="15s"
+                trailWidth={130}
+              />
+              <FlyingRocket
+                className="left-[84%] top-[62%] rotate-[-28deg]"
+                delay="7s"
+                duration="18s"
+                trailWidth={120}
+              />
             </div>
 
-            <div className="absolute left-[8%] top-[20%] h-28 w-28 rounded-full bg-indigo-500/8 blur-3xl" />
-            <div className="absolute right-[10%] top-[18%] h-40 w-40 rounded-full bg-fuchsia-500/8 blur-3xl" />
-            <div className="absolute bottom-[10%] left-[22%] h-36 w-36 rounded-full bg-cyan-500/8 blur-3xl" />
+            <div className="absolute left-[10%] top-[16%] h-1.5 w-1.5 rounded-full bg-fuchsia-400/20" />
+            <div className="absolute left-[24%] top-[28%] h-1.5 w-1.5 rounded-full bg-indigo-400/20" />
+            <div className="absolute left-[76%] top-[18%] h-1.5 w-1.5 rounded-full bg-cyan-400/20" />
+            <div className="absolute left-[82%] top-[74%] h-1.5 w-1.5 rounded-full bg-fuchsia-400/20" />
+            <div className="absolute left-[16%] top-[80%] h-1.5 w-1.5 rounded-full bg-indigo-400/20" />
+            <div className="absolute left-[62%] top-[86%] h-1.5 w-1.5 rounded-full bg-cyan-400/20" />
+
+            <div className="absolute left-[14%] top-[18%] h-28 w-28 rounded-full bg-indigo-500/4 blur-3xl" />
+            <div className="absolute right-[12%] top-[22%] h-32 w-32 rounded-full bg-fuchsia-500/4 blur-3xl" />
+            <div className="absolute bottom-[12%] left-[30%] h-32 w-32 rounded-full bg-cyan-500/4 blur-3xl" />
           </div>
 
-          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/30 to-slate-950/90" />
-          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.55)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/28 to-slate-950/90" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.52)_100%)]" />
 
           <main className="relative z-10 flex min-h-dvh flex-col items-center justify-center p-6">
             <div className="w-full">
@@ -274,7 +316,7 @@ export default function LoginPage() {
                   <div className="mb-8 flex justify-center">
                     <Link href="/" className="group inline-flex items-center gap-2.5">
                       <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
-                        <RocketIcon className="h-[22px] w-[22px]" />
+                        <RocketLogoIcon className="h-[22px] w-[22px]" />
                       </span>
                       <span className="text-lg font-semibold tracking-tight text-white">
                         Webraketa<span className="text-indigo-400">.cz</span>
@@ -284,7 +326,7 @@ export default function LoginPage() {
 
                   <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-indigo-500/5 backdrop-blur-xl sm:p-8">
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent" />
-                    <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[28rem] -translate-x-1/2 rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-2xl" />
+                    <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[28rem] -translate-x-1/2 rotate-12 bg-gradient-to-r from-transparent via-white/6 to-transparent blur-2xl" />
 
                     <div className="relative">
                       <div className="mb-6">
@@ -482,28 +524,28 @@ export default function LoginPage() {
           animation: gradient-xy 15s ease infinite;
         }
 
-        @keyframes rocket-launch {
+        @keyframes flight-diagonal {
           0% {
-            transform: translate3d(0, 80px, 0) scale(0.9);
+            transform: translate3d(-40px, 40px, 0);
             opacity: 0;
           }
-          10% {
-            opacity: 0.55;
+          12% {
+            opacity: 0.25;
           }
           50% {
-            opacity: 0.85;
+            opacity: 0.55;
           }
-          90% {
-            opacity: 0.35;
+          88% {
+            opacity: 0.2;
           }
           100% {
-            transform: translate3d(0, -520px, 0) scale(1.08);
+            transform: translate3d(240px, -240px, 0);
             opacity: 0;
           }
         }
 
-        .animate-rocket-launch {
-          animation-name: rocket-launch;
+        .animate-flight-diagonal {
+          animation-name: flight-diagonal;
           animation-timing-function: linear;
           animation-iteration-count: infinite;
         }
