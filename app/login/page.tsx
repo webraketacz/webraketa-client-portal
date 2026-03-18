@@ -150,113 +150,33 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function WindowCardA() {
-  return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
-      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-      </div>
-      <div className="mb-2 h-16 w-full rounded-lg bg-indigo-500/20" />
-      <div className="grid grid-cols-2 gap-2">
-        <div className="h-20 rounded bg-white/5" />
-        <div className="h-20 rounded bg-white/5" />
-        <div className="h-20 rounded bg-white/5" />
-        <div className="h-20 rounded bg-white/5" />
-      </div>
-    </div>
-  );
-}
-
-function WindowCardB() {
-  return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
-      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-      </div>
-      <div className="flex gap-2">
-        <div className="h-32 w-1/4 rounded bg-white/5" />
-        <div className="flex flex-1 flex-col gap-2">
-          <div className="h-8 rounded bg-white/5" />
-          <div className="flex gap-2">
-            <div className="h-10 flex-1 rounded bg-purple-500/20" />
-            <div className="h-10 flex-1 rounded bg-fuchsia-500/20" />
-          </div>
-          <div className="h-10 rounded bg-white/5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WindowCardC() {
-  return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
-      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-      </div>
-      <div className="mb-3 h-4 w-1/3 rounded bg-white/10" />
-      <div className="mb-2 flex h-20 items-end gap-1">
-        <div className="h-1/3 w-1/6 rounded-t bg-indigo-500/40" />
-        <div className="h-2/3 w-1/6 rounded-t bg-indigo-500/40" />
-        <div className="h-1/2 w-1/6 rounded-t bg-indigo-500/40" />
-        <div className="h-[90%] w-1/6 rounded-t bg-indigo-500/40" />
-        <div className="h-3/4 w-1/6 rounded-t bg-indigo-500/40" />
-        <div className="h-full w-1/6 rounded-t bg-indigo-500/40" />
-      </div>
-      <div className="h-8 rounded bg-white/5" />
-    </div>
-  );
-}
-
-function WindowCardD() {
-  return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
-      <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-      </div>
-      <div className="mb-3 flex items-center gap-2">
-        <div className="h-6 w-6 rounded-full bg-blue-500/20" />
-        <div className="h-3 w-16 rounded bg-white/10" />
-        <div className="ml-auto flex gap-1">
-          <div className="h-2 w-6 rounded bg-white/5" />
-          <div className="h-2 w-6 rounded bg-white/5" />
-        </div>
-      </div>
-      <div className="mb-2 h-24 w-full rounded-lg bg-blue-500/20" />
-      <div className="mb-1 h-3 w-3/4 rounded bg-white/5" />
-      <div className="h-3 w-1/2 rounded bg-white/5" />
-    </div>
-  );
-}
-
-function Column({
-  direction = "up",
-  pt = "",
+function BackgroundRocket({
+  className = "",
+  delay = "0s",
+  duration = "18s",
+  size = 42,
 }: {
-  direction?: "up" | "down";
-  pt?: string;
+  className?: string;
+  delay?: string;
+  duration?: string;
+  size?: number;
 }) {
-  const animation =
-    direction === "up" ? "animate-scroll-y-up" : "animate-scroll-y-down";
-
   return (
-    <div className={`flex w-48 flex-col gap-4 sm:w-64 sm:gap-6 ${animation} ${pt}`}>
-      <WindowCardA />
-      <WindowCardB />
-      <WindowCardC />
-      <WindowCardD />
-      <WindowCardA />
-      <WindowCardB />
-      <WindowCardC />
-      <WindowCardD />
+    <div
+      className={`pointer-events-none absolute text-indigo-400/70 ${className}`}
+      style={{
+        animationDelay: delay,
+        animationDuration: duration,
+      }}
+    >
+      <div
+        className="relative animate-rocket-launch"
+        style={{ width: size, height: size }}
+      >
+        <div className="absolute left-1/2 top-1/2 h-24 w-[2px] -translate-x-1/2 translate-y-4 bg-gradient-to-t from-cyan-400/0 via-cyan-400/35 to-fuchsia-400/0 blur-[1px]" />
+        <div className="absolute left-1/2 top-1/2 h-16 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/10 blur-xl" />
+        <RocketIcon className="relative z-10 h-full w-full drop-shadow-[0_0_12px_rgba(129,140,248,0.45)]" />
+      </div>
     </div>
   );
 }
@@ -317,20 +237,35 @@ export default function LoginPage() {
         }}
       >
         <div className="relative min-h-dvh overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#0f172a,#312e81,#581c87,#1e3a8a,#0f172a)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#020617,#1e1b4b,#3b0764,#1d4ed8,#020617)]" />
 
-          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden [perspective:1000px] opacity-40 sm:opacity-60">
-            <div className="absolute top-1/2 left-1/2 flex w-[150%] -translate-x-1/2 -translate-y-1/2 gap-4 [transform:rotateX(20deg)_rotateZ(-20deg)_scale(1.5)] sm:gap-6">
-              <Column direction="up" />
-              <Column direction="down" pt="pt-12" />
-              <Column direction="up" pt="pt-24" />
-              <Column direction="down" pt="pt-8" />
-              <Column direction="up" pt="pt-16" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(129,140,248,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(129,140,248,0.08)_1px,transparent_1px)] bg-[size:72px_72px]" />
+
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(129,140,248,0.08)_0%,transparent_45%)]" />
+
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+            <div className="absolute left-[8%] top-[8%] h-2 w-2 rounded-full bg-fuchsia-400/30 blur-[1px]" />
+            <div className="absolute left-[22%] top-[30%] h-2 w-2 rounded-full bg-indigo-400/30 blur-[1px]" />
+            <div className="absolute left-[78%] top-[18%] h-2 w-2 rounded-full bg-cyan-400/30 blur-[1px]" />
+            <div className="absolute left-[84%] top-[68%] h-2 w-2 rounded-full bg-fuchsia-400/30 blur-[1px]" />
+            <div className="absolute left-[12%] top-[72%] h-2 w-2 rounded-full bg-indigo-400/30 blur-[1px]" />
+            <div className="absolute left-[62%] top-[82%] h-2 w-2 rounded-full bg-cyan-400/30 blur-[1px]" />
+
+            <div className="absolute inset-0 opacity-70">
+              <BackgroundRocket className="left-[10%] top-[68%] rotate-[18deg]" delay="0s" duration="18s" size={42} />
+              <BackgroundRocket className="left-[24%] top-[40%] rotate-[10deg]" delay="4s" duration="20s" size={34} />
+              <BackgroundRocket className="left-[72%] top-[55%] rotate-[-14deg]" delay="8s" duration="22s" size={40} />
+              <BackgroundRocket className="left-[84%] top-[22%] rotate-[-20deg]" delay="2s" duration="19s" size={30} />
+              <BackgroundRocket className="left-[58%] top-[78%] rotate-[12deg]" delay="6s" duration="24s" size={36} />
             </div>
+
+            <div className="absolute left-[8%] top-[20%] h-28 w-28 rounded-full bg-indigo-500/8 blur-3xl" />
+            <div className="absolute right-[10%] top-[18%] h-40 w-40 rounded-full bg-fuchsia-500/8 blur-3xl" />
+            <div className="absolute bottom-[10%] left-[22%] h-36 w-36 rounded-full bg-cyan-500/8 blur-3xl" />
           </div>
 
-          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/40 to-slate-950/90" />
-          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.5)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/30 to-slate-950/90" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.55)_100%)]" />
 
           <main className="relative z-10 flex min-h-dvh flex-col items-center justify-center p-6">
             <div className="w-full">
@@ -547,30 +482,30 @@ export default function LoginPage() {
           animation: gradient-xy 15s ease infinite;
         }
 
-        @keyframes scroll-y-up {
+        @keyframes rocket-launch {
           0% {
-            transform: translateY(0);
+            transform: translate3d(0, 80px, 0) scale(0.9);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.55;
+          }
+          50% {
+            opacity: 0.85;
+          }
+          90% {
+            opacity: 0.35;
           }
           100% {
-            transform: translateY(-50%);
+            transform: translate3d(0, -520px, 0) scale(1.08);
+            opacity: 0;
           }
         }
 
-        @keyframes scroll-y-down {
-          0% {
-            transform: translateY(-50%);
-          }
-          100% {
-            transform: translateY(0);
-          }
-        }
-
-        .animate-scroll-y-up {
-          animation: scroll-y-up 50s linear infinite;
-        }
-
-        .animate-scroll-y-down {
-          animation: scroll-y-down 50s linear infinite;
+        .animate-rocket-launch {
+          animation-name: rocket-launch;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
         }
 
         input,
