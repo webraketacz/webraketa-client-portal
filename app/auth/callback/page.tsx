@@ -39,7 +39,8 @@ function AuthCallbackInner() {
           return;
         }
 
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        const { data: exchangeData, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
           console.error("OAuth exchange error:", exchangeError);
@@ -47,15 +48,21 @@ function AuthCallbackInner() {
           return;
         }
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        let user = exchangeData?.user ?? exchangeData?.session?.user ?? null;
 
-        if (userError || !user) {
-          console.error("Get user error:", userError);
-          router.replace("/login");
-          return;
+        if (!user) {
+          const {
+            data: { user: fetchedUser },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError || !fetchedUser) {
+            console.error("Get user error:", userError);
+            router.replace("/login");
+            return;
+          }
+
+          user = fetchedUser;
         }
 
         if (safePlan && safeBilling) {
