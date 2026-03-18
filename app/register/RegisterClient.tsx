@@ -264,13 +264,28 @@ const inputBaseStyle: React.CSSProperties = {
   MozAppearance: "none",
 };
 
+const planLabels: Record<string, string> = {
+  start: "Start",
+  pro: "Pro",
+  premium: "Premium",
+  enterprise: "Enterprise",
+};
+
+const billingLabels: Record<string, string> = {
+  monthly: "Měsíční platba",
+  yearly: "Roční platba",
+};
+
 export default function RegisterClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentYear = new Date().getFullYear();
 
-  const plan = searchParams.get("plan") ?? "start";
-  const billing = searchParams.get("billing") ?? "subscription";
+  const planParam = (searchParams.get("plan") ?? "start").toLowerCase();
+  const billingParam = (searchParams.get("billing") ?? "monthly").toLowerCase();
+
+  const plan = planLabels[planParam] ? planParam : "start";
+  const billing = billingLabels[billingParam] ? billingParam : "monthly";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -407,12 +422,10 @@ export default function RegisterClient() {
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-white">
-                            {plan.toUpperCase()}
+                            {planLabels[plan]}
                           </span>
                           <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-slate-300">
-                            {billing === "subscription"
-                              ? "Měsíční předplatné"
-                              : "Jednorázově"}
+                            {billingLabels[billing]}
                           </span>
                         </div>
                       </div>
@@ -468,9 +481,7 @@ export default function RegisterClient() {
                               className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
                             />
                           </div>
-                          <p className="text-[0.625rem] text-slate-500">
-                            Minimálně 6 znaků.
-                          </p>
+                          <p className="text-[0.625rem] text-slate-500">Minimálně 6 znaků.</p>
                         </div>
 
                         <div className="space-y-2">
@@ -564,8 +575,7 @@ export default function RegisterClient() {
                           </Link>
 
                           <p className="text-xs text-slate-500">
-                            Registrací souhlasíte s pokračováním do klientské zóny a
-                            onboardingu.
+                            Registrací souhlasíte s pokračováním do klientské zóny a onboardingu.
                           </p>
                         </div>
 
