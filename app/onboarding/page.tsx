@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase";
 
@@ -9,13 +10,11 @@ type ProfileRow = {
   email: string | null;
   plan: string | null;
   billing_type: string | null;
-
   business: string | null;
   domain: string | null;
   domain_owned: boolean | null;
   website_desc: string | null;
   materials_note: string | null;
-
   updated_at: string | null;
 };
 
@@ -35,6 +34,11 @@ const PLAN_OPTIONS = [
     label: "PREMIUM",
     desc: "Prémiové řešení s větším důrazem na design, značku, vizuální styl a klientský zážitek.",
   },
+  {
+    id: "enterprise",
+    label: "ENTERPRISE",
+    desc: "Řešení na míru pro náročnější projekty a firmy, které chtějí individuální přístup.",
+  },
 ];
 
 const STYLE_OPTIONS = [
@@ -47,6 +51,145 @@ const STYLE_OPTIONS = [
   "Čistý a firemní",
 ];
 
+function RocketLogoIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M14.5 4.5c1.9-.6 3.9-.6 5.8-.2.4 1.9.4 3.9-.2 5.8-.6 2-1.7 3.8-3.2 5.3l-3.2 3.2a3 3 0 0 1-4.2 0l-4-4a3 3 0 0 1 0-4.2l3.2-3.2c1.5-1.5 3.3-2.6 5.3-3.2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M14.5 9.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <path
+        d="M8.5 15.5 6 18c-.7.7-1.8.8-2.8.8.2-1 .5-2.1 1.2-2.8l2.5-2.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.5 8.5 18 6c.7-.7 1-1.8.8-2.8-1-.2-2.1.1-2.8.8l-2.5 2.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+function MiniRocket(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M13.8 4.8c1.4-.4 2.8-.4 4.1-.1.3 1.3.3 2.7-.1 4.1-.4 1.4-1.2 2.7-2.3 3.8l-2.3 2.3a2.1 2.1 0 0 1-3 0l-2.8-2.8a2.1 2.1 0 0 1 0-3l2.3-2.3c1.1-1.1 2.4-1.9 4.1-2.3Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M13.7 8.5h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path
+        d="M8.3 14.2 6.4 16c-.5.5-1.2.7-1.9.6.1-.7.3-1.4.8-1.9l1.8-1.9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ArrowLeftIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M15 18l-6-6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M5 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M13 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MailIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M4 7.5l8 5 8-5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.5 6.5h13A1.5 1.5 0 0 1 20 8v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        opacity="0.9"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M5 12.5 9.5 17 19 7.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 10v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 7.5h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SpinnerIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M20 12a8 8 0 1 1-2.34-5.66"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function normalizePlanLabel(plan: string | null) {
   const p = (plan ?? "start").toLowerCase();
   if (p === "pro") return "PRO";
@@ -56,8 +199,9 @@ function normalizePlanLabel(plan: string | null) {
 }
 
 function normalizeBillingLabel(billing: string | null) {
-  const b = (billing ?? "subscription").toLowerCase();
-  return b === "one_time" ? "Jednorázově" : "Měsíční předplatné";
+  const b = (billing ?? "monthly").toLowerCase();
+  if (b === "yearly") return "Roční předplatné";
+  return "Měsíční předplatné";
 }
 
 function planDescription(plan: string | null) {
@@ -65,6 +209,18 @@ function planDescription(plan: string | null) {
   const found = PLAN_OPTIONS.find((item) => item.id === p);
   return found?.desc ?? PLAN_OPTIONS[0].desc;
 }
+
+const inputBaseStyle: React.CSSProperties = {
+  backgroundColor: "rgba(2, 6, 23, 0.72)",
+  WebkitBoxShadow: "0 0 0 1000px rgba(2, 6, 23, 0.72) inset",
+  boxShadow:
+    "0 0 0 1000px rgba(2, 6, 23, 0.72) inset, inset 0 1px 0 rgba(255,255,255,0.04)",
+  WebkitTextFillColor: "#ffffff",
+  color: "#ffffff",
+  appearance: "none",
+  WebkitAppearance: "none",
+  MozAppearance: "none",
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -86,7 +242,7 @@ export default function OnboardingPage() {
   const [materialsNote, setMaterialsNote] = useState("");
 
   const [selectedPlan, setSelectedPlan] = useState("start");
-  const [selectedBilling, setSelectedBilling] = useState("subscription");
+  const [selectedBilling, setSelectedBilling] = useState("monthly");
   const [planExpanded, setPlanExpanded] = useState(false);
 
   const [businessType, setBusinessType] = useState("");
@@ -100,9 +256,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const progress = useMemo(() => {
-    return Math.round((step / totalSteps) * 100);
-  }, [step]);
+  const progress = useMemo(() => Math.round((step / totalSteps) * 100), [step]);
 
   useEffect(() => {
     let mounted = true;
@@ -189,7 +343,7 @@ export default function OnboardingPage() {
         setWebsiteDesc(afterInsert.website_desc ?? "");
         setMaterialsNote(afterInsert.materials_note ?? "");
         setSelectedPlan((afterInsert.plan ?? "start").toLowerCase());
-        setSelectedBilling((afterInsert.billing_type ?? "subscription").toLowerCase());
+        setSelectedBilling((afterInsert.billing_type ?? "monthly").toLowerCase());
         setLoading(false);
         return;
       }
@@ -202,7 +356,7 @@ export default function OnboardingPage() {
       setWebsiteDesc(existing.website_desc ?? "");
       setMaterialsNote(existing.materials_note ?? "");
       setSelectedPlan((existing.plan ?? "start").toLowerCase());
-      setSelectedBilling((existing.billing_type ?? "subscription").toLowerCase());
+      setSelectedBilling((existing.billing_type ?? "monthly").toLowerCase());
       setLoading(false);
     }
 
@@ -364,27 +518,43 @@ export default function OnboardingPage() {
   }
 
   function canContinue() {
-    if (step === 1) return business.trim().length >= 2;
-    if (step === 2) {
+    if (step === 1) return true;
+    if (step === 2) return business.trim().length >= 2;
+    if (step === 3) {
       if (domainOwned === null) return false;
       return domain.trim().length >= 3;
     }
-    if (step === 3) {
+    if (step === 4) {
       return businessType.trim().length >= 2 && websiteDesc.trim().length >= 10;
     }
     return true;
   }
 
+  function goBackStep() {
+    setStep((s) => Math.max(1, s - 1));
+  }
+
+  function goHome() {
+    window.location.href = "https://webraketa.cz";
+  }
+
   if (loading) {
     return (
-      <div className="min-h-dvh bg-zinc-950 text-zinc-200 antialiased">
+      <div
+        className="min-h-dvh bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500 selection:text-white"
+        style={{
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'",
+        }}
+      >
         <div className="relative min-h-dvh overflow-hidden">
-          <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/20 blur-[6rem]" />
-          <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-full bg-blue-600/15 blur-[7rem]" />
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#020617,#1e1b4b,#3b0764,#1d4ed8,#020617)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(129,140,248,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(129,140,248,0.045)_1px,transparent_1px)] bg-[size:72px_72px]" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/28 to-slate-950/90" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.52)_100%)]" />
 
-          <div className="relative z-10 mx-auto max-w-7xl px-6 py-16">
-            <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 backdrop-blur-xl">
+          <div className="relative z-10 flex min-h-dvh items-center justify-center px-6">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.06] px-6 py-4 text-sm text-slate-300 backdrop-blur-xl">
               Načítám onboarding…
             </div>
           </div>
@@ -397,560 +567,505 @@ export default function OnboardingPage() {
   const billingLabel = normalizeBillingLabel(selectedBilling);
 
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-200 antialiased">
-      <div className="relative min-h-dvh overflow-hidden">
-        <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/20 blur-[6rem]" />
-        <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-full bg-blue-600/15 blur-[7rem]" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]" />
+    <>
+      <div
+        className="min-h-dvh bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500 selection:text-white"
+        style={{
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'",
+        }}
+      >
+        <div className="relative min-h-dvh overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 z-0 animate-gradient-xy bg-[linear-gradient(45deg,#020617,#1e1b4b,#3b0764,#1d4ed8,#020617)]" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(129,140,248,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(129,140,248,0.045)_1px,transparent_1px)] bg-[size:72px_72px]" />
 
-        <header className="relative z-10">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur-xl" />
-              <div className="flex flex-col leading-tight">
-                <span className="text-sm font-semibold text-white">Webraketa.cz</span>
-                <span className="text-xs text-zinc-400">Onboarding</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={goToZone}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
-              >
-                Přeskočit a jít do zóny
-              </button>
-
-              <button
-                onClick={logout}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
-              >
-                Odhlásit
-              </button>
-            </div>
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+            <div className="absolute left-[10%] top-[18%] h-40 w-40 rounded-full bg-violet-500/8 blur-3xl" />
+            <div className="absolute right-[12%] top-[20%] h-44 w-44 rounded-full bg-blue-500/8 blur-3xl" />
+            <div className="absolute bottom-[10%] left-[28%] h-36 w-36 rounded-full bg-fuchsia-500/8 blur-3xl" />
           </div>
-        </header>
 
-        <main className="relative z-10">
-          <div className="mx-auto max-w-7xl px-6 py-10 md:py-14">
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 md:p-10 backdrop-blur-xl">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-3xl">
-                  <h1 className="text-3xl font-semibold text-white md:text-5xl">
-                    Řekněte nám něco o vašem podnikání
-                  </h1>
-                  <p className="mt-3 text-sm text-zinc-400 md:text-base">
-                    Abychom mohli připravit váš web do 48 hodin, potřebujeme od vás tyto informace
-                    co nejpřesněji vyplnit.
-                  </p>
+          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/28 to-slate-950/90" />
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.52)_100%)]" />
 
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
-                      Přihlášen: {sessionEmail ?? "—"}
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
-                      Balíček: {planLabel}
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
-                      Typ: {billingLabel}
-                    </span>
+          <main className="relative z-10 flex min-h-dvh flex-col items-center px-6 py-6">
+            <div className="w-full max-w-6xl">
+              <div className="mb-8 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={goBackStep}
+                  disabled={step === 1}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ArrowLeftIcon className="h-4 w-4" />
+                  Zpět
+                </button>
+
+                <Link href="/" className="group inline-flex items-center gap-2.5">
+                  <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
+                    <RocketLogoIcon className="h-[22px] w-[22px]" />
+                  </span>
+                  <span className="text-lg font-semibold tracking-tight text-white">
+                    Webraketa<span className="text-indigo-400">.cz</span>
+                  </span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={goHome}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
+                >
+                  Zpátky na hlavní stránku
+                </button>
+              </div>
+
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 shadow-2xl shadow-indigo-500/5 backdrop-blur-xl md:p-10">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent" />
+                <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[28rem] -translate-x-1/2 rotate-12 bg-gradient-to-r from-transparent via-white/6 to-transparent blur-2xl" />
+
+                <div className="relative">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="max-w-3xl">
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                          Přihlášen: {sessionEmail ?? "—"}
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                          Balíček: {planLabel}
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                          Typ: {billingLabel}
+                        </span>
+                      </div>
+
+                      <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+                        {step === 1
+                          ? "Teď už jen pár informací"
+                          : step === 2
+                          ? "Řekněte nám něco o vašem podnikání"
+                          : step === 3
+                          ? "Doména a základní nastavení"
+                          : "Styl, podklady a dokončení"}
+                      </h1>
+
+                      <p className="mt-3 text-sm text-slate-400 md:text-base">
+                        {step === 1
+                          ? "Nezabere to více než pár minut. Hned potom se pustíme do přípravy vašeho webu."
+                          : step === 2
+                          ? "Čím přesnější budete, tím rychleji připravíme správný návrh webu."
+                          : step === 3
+                          ? "Potřebujeme vědět, jakou doménu budeme řešit a jestli ji už vlastníte."
+                          : "Na závěr doplníme styl, zadání webu a případné podklady."}
+                      </p>
+                    </div>
+
+                    <div className="lg:min-w-[140px] lg:text-right">
+                      <div className="text-xs uppercase tracking-wide text-slate-400">Postup</div>
+                      <div className="text-3xl font-semibold text-white">{progress}%</div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="lg:min-w-[120px] lg:text-right">
-                  <div className="text-xs uppercase tracking-wide text-zinc-400">Postup</div>
-                  <div className="text-3xl font-semibold text-white">{progress}%</div>
-                </div>
-              </div>
-
-              <div className="mt-6 h-2 w-full rounded-full bg-white/10">
-                <div
-                  className="h-2 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-
-              {(error || info) && (
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm">
-                  {error ? (
-                    <span className="text-red-300">{error}</span>
-                  ) : (
-                    <span className="text-emerald-300">{info}</span>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-8">
-                {step === 1 && (
-                  <div className="space-y-6">
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                      <button
-                        type="button"
-                        onClick={() => setPlanExpanded((prev) => !prev)}
-                        className="flex w-full items-start justify-between gap-4 text-left"
+                  <div className="mt-8">
+                    <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-3 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                      />
+                      <div
+                        className="absolute top-1/2 z-10 -translate-y-1/2 transition-all duration-500"
+                        style={{ left: `calc(${progress}% - 14px)` }}
                       >
-                        <div>
-                          <div className="text-xs uppercase tracking-wider text-zinc-400">
-                            Vybraný balíček
+                        <div className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/15 blur-xl" />
+                        <MiniRocket className="relative h-7 w-7 rotate-[18deg] text-indigo-200 drop-shadow-[0_0_10px_rgba(129,140,248,0.45)]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {(error || info) && (
+                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm">
+                      {error ? (
+                        <span className="text-red-300">{error}</span>
+                      ) : (
+                        <span className="text-emerald-300">{info}</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-8">
+                    {step === 1 && (
+                      <div className="space-y-6">
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                          <div className="text-xs uppercase tracking-wider text-slate-500">
+                            Vybrali jste si
                           </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-white/[0.08] px-3 py-1 text-sm font-semibold text-white">
+
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
+                            <span className="rounded-full bg-white/[0.08] px-4 py-2 text-sm font-semibold text-white">
                               {planLabel}
                             </span>
-                            <span className="rounded-full border border-white/10 px-3 py-1 text-sm text-zinc-300">
+                            <span className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-300">
                               {billingLabel}
                             </span>
                           </div>
-                          <p className="mt-3 max-w-3xl text-sm text-zinc-400">
+
+                          <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-400">
                             {planDescription(selectedPlan)}
                           </p>
                         </div>
 
-                        <span className="rounded-full border border-white/10 px-3 py-1 text-sm text-white/80">
-                          {planExpanded ? "Skrýt" : "Změnit"}
-                        </span>
-                      </button>
-
-                      {planExpanded && (
-                        <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                          {PLAN_OPTIONS.map((option) => {
-                            const active = selectedPlan === option.id;
-                            return (
-                              <button
-                                key={option.id}
-                                type="button"
-                                onClick={() => setSelectedPlan(option.id)}
-                                className={`rounded-3xl border p-5 text-left transition ${
-                                  active
-                                    ? "border-violet-400/40 bg-white/[0.08]"
-                                    : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                                }`}
-                              >
-                                <div className="text-sm font-semibold text-white">{option.label}</div>
-                                <p className="mt-2 text-sm leading-6 text-zinc-400">{option.desc}</p>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {planExpanded && (
-                        <div className="mt-4 flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedBilling("subscription")}
-                            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                              selectedBilling === "subscription"
-                                ? "border-violet-400/40 bg-white/[0.10] text-white"
-                                : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08]"
-                            }`}
-                          >
-                            Měsíční předplatné
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedBilling("one_time")}
-                            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                              selectedBilling === "one_time"
-                                ? "border-violet-400/40 bg-white/[0.10] text-white"
-                                : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08]"
-                            }`}
-                          >
-                            Jednorázově
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="text-base font-semibold text-white">1) O vašem podnikání</div>
-                      <p className="text-sm text-zinc-400">
-                        Jednou větou popište, co děláte. Čím přesnější budete, tím rychleji
-                        připravíme správný návrh webu.
-                      </p>
-
-                      <textarea
-                        value={business}
-                        onChange={(e) => setBusiness(e.target.value)}
-                        placeholder="Např. Autoservis a pneuservis v Praze, specializace na prémiové vozy..."
-                        className="min-h-[180px] w-full rounded-3xl border border-white/10 bg-zinc-950/40 px-5 py-4 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {step === 2 && (
-                  <div className="space-y-6">
-                    <div>
-                      <div className="text-base font-semibold text-white">2) Doména</div>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        Nejprve zvolte, jestli už doménu máte, nebo ji teprve chcete zajistit.
-                      </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDomainOwned(true);
-                          setDomainCheckMessage(null);
-                        }}
-                        className={`rounded-3xl border p-5 text-left transition ${
-                          domainOwned === true
-                            ? "border-violet-400/40 bg-white/[0.08]"
-                            : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        <div className="text-base font-semibold text-white">Mám doménu</div>
-                        <p className="mt-2 text-sm text-zinc-400">
-                          Už vlastníte doménu a chcete ji použít pro nový web.
-                        </p>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDomainOwned(false);
-                          setDomainCheckMessage(null);
-                        }}
-                        className={`rounded-3xl border p-5 text-left transition ${
-                          domainOwned === false
-                            ? "border-violet-400/40 bg-white/[0.08]"
-                            : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        <div className="text-base font-semibold text-white">Nemám doménu</div>
-                        <p className="mt-2 text-sm text-zinc-400">
-                          Doménu zatím nemáte a chcete, abychom ji pomohli zajistit.
-                        </p>
-                      </button>
-                    </div>
-
-                    {domainOwned === true && (
-                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                        <div className="text-sm font-semibold text-white">Zadejte vaši doménu</div>
-                        <input
-                          value={domain}
-                          onChange={(e) => setDomain(e.target.value)}
-                          placeholder="např. garagelabs.cz"
-                          className="mt-4 w-full rounded-2xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
-
-                        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
-                          Instrukce pro přidání domény zobrazíme až v klientské zóně po hotovém
-                          návrhu. Teď jen uložíme, kterou doménu budeme řešit.
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                          <div className="text-sm font-semibold text-white">
+                            Pokračujte dále a během pár minut nám doplníte vše potřebné pro přípravu webu.
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">
+                            V dalších krocích vyplníte stručné informace o podnikání, doméně, stylu a podkladech.
+                          </p>
                         </div>
                       </div>
                     )}
 
-                    {domainOwned === false && (
-                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                        <div className="text-sm font-semibold text-white">Vyberte požadovanou doménu</div>
-                        <input
-                          value={domain}
-                          onChange={(e) => setDomain(e.target.value)}
-                          placeholder="např. garagelabs.cz"
-                          className="mt-4 w-full rounded-2xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
+                    {step === 2 && (
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="text-base font-semibold text-white">1) O vašem podnikání</div>
+                          <p className="text-sm text-slate-400">
+                            Jednou větou popište, co děláte. Čím přesnější budete, tím rychleji připravíme správný návrh webu.
+                          </p>
 
-                        <div className="mt-4 flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            onClick={simulateDomainCheck}
-                            className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.10]"
-                          >
-                            Ověřit dostupnost
-                          </button>
-
-                          <button
-                            type="button"
-                            className="rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95"
-                          >
-                            Chci tuto doménu
-                          </button>
+                          <textarea
+                            value={business}
+                            onChange={(e) => setBusiness(e.target.value)}
+                            placeholder="Např. Autoservis a pneuservis v Praze, specializace na prémiové vozy..."
+                            style={inputBaseStyle}
+                            className="min-h-[180px] w-full rounded-3xl border border-white/10 px-5 py-4 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                          />
                         </div>
-
-                        {domainCheckMessage && (
-                          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
-                            {domainCheckMessage}
-                          </div>
-                        )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                {step === 3 && (
-                  <div className="space-y-6">
-                    <div>
-                      <div className="text-base font-semibold text-white">3) Brand, styl a zadání webu</div>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        Tady nám řeknete, jak má web působit vizuálně a co přesně má obsahovat.
-                      </p>
-                    </div>
-
-                    <div className="grid gap-5 lg:grid-cols-2">
-                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                        <label className="text-sm font-semibold text-white">Obor podnikání</label>
-                        <input
-                          value={businessType}
-                          onChange={(e) => setBusinessType(e.target.value)}
-                          placeholder="Např. Autoservis, realitní kancelář, kosmetika..."
-                          className="mt-3 w-full rounded-2xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
-                      </div>
-
-                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                        <label className="text-sm font-semibold text-white">Preferovaný styl</label>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {STYLE_OPTIONS.map((style) => {
-                            const active = preferredStyle === style;
-                            return (
-                              <button
-                                key={style}
-                                type="button"
-                                onClick={() => setPreferredStyle(style)}
-                                className={`rounded-full border px-4 py-2 text-sm transition ${
-                                  active
-                                    ? "border-violet-400/40 bg-white/[0.10] text-white"
-                                    : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08]"
-                                }`}
-                              >
-                                {style}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                      <label className="text-sm font-semibold text-white">
-                        Máte vlastní barvy? Přidejte je tady
-                      </label>
-                      <input
-                        value={brandColors}
-                        onChange={(e) => setBrandColors(e.target.value)}
-                        placeholder="Např. černá, bílá, fialová / #111111 #ffffff #7c3aed"
-                        className="mt-3 w-full rounded-2xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                      />
-                    </div>
-
-                    <div className="grid gap-5 lg:grid-cols-2">
-                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                        <label className="text-sm font-semibold text-white">Nahrajte logo</label>
-                        <input
-                          type="file"
-                          accept="image/*,.svg,.pdf"
-                          multiple
-                          onChange={(e) => handleLogoFiles(e.target.files)}
-                          className="mt-3 block w-full text-sm text-zinc-300 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
-                        />
-
-                        {logoFiles.length > 0 ? (
-                          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
-                            {logoFiles.map((file) => file.name).join(", ")}
-                          </div>
-                        ) : (
-                          <div className="mt-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
-                            Pokud logo nemáte, v dalším kroku sem doplníme AI generování loga.
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                        <label className="text-sm font-semibold text-white">Popis webu co nejdetailněji</label>
-                        <textarea
-                          value={websiteDesc}
-                          onChange={(e) => setWebsiteDesc(e.target.value)}
-                          placeholder="Jaké sekce má web mít, jak má působit, co má obsahovat, jaký je cíl webu..."
-                          className="mt-3 min-h-[220px] w-full rounded-2xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={improveDescriptionDemo}
-                          disabled={improvingText}
-                          className="mt-4 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {improvingText ? "AI vylepšuje..." : "Vylepšit s AI"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {step === 4 && (
-                  <div className="space-y-6">
-                    <div>
-                      <div className="text-base font-semibold text-white">4) Podklady a shrnutí</div>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        Nahrajte texty, fotky, loga a další soubory, které k webu chcete použít.
-                      </p>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                      <label className="text-sm font-semibold text-white">Nahrát soubory</label>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => handleMaterialFiles(e.target.files)}
-                        className="mt-3 block w-full text-sm text-zinc-300 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
-                      />
-
-                      {materialFiles.length > 0 && (
-                        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
-                          {materialFiles.map((file) => file.name).join(", ")}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                      <label className="text-sm font-semibold text-white">Poznámka k podkladům</label>
-                      <textarea
-                        value={materialsNote}
-                        onChange={(e) => setMaterialsNote(e.target.value)}
-                        placeholder="Např. texty pošlu později, logo zatím nemám, fotky dodám do 2 dnů..."
-                        className="mt-3 min-h-[140px] w-full rounded-2xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                      />
-                    </div>
-
-                    <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.03] p-6">
-                      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    {step === 3 && (
+                      <div className="space-y-6">
                         <div>
-                          <div className="text-xs uppercase tracking-[0.18em] text-zinc-400">
-                            Shrnutí zadání
-                          </div>
-                          <h3 className="mt-2 text-2xl font-semibold text-white">
-                            Připraveno pro návrh webu
-                          </h3>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-                            Tohle je souhrn informací, se kterými bude náš tým pracovat při přípravě
-                            prvního návrhu vašeho webu.
+                          <div className="text-base font-semibold text-white">2) Doména</div>
+                          <p className="mt-2 text-sm text-slate-400">
+                            Nejprve zvolte, jestli už doménu máte, nebo ji teprve chcete zajistit.
                           </p>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white">
-                          {planLabel} · {billingLabel}
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDomainOwned(true);
+                              setDomainCheckMessage(null);
+                            }}
+                            className={`rounded-3xl border p-5 text-left transition ${
+                              domainOwned === true
+                                ? "border-violet-400/40 bg-white/[0.08]"
+                                : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                            }`}
+                          >
+                            <div className="text-base font-semibold text-white">Mám doménu</div>
+                            <p className="mt-2 text-sm text-slate-400">
+                              Už vlastníte doménu a chcete ji použít pro nový web.
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDomainOwned(false);
+                              setDomainCheckMessage(null);
+                            }}
+                            className={`rounded-3xl border p-5 text-left transition ${
+                              domainOwned === false
+                                ? "border-violet-400/40 bg-white/[0.08]"
+                                : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                            }`}
+                          >
+                            <div className="text-base font-semibold text-white">Nemám doménu</div>
+                            <p className="mt-2 text-sm text-slate-400">
+                              Doménu zatím nemáte a chcete, abychom ji pomohli zajistit.
+                            </p>
+                          </button>
+                        </div>
+
+                        {domainOwned === true && (
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                            <div className="text-sm font-semibold text-white">Zadejte vaši doménu</div>
+                            <input
+                              value={domain}
+                              onChange={(e) => setDomain(e.target.value)}
+                              placeholder="např. garagelabs.cz"
+                              style={inputBaseStyle}
+                              className="mt-4 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            />
+
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                              Instrukce pro přidání domény zobrazíme až v klientské zóně po hotovém návrhu.
+                            </div>
+                          </div>
+                        )}
+
+                        {domainOwned === false && (
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                            <div className="text-sm font-semibold text-white">Vyberte požadovanou doménu</div>
+                            <input
+                              value={domain}
+                              onChange={(e) => setDomain(e.target.value)}
+                              placeholder="např. garagelabs.cz"
+                              style={inputBaseStyle}
+                              className="mt-4 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            />
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+                              <button
+                                type="button"
+                                onClick={simulateDomainCheck}
+                                className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.10]"
+                              >
+                                Ověřit dostupnost
+                              </button>
+                            </div>
+
+                            {domainCheckMessage && (
+                              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                                {domainCheckMessage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {step === 4 && (
+                      <div className="space-y-6">
+                        <div>
+                          <div className="text-base font-semibold text-white">3) Styl, zadání a podklady</div>
+                          <p className="mt-2 text-sm text-slate-400">
+                            Tady nám řeknete, jak má web působit vizuálně a co přesně má obsahovat.
+                          </p>
+                        </div>
+
+                        <div className="grid gap-5 lg:grid-cols-2">
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                            <label className="text-sm font-semibold text-white">Obor podnikání</label>
+                            <input
+                              value={businessType}
+                              onChange={(e) => setBusinessType(e.target.value)}
+                              placeholder="Např. Autoservis, realitní kancelář, kosmetika..."
+                              style={inputBaseStyle}
+                              className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            />
+                          </div>
+
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                            <label className="text-sm font-semibold text-white">Preferovaný styl</label>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {STYLE_OPTIONS.map((style) => {
+                                const active = preferredStyle === style;
+                                return (
+                                  <button
+                                    key={style}
+                                    type="button"
+                                    onClick={() => setPreferredStyle(style)}
+                                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                                      active
+                                        ? "border-violet-400/40 bg-white/[0.10] text-white"
+                                        : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08]"
+                                    }`}
+                                  >
+                                    {style}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                          <label className="text-sm font-semibold text-white">
+                            Máte vlastní barvy? Přidejte je tady
+                          </label>
+                          <input
+                            value={brandColors}
+                            onChange={(e) => setBrandColors(e.target.value)}
+                            placeholder="Např. černá, bílá, fialová / #111111 #ffffff #7c3aed"
+                            style={inputBaseStyle}
+                            className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                          />
+                        </div>
+
+                        <div className="grid gap-5 lg:grid-cols-2">
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                            <label className="text-sm font-semibold text-white">Nahrajte logo</label>
+                            <input
+                              type="file"
+                              accept="image/*,.svg,.pdf"
+                              multiple
+                              onChange={(e) => handleLogoFiles(e.target.files)}
+                              className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
+                            />
+
+                            {logoFiles.length > 0 ? (
+                              <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
+                                {logoFiles.map((file) => file.name).join(", ")}
+                              </div>
+                            ) : (
+                              <div className="mt-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                                Pokud logo nemáte, doplníme později i AI variantu.
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                            <label className="text-sm font-semibold text-white">Popis webu co nejdetailněji</label>
+                            <textarea
+                              value={websiteDesc}
+                              onChange={(e) => setWebsiteDesc(e.target.value)}
+                              placeholder="Jaké sekce má web mít, jak má působit, co má obsahovat, jaký je cíl webu..."
+                              style={inputBaseStyle}
+                              className="mt-3 min-h-[220px] w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={improveDescriptionDemo}
+                              disabled={improvingText}
+                              className="mt-4 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {improvingText ? "AI vylepšuje..." : "Vylepšit s AI"}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                          <label className="text-sm font-semibold text-white">Nahrát další soubory</label>
+                          <input
+                            type="file"
+                            multiple
+                            onChange={(e) => handleMaterialFiles(e.target.files)}
+                            className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
+                          />
+
+                          {materialFiles.length > 0 && (
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
+                              {materialFiles.map((file) => file.name).join(", ")}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                          <label className="text-sm font-semibold text-white">Poznámka k podkladům</label>
+                          <textarea
+                            value={materialsNote}
+                            onChange={(e) => setMaterialsNote(e.target.value)}
+                            placeholder="Např. texty pošlu později, logo zatím nemám, fotky dodám do 2 dnů..."
+                            style={inputBaseStyle}
+                            className="mt-3 min-h-[140px] w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                          />
                         </div>
                       </div>
+                    )}
+                  </div>
 
-                      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                        <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500">Podnikání</div>
-                          <div className="mt-2 text-base font-medium text-white">
-                            {business.trim() || "—"}
-                          </div>
-                        </div>
+                  <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10]"
+                    >
+                      Odhlásit
+                    </button>
 
-                        <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500">Doména</div>
-                          <div className="mt-2 text-base font-medium text-white">
-                            {domain.trim() || "—"}{" "}
-                            {domainOwned === null
-                              ? ""
-                              : domainOwned
-                              ? "(už vlastní)"
-                              : "(chce registrovat)"}
-                          </div>
-                        </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <button
+                        type="button"
+                        onClick={() => savePartial()}
+                        disabled={saving}
+                        className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {saving ? "Ukládám…" : "Uložit"}
+                      </button>
 
-                        <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500">Obor a styl</div>
-                          <div className="mt-2 text-base font-medium text-white">
-                            {businessType.trim() || "—"}
-                          </div>
-                          <div className="mt-2 text-sm text-zinc-400">
-                            Styl: {preferredStyle || "—"}
-                          </div>
-                          <div className="mt-1 text-sm text-zinc-400">
-                            Barvy: {brandColors.trim() || "—"}
-                          </div>
-                        </div>
-
-                        <div className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500">Podklady</div>
-                          <div className="mt-2 text-base font-medium text-white">
-                            {materialFiles.length > 0
-                              ? `${materialFiles.length} souborů připraveno`
-                              : "Zatím bez souborů"}
-                          </div>
-                          <div className="mt-2 text-sm text-zinc-400">
-                            Logo:{" "}
-                            {logoFiles.length > 0
-                              ? logoFiles.map((f) => f.name).join(", ")
-                              : "nenahráno"}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
-                        <div className="text-xs uppercase tracking-wide text-zinc-500">
-                          Detailní popis webu
-                        </div>
-                        <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-zinc-300">
-                          {websiteDesc.trim() || "Zatím nevyplněno"}
-                        </div>
-                      </div>
+                      {step < totalSteps ? (
+                        <button
+                          type="button"
+                          onClick={() => savePartial(step + 1)}
+                          disabled={saving || !canContinue()}
+                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {saving ? "Ukládám…" : "Pokračovat"}
+                          <ArrowRightIcon className="ml-2 h-4 w-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await savePartial();
+                            router.push("/preparing");
+                            router.refresh();
+                          }}
+                          disabled={saving}
+                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Dokončit a pokračovat
+                          <ArrowRightIcon className="ml-2 h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
-
-              <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={() => setStep((s) => Math.max(1, s - 1))}
-                  disabled={step === 1 || saving}
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Zpět
-                </button>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button
-                    type="button"
-                    onClick={() => savePartial()}
-                    disabled={saving}
-                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {saving ? "Ukládám…" : "Uložit"}
-                  </button>
-
-                  {step < totalSteps ? (
-                    <button
-                      type="button"
-                      onClick={() => savePartial(step + 1)}
-                      disabled={saving || !canContinue()}
-                      className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {saving ? "Ukládám…" : "Pokračovat"}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await savePartial();
-                        router.push("/preparing");
-                        router.refresh();
-                      }}
-                      disabled={saving}
-                      className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Dokončit a pokračovat
-                    </button>
-                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6 text-center text-xs text-zinc-500">
-              © 2026 Webraketa.cz · Všechna práva vyhrazena
+              <div className="mt-6 text-center text-[0.625rem] font-medium text-slate-600">
+                © 2026 Webraketa.cz • Všechna práva vyhrazena
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+
+      <style jsx global>{`
+        @keyframes gradient-xy {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        .animate-gradient-xy {
+          background-size: 400% 400%;
+          animation: gradient-xy 15s ease infinite;
+        }
+
+        input,
+        textarea,
+        select {
+          color-scheme: dark;
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active,
+        textarea:-webkit-autofill,
+        textarea:-webkit-autofill:hover,
+        textarea:-webkit-autofill:focus,
+        textarea:-webkit-autofill:active {
+          -webkit-text-fill-color: #ffffff !important;
+          -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.72) inset !important;
+          box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.72) inset !important;
+          caret-color: #ffffff !important;
+          transition: background-color 9999s ease-in-out 0s;
+          border-radius: 1rem;
+        }
+      `}</style>
+    </>
   );
 }
