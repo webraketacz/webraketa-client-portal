@@ -132,40 +132,6 @@ function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function MailIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <path
-        d="M4 7.5l8 5 8-5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5.5 6.5h13A1.5 1.5 0 0 1 20 8v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        opacity="0.9"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <path
-        d="M5 12.5 9.5 17 19 7.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -233,7 +199,7 @@ export default function OnboardingPage() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   const [business, setBusiness] = useState("");
   const [domain, setDomain] = useState("");
@@ -243,7 +209,6 @@ export default function OnboardingPage() {
 
   const [selectedPlan, setSelectedPlan] = useState("start");
   const [selectedBilling, setSelectedBilling] = useState("monthly");
-  const [planExpanded, setPlanExpanded] = useState(false);
 
   const [businessType, setBusinessType] = useState("");
   const [preferredStyle, setPreferredStyle] = useState("");
@@ -369,6 +334,7 @@ export default function OnboardingPage() {
 
   function buildWebsiteDescPayload() {
     const parts = [
+      business.trim() ? `Stručně o podnikání: ${business.trim()}` : "",
       businessType.trim() ? `Obor podnikání: ${businessType.trim()}` : "",
       preferredStyle.trim() ? `Preferovaný styl: ${preferredStyle.trim()}` : "",
       brandColors.trim() ? `Vlastní barvy: ${brandColors.trim()}` : "",
@@ -445,11 +411,6 @@ export default function OnboardingPage() {
     router.push("/login");
   }
 
-  function goToZone() {
-    router.push("/dashboard");
-    router.refresh();
-  }
-
   async function improveDescriptionDemo() {
     if (!websiteDesc.trim()) {
       setInfo("Nejdřív napište alespoň základní popis webu.");
@@ -519,13 +480,16 @@ export default function OnboardingPage() {
 
   function canContinue() {
     if (step === 1) return true;
-    if (step === 2) return business.trim().length >= 2;
-    if (step === 3) {
+    if (step === 2) {
       if (domainOwned === null) return false;
       return domain.trim().length >= 3;
     }
-    if (step === 4) {
-      return businessType.trim().length >= 2 && websiteDesc.trim().length >= 10;
+    if (step === 3) {
+      return (
+        business.trim().length >= 2 &&
+        businessType.trim().length >= 2 &&
+        websiteDesc.trim().length >= 10
+      );
     }
     return true;
   }
@@ -563,6 +527,7 @@ export default function OnboardingPage() {
     );
   }
 
+  const currentYear = new Date().getFullYear();
   const planLabel = normalizePlanLabel(selectedPlan);
   const billingLabel = normalizeBillingLabel(selectedBilling);
 
@@ -642,20 +607,16 @@ export default function OnboardingPage() {
                         {step === 1
                           ? "Teď už jen pár informací"
                           : step === 2
-                          ? "Řekněte nám něco o vašem podnikání"
-                          : step === 3
                           ? "Doména a základní nastavení"
-                          : "Styl, podklady a dokončení"}
+                          : "Podnikání, styl a podklady"}
                       </h1>
 
                       <p className="mt-3 text-sm text-slate-400 md:text-base">
                         {step === 1
                           ? "Nezabere to více než pár minut. Hned potom se pustíme do přípravy vašeho webu."
                           : step === 2
-                          ? "Čím přesnější budete, tím rychleji připravíme správný návrh webu."
-                          : step === 3
                           ? "Potřebujeme vědět, jakou doménu budeme řešit a jestli ji už vlastníte."
-                          : "Na závěr doplníme styl, zadání webu a případné podklady."}
+                          : "Na závěr doplníte informace o podnikání, stylu webu a případné podklady."}
                       </p>
                     </div>
 
@@ -718,7 +679,7 @@ export default function OnboardingPage() {
                             Pokračujte dále a během pár minut nám doplníte vše potřebné pro přípravu webu.
                           </div>
                           <p className="mt-2 text-sm leading-6 text-slate-400">
-                            V dalších krocích vyplníte stručné informace o podnikání, doméně, stylu a podkladech.
+                            V dalších krocích vyplníte doménu, informace o podnikání, stylu a podkladech.
                           </p>
                         </div>
                       </div>
@@ -726,27 +687,8 @@ export default function OnboardingPage() {
 
                     {step === 2 && (
                       <div className="space-y-6">
-                        <div className="space-y-4">
-                          <div className="text-base font-semibold text-white">1) O vašem podnikání</div>
-                          <p className="text-sm text-slate-400">
-                            Jednou větou popište, co děláte. Čím přesnější budete, tím rychleji připravíme správný návrh webu.
-                          </p>
-
-                          <textarea
-                            value={business}
-                            onChange={(e) => setBusiness(e.target.value)}
-                            placeholder="Např. Autoservis a pneuservis v Praze, specializace na prémiové vozy..."
-                            style={inputBaseStyle}
-                            className="min-h-[180px] w-full rounded-3xl border border-white/10 px-5 py-4 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {step === 3 && (
-                      <div className="space-y-6">
                         <div>
-                          <div className="text-base font-semibold text-white">2) Doména</div>
+                          <div className="text-base font-semibold text-white">1) Doména</div>
                           <p className="mt-2 text-sm text-slate-400">
                             Nejprve zvolte, jestli už doménu máte, nebo ji teprve chcete zajistit.
                           </p>
@@ -838,13 +780,26 @@ export default function OnboardingPage() {
                       </div>
                     )}
 
-                    {step === 4 && (
+                    {step === 3 && (
                       <div className="space-y-6">
                         <div>
-                          <div className="text-base font-semibold text-white">3) Styl, zadání a podklady</div>
+                          <div className="text-base font-semibold text-white">
+                            2) Podnikání, styl a podklady
+                          </div>
                           <p className="mt-2 text-sm text-slate-400">
                             Tady nám řeknete, jak má web působit vizuálně a co přesně má obsahovat.
                           </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                          <label className="text-sm font-semibold text-white">O vašem podnikání</label>
+                          <textarea
+                            value={business}
+                            onChange={(e) => setBusiness(e.target.value)}
+                            placeholder="Jednou větou popište, co děláte. Např. Svatební salon zaměřený na moderní šaty a doplňky..."
+                            style={inputBaseStyle}
+                            className="mt-3 min-h-[160px] w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                          />
                         </div>
 
                         <div className="grid gap-5 lg:grid-cols-2">
@@ -853,7 +808,7 @@ export default function OnboardingPage() {
                             <input
                               value={businessType}
                               onChange={(e) => setBusinessType(e.target.value)}
-                              placeholder="Např. Autoservis, realitní kancelář, kosmetika..."
+                              placeholder="Např. Svatební salon, realitní kancelář, kosmetika..."
                               style={inputBaseStyle}
                               className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                             />
@@ -919,7 +874,9 @@ export default function OnboardingPage() {
                           </div>
 
                           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                            <label className="text-sm font-semibold text-white">Popis webu co nejdetailněji</label>
+                            <label className="text-sm font-semibold text-white">
+                              Popis webu co nejdetailněji
+                            </label>
                             <textarea
                               value={websiteDesc}
                               onChange={(e) => setWebsiteDesc(e.target.value)}
@@ -1019,7 +976,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="mt-6 text-center text-[0.625rem] font-medium text-slate-600">
-                © 2026 Webraketa.cz • Všechna práva vyhrazena
+                © {currentYear} Webraketa.cz • Všechna práva vyhrazena
               </div>
             </div>
           </main>
