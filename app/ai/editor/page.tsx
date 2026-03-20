@@ -26,6 +26,12 @@ type ChatMessage = {
   text: string;
 };
 
+type SectionMeta = {
+  id: string;
+  type: string;
+  label: string;
+};
+
 const GENERATE_LOADING_MESSAGES = [
   "Rozumím zadání…",
   "Analyzuji obor a cílový dojem…",
@@ -49,7 +55,56 @@ const IMPROVE_LOADING_MESSAGES = [
   "Finalizuji upravený výstup…",
 ];
 
-function buildPreviewDocument(html: string, css: string, js: string) {
+function prettifySectionLabel(id: string, type: string) {
+  const source = type || id || "sekce";
+  return source
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function extractSectionsFromHtml(html: string): SectionMeta[] {
+  if (!html) return [];
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
+    const nodes = Array.from(doc.querySelectorAll("[data-section-id]"));
+
+    const sections = nodes
+      .map((node) => {
+        const id = node.getAttribute("data-section-id") || "";
+        const type = node.getAttribute("data-section-type") || "";
+        if (!id) return null;
+
+        return {
+          id,
+          type,
+          label: prettifySectionLabel(id, type),
+        };
+      })
+      .filter(Boolean) as SectionMeta[];
+
+    const unique = new Map<string, SectionMeta>();
+    for (const section of sections) {
+      if (!unique.has(section.id)) {
+        unique.set(section.id, section);
+      }
+    }
+
+    return Array.from(unique.values());
+  } catch {
+    return [];
+  }
+}
+
+function buildPreviewDocument(
+  html: string,
+  css: string,
+  js: string,
+  selectedSectionId: string | null
+) {
+  const safeSelected = selectedSectionId ? JSON.stringify(selectedSectionId) : "null";
+
   return `<!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -58,12 +113,161 @@ function buildPreviewDocument(html: string, css: string, js: string) {
   <title>Zyvia Preview</title>
   <style>
 ${css}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  position: relative;
+}
+
+[data-section-id] {
+  transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+[data-section-id].zyvia-section-hover {
+  outline: 2px solid rgba(90, 209, 255, 0.45);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px rgba(90, 209, 255, 0.08);
+  cursor: pointer !important;
+}
+
+[data-section-id].zyvia-section-selected {
+  outline: 2px solid rgba(124, 92, 255, 0.75);
+  outline-offset: 4px;
+  box-shadow:
+    0 0 0 4px rgba(124, 92, 255, 0.14),
+    0 10px 30px rgba(124, 92, 255, 0.16);
+}
+
+.zyvia-section-badge {
+  position: absolute;
+  z-index: 999999;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(9, 10, 15, 0.92);
+  color: #fff;
+  font: 12px/1.2 Inter, system-ui, sans-serif;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.20);
+  transform: translateY(-10px);
+  white-space: nowrap;
+}
   </style>
 </head>
 <body>
 ${html}
 <script>
 ${js}
+</script>
+
+<script>
+(function () {
+  const SELECTED_SECTION_ID = ${safeSelected};
+  let badgeEl = null;
+
+  function ensureBadge() {
+    if (badgeEl) return badgeEl;
+    badgeEl = document.createElement("div");
+    badgeEl.className = "zyvia-section-badge";
+    badgeEl.style.display = "none";
+    document.body.appendChild(badgeEl);
+    return badgeEl;
+  }
+
+  function getSectionFromEventTarget(target) {
+    if (!target || !(target instanceof Element)) return null;
+    return target.closest("[data-section-id]");
+  }
+
+  function clearHoverStates() {
+    document.querySelectorAll("[data-section-id].zyvia-section-hover").forEach((node) => {
+      node.classList.remove("zyvia-section-hover");
+    });
+  }
+
+  function applySelectedState() {
+    document.querySelectorAll("[data-section-id]").forEach((node) => {
+      const id = node.getAttribute("data-section-id");
+      node.classList.toggle("zyvia-section-selected", id === SELECTED_SECTION_ID);
+    });
+  }
+
+  function moveBadgeForSection(section) {
+    const badge = ensureBadge();
+    const rect = section.getBoundingClientRect();
+
+    badge.textContent =
+      section.getAttribute("data-section-type") ||
+      section.getAttribute("data-section-id") ||
+      "Sekce";
+
+    badge.style.display = "block";
+    badge.style.left = window.scrollX + rect.left + 8 + "px";
+    badge.style.top = window.scrollY + rect.top + 8 + "px";
+  }
+
+  function hideBadge() {
+    if (!badgeEl) return;
+    badgeEl.style.display = "none";
+  }
+
+  function preventNavigation(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const clickable = target.closest("a, button");
+    const section = getSectionFromEventTarget(target);
+
+    if (clickable && section) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  document.addEventListener("mouseover", function (event) {
+    const section = getSectionFromEventTarget(event.target);
+    clearHoverStates();
+
+    if (section) {
+      section.classList.add("zyvia-section-hover");
+      moveBadgeForSection(section);
+    } else {
+      hideBadge();
+    }
+  });
+
+  document.addEventListener("mouseout", function (event) {
+    const related = event.relatedTarget;
+    if (related instanceof Element && related.closest("[data-section-id]")) return;
+    clearHoverStates();
+    hideBadge();
+  });
+
+  document.addEventListener("click", function (event) {
+    const section = getSectionFromEventTarget(event.target);
+    preventNavigation(event);
+
+    if (!section) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const payload = {
+      type: "zyvia-section-select",
+      sectionId: section.getAttribute("data-section-id") || "",
+      sectionType: section.getAttribute("data-section-type") || "",
+    };
+
+    window.parent.postMessage(payload, "*");
+  }, true);
+
+  applySelectedState();
+
+  window.addEventListener("load", applySelectedState);
+})();
 </script>
 </body>
 </html>`;
@@ -127,6 +331,9 @@ export default function AiEditorPage() {
   const [model, setModel] = useState("");
   const [briefLabel, setBriefLabel] = useState("");
 
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(null);
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "system-initial",
@@ -143,14 +350,27 @@ export default function AiEditorPage() {
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const iframeKey = useMemo(
-    () => `${html.length}-${css.length}-${js.length}`,
-    [html, css, js]
+    () => `${html.length}-${css.length}-${js.length}-${selectedSectionId ?? "none"}`,
+    [html, css, js, selectedSectionId]
   );
+
+  const availableSections = useMemo(() => extractSectionsFromHtml(html), [html]);
+
+  const selectedSectionMeta = useMemo(() => {
+    if (!selectedSectionId) return null;
+    return (
+      availableSections.find((section) => section.id === selectedSectionId) || {
+        id: selectedSectionId,
+        type: selectedSectionType || "",
+        label: prettifySectionLabel(selectedSectionId, selectedSectionType || ""),
+      }
+    );
+  }, [availableSections, selectedSectionId, selectedSectionType]);
 
   const previewDocument = useMemo(() => {
     if (!html) return "";
-    return buildPreviewDocument(html, css, js);
-  }, [html, css, js]);
+    return buildPreviewDocument(html, css, js, selectedSectionId);
+  }, [html, css, js, selectedSectionId]);
 
   function getChatHistoryPayload() {
     return messages.slice(-12).map((message) => ({
@@ -191,6 +411,41 @@ export default function AiEditorPage() {
   }, []);
 
   useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type !== "zyvia-section-select") return;
+
+      setSelectedSectionId(data.sectionId || null);
+      setSelectedSectionType(data.sectionType || null);
+
+      if (data.sectionId) {
+        setMessages((prev) => {
+          const alreadyExists = prev.some(
+            (message) =>
+              message.role === "system" &&
+              message.text === `Vybraná sekce: ${prettifySectionLabel(data.sectionId, data.sectionType || "")}`
+          );
+
+          if (alreadyExists) return prev;
+
+          return [
+            ...prev,
+            {
+              id: `section-select-${Date.now()}`,
+              role: "system",
+              text: `Vybraná sekce: ${prettifySectionLabel(data.sectionId, data.sectionType || "")}`,
+            },
+          ];
+        });
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (progressRef.current) {
         window.clearInterval(progressRef.current);
@@ -213,7 +468,8 @@ export default function AiEditorPage() {
       setStatus(source[loadingMessageRef.current]);
 
       setProgress((prev) => {
-        const speed = mode === "generate" ? Math.random() * 2.8 + 0.8 : Math.random() * 3.2 + 1.0;
+        const speed =
+          mode === "generate" ? Math.random() * 2.8 + 0.8 : Math.random() * 3.2 + 1.0;
         const next = prev + speed;
         return next >= 98 ? 98 : next;
       });
@@ -246,6 +502,8 @@ export default function AiEditorPage() {
     setCss("");
     setJs("");
     setBriefLabel("");
+    setSelectedSectionId(null);
+    setSelectedSectionType(null);
     setProgress(0);
     setActiveTab("preview");
 
@@ -279,7 +537,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Napiš mi změnu a já ji upravím.",
+          text: "Návrh je připraven. Klikni na sekci v náhledu nebo mi napiš změnu.",
         },
       ]);
 
@@ -400,6 +658,22 @@ export default function AiEditorPage() {
       e.preventDefault();
       handleImprove();
     }
+  }
+
+  function useSectionAction(type: "text" | "visual" | "regenerate" | "move-up" | "move-down") {
+    if (!selectedSectionMeta) return;
+
+    const sectionName = selectedSectionMeta.label;
+    const prompts: Record<typeof type, string> = {
+      text: `Uprav texty v sekci ${sectionName}, aby byly přesvědčivější a lépe strukturované.`,
+      visual: `Vylepši vizuál sekce ${sectionName}, přidej lepší hierarchii, spacing a výraznější kompozici.`,
+      regenerate: `Přegeneruj sekci ${sectionName} v novém, kvalitnějším layoutu, ale zachovej celkový styl webu.`,
+      "move-up": `Posuň sekci ${sectionName} výše v rámci stránky a uprav návaznost sekcí.`,
+      "move-down": `Posuň sekci ${sectionName} níže v rámci stránky a uprav návaznost sekcí.`,
+    };
+
+    setChatInput(prompts[type]);
+    chatInputRef.current?.focus();
   }
 
   const previewWidthClass =
@@ -566,6 +840,81 @@ export default function AiEditorPage() {
                   </div>
                 )}
 
+                {selectedSectionMeta && (
+                  <div className="mt-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3">
+                    <div className="text-xs uppercase tracking-[0.16em] text-cyan-200/80">
+                      Vybraná sekce
+                    </div>
+                    <div className="mt-2 text-sm font-medium text-white">
+                      {selectedSectionMeta.label}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("text")}
+                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                      >
+                        Upravit text
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("visual")}
+                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                      >
+                        Vylepšit vzhled
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("regenerate")}
+                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                      >
+                        Přegenerovat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("move-up")}
+                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                      >
+                        Posunout výš
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("move-down")}
+                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                      >
+                        Posunout níž
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {availableSections.length > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      Sekce stránky
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSections.map((section) => (
+                        <button
+                          key={section.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSectionId(section.id);
+                            setSelectedSectionType(section.type);
+                          }}
+                          className={`rounded-full border px-3 py-2 text-xs transition ${
+                            selectedSectionId === section.id
+                              ? "border-cyan-400/30 bg-cyan-500/10 text-white"
+                              : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                          }`}
+                        >
+                          {section.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => handleGenerate()}
@@ -627,7 +976,9 @@ export default function AiEditorPage() {
                         ? "Probíhá generování návrhu a průběžná optimalizace výstupu."
                         : improving
                         ? "Probíhá zpracování úprav a aplikace změn do návrhu."
-                        : "Editor je připraven pro další úpravy."}
+                        : selectedSectionMeta
+                        ? "Kliknutím v náhledu vybíráš konkrétní sekce pro úpravy."
+                        : "Klikni do náhledu na konkrétní sekci, kterou chceš upravit."}
                     </div>
                   </div>
 
@@ -670,7 +1021,11 @@ export default function AiEditorPage() {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={onChatKeyDown}
-                    placeholder="Napiš úpravu návrhu… například: Uprav hero, přidej více prostoru, vylepši CTA."
+                    placeholder={
+                      selectedSectionMeta
+                        ? `Napiš úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
+                        : "Napiš úpravu návrhu… například: Uprav hero, přidej více prostoru, vylepši CTA."
+                    }
                     className="h-16 w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
                   />
 
