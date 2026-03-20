@@ -11,9 +11,30 @@ const QUICK_PROMPTS = [
   "Moderní startup landing page s produktem a pricingem",
 ];
 
+const BUILD_TYPES = [
+  { id: "landing", label: "Landing Page", icon: "solar:window-frame-linear" },
+  { id: "business", label: "Firemní web", icon: "solar:buildings-2-linear" },
+  { id: "premium", label: "Premium brand", icon: "solar:star-line-duotone" },
+];
+
+const AGENTS = [
+  { id: "synto-core", label: "Synto Core", sub: "Vyvážený agent" },
+  { id: "synto-convert", label: "Synto Convert", sub: "Silnější CTA a konverze" },
+  { id: "synto-brand", label: "Synto Brand", sub: "Více vizuální směr" },
+];
+
+const MODELS = [
+  { id: "gpt-5.4", label: "GPT-5.4" },
+  { id: "claude-4.5", label: "Claude 4.5" },
+  { id: "gemini-2.0", label: "Gemini 2.0" },
+];
+
 export default function AiLandingPage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
+  const [buildType, setBuildType] = useState("landing");
+  const [agent, setAgent] = useState("synto-core");
+  const [model, setModel] = useState("gpt-5.4");
 
   const canContinue = useMemo(() => prompt.trim().length >= 12, [prompt]);
 
@@ -23,6 +44,10 @@ export default function AiLandingPage() {
 
     sessionStorage.setItem("ai_webgen_prompt", finalPrompt);
     sessionStorage.setItem("ai_webgen_autostart", "1");
+    sessionStorage.setItem("ai_webgen_build_type", buildType);
+    sessionStorage.setItem("ai_webgen_agent", agent);
+    sessionStorage.setItem("ai_webgen_model", model);
+
     router.push("/ai/editor");
   }
 
@@ -34,7 +59,7 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(40px, -30px, 0) scale(1.08);
+            transform: translate3d(32px, -24px, 0) scale(1.05);
           }
         }
 
@@ -43,7 +68,17 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(-50px, 35px, 0) scale(1.05);
+            transform: translate3d(-40px, 28px, 0) scale(1.06);
+          }
+        }
+
+        @keyframes syntoGlowPulse {
+          0%,
+          100% {
+            opacity: 0.4;
+          }
+          50% {
+            opacity: 0.9;
           }
         }
 
@@ -55,88 +90,89 @@ export default function AiLandingPage() {
             background-position: 200% 50%;
           }
         }
-
-        @keyframes syntoPulse {
-          0%,
-          100% {
-            opacity: 0.45;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
       `}</style>
 
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.14]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:42px_42px] opacity-[0.11]" />
 
       <div
-        className="pointer-events-none absolute -left-24 top-[-120px] h-[30rem] w-[30rem] rounded-full blur-[120px]"
+        className="pointer-events-none absolute left-[-140px] top-[-120px] h-[28rem] w-[28rem] rounded-full blur-[120px]"
         style={{
           background:
-            "radial-gradient(circle, rgba(124,92,255,0.28) 0%, rgba(124,92,255,0.10) 35%, transparent 70%)",
+            "radial-gradient(circle, rgba(124,92,255,0.22) 0%, rgba(124,92,255,0.08) 35%, transparent 75%)",
           animation: "syntoFloatA 16s ease-in-out infinite alternate",
         }}
       />
+
       <div
-        className="pointer-events-none absolute bottom-[-160px] right-[-80px] h-[34rem] w-[34rem] rounded-full blur-[130px]"
+        className="pointer-events-none absolute bottom-[-160px] right-[-100px] h-[30rem] w-[30rem] rounded-full blur-[130px]"
         style={{
           background:
-            "radial-gradient(circle, rgba(90,209,255,0.22) 0%, rgba(90,209,255,0.08) 35%, transparent 72%)",
+            "radial-gradient(circle, rgba(90,209,255,0.18) 0%, rgba(90,209,255,0.07) 35%, transparent 75%)",
           animation: "syntoFloatB 18s ease-in-out infinite alternate",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.06),transparent_28%)]" />
 
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-6 py-8 md:px-8 lg:px-10">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_0_30px_rgba(124,92,255,0.14)]">
-              <div className="absolute inset-0 rounded-2xl bg-[linear-gradient(135deg,rgba(124,92,255,0.15),rgba(90,209,255,0.10))]" />
-              <span className="relative text-lg font-semibold tracking-[0.18em] text-white">
-                S
-              </span>
-            </div>
-
-            <div>
-              <div className="text-base font-semibold tracking-tight text-white">
-                Synto
-              </div>
-              <div className="text-xs text-zinc-500">
-                AI Website Builder by Webraketa
-              </div>
-            </div>
+            <img
+              src="/synto-logo.svg"
+              alt="Synto"
+              className="h-10 w-auto md:h-11"
+            />
           </div>
 
-          <div className="hidden rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-zinc-300 md:block">
+          <div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-zinc-300">
             50 kreditů zdarma
           </div>
         </header>
 
-        <main className="flex flex-1 items-center">
-          <div className="mx-auto w-full max-w-4xl py-12 text-center md:py-20">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
-              <span
-                className="inline-block h-2 w-2 rounded-full bg-emerald-400"
-                style={{ animation: "syntoPulse 1.8s ease-in-out infinite" }}
-              />
-              Vytvoř si svůj web zcela zdarma
+        <main className="flex flex-1 items-center justify-center py-10 md:py-14">
+          <div className="w-full max-w-5xl">
+            <div className="mb-5 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400"
+                  style={{ animation: "syntoGlowPulse 1.8s ease-in-out infinite" }}
+                />
+                Vytvoř si svůj web zcela zdarma
+              </div>
             </div>
 
-            <h1 className="mx-auto max-w-4xl text-5xl font-semibold tracking-tight text-white md:text-7xl">
-              Vygeneruj si web pomocí AI
-            </h1>
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+                Co vytvoříme dnes?
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-zinc-400">
+                Popiš projekt, zvol styl generování a nech Synto vytvořit hotový web
+                včetně stylů a exportu.
+              </p>
+            </div>
 
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-zinc-400 md:text-lg">
-              Popiš svůj byznys, styl a cíl. Synto ti během chvíle vytvoří kompletní
-              web včetně stylů a připraví ho rovnou k exportu.
-            </p>
+            <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.86)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
+              <div className="mb-3 flex flex-wrap gap-2">
+                {BUILD_TYPES.map((type) => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setBuildType(type.id)}
+                    className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm transition ${
+                      buildType === type.id
+                        ? "border-white/15 bg-white/[0.08] text-white"
+                        : "border-white/8 bg-white/[0.02] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                  >
+                    <Icon icon={type.icon} width={16} />
+                    {type.label}
+                  </button>
+                ))}
+              </div>
 
-            <div className="mx-auto mt-10 max-w-3xl rounded-[2rem] border border-white/10 bg-[rgba(17,17,24,0.72)] p-3 shadow-[0_20px_100px_-40px_rgba(0,0,0,0.8)] backdrop-blur-2xl md:p-4">
               <div
                 className="rounded-[1.7rem] p-[1px]"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(90,209,255,0.65), rgba(124,92,255,0.85))",
+                    "linear-gradient(135deg, rgba(124,92,255,0.8), rgba(90,209,255,0.52), rgba(124,92,255,0.8))",
                   backgroundSize: "200% 200%",
                   animation: "syntoBorderShift 6s linear infinite",
                 }}
@@ -145,14 +181,53 @@ export default function AiLandingPage() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Např. Vytvoř moderní web pro soukromou psychiatrickou ambulanci v Praze. Klidný, minimalistický a důvěryhodný styl. Sekce služby, o lékaři, objednání, reference a kontakt."
-                    className="h-44 w-full resize-none rounded-[1.65rem] border-0 bg-transparent px-6 py-5 text-base text-white outline-none placeholder:text-zinc-500 md:h-48 md:text-lg"
+                    placeholder="Popiš, co chceš vytvořit. Např. moderní web pro soukromou kliniku v Praze, klidný a důvěryhodný styl, služby, o lékaři, reference, objednání a kontakt."
+                    className="h-44 w-full resize-none rounded-[1.65rem] border-0 bg-transparent px-5 py-5 text-base text-white outline-none placeholder:text-zinc-500 md:h-48 md:px-6 md:text-lg"
                   />
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  AI agent
+                </div>
+
+                {AGENTS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setAgent(item.id)}
+                    className={`rounded-full border px-3 py-2 text-left transition ${
+                      agent === item.id
+                        ? "border-cyan-400/30 bg-cyan-500/10 text-white"
+                        : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{item.label}</div>
+                    <div className="text-[11px] text-zinc-500">{item.sub}</div>
+                  </button>
+                ))}
+
+                <div className="ml-auto flex flex-wrap gap-2">
+                  {MODELS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setModel(item.id)}
+                      className={`rounded-full border px-3 py-2 text-sm transition ${
+                        model === item.id
+                          ? "border-violet-400/30 bg-violet-500/10 text-white"
+                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div className="flex flex-1 flex-wrap gap-2">
                   {QUICK_PROMPTS.map((item) => (
                     <button
                       key={item}
@@ -169,7 +244,7 @@ export default function AiLandingPage() {
                   type="button"
                   onClick={() => startGenerating()}
                   disabled={!canContinue}
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-w-[190px] items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                   style={{
                     background:
                       "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
@@ -183,7 +258,7 @@ export default function AiLandingPage() {
               </div>
             </div>
 
-            <div className="mt-5 text-sm text-zinc-500">
+            <div className="mt-5 text-center text-sm text-zinc-500">
               Start zdarma — získáš až 50 kreditů pro první generování
             </div>
           </div>
