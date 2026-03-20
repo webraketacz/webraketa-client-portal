@@ -287,6 +287,14 @@ STRUKTURNÍ PRAVIDLO:
 - header a footer se počítají jako důležité části výsledku
 - footer musí být vždy dotažený, ne minimalisticky odbytý
 
+COPYWRITING PRAVIDLA:
+- hlavní hero headline musí být krátký, silný a dobře čitelný
+- preferuj 3 až 8 slov v hlavním hero nadpisu
+- nepoužívej zbytečně dlouhé věty v hlavním nadpisu
+- supporting text pod hero musí být stručný, jasný a prodejní
+- vyhýbej se ukecaným odstavcům v top části webu
+- text má působit prémiově, sebevědomě a přehledně
+
 KONTEKST:
 - Build type: ${params.buildType || "neuvedeno"}
 - Zvolený model: ${params.model || "neuvedeno"}
@@ -432,6 +440,15 @@ STRUCTURE RULES:
 - include strong header and strong footer as part of the experience
 - build a complete page, not just a hero plus a few blocks
 
+COPYWRITING RULES:
+- the main hero headline must be short, punchy and premium
+- prefer roughly 3 to 8 words for the main hero headline
+- never make the first headline unnecessarily long
+- avoid paragraph-like headlines
+- supporting hero paragraph should be concise and easy to scan
+- keep section headings cleaner and shorter when possible
+- strong brevity is preferred over verbose copy
+
 IMAGE RULES:
 - choose the most semantically fitting provided images
 - do not use random irrelevant imagery
@@ -448,6 +465,7 @@ FINAL QA BEFORE OUTPUT:
 - responsive layout
 - commercial quality result
 - enough meaningful sections
+- short and strong hero headline
 
 Return only final JSON object.
 `;
@@ -477,6 +495,7 @@ IMPORTANT:
 - Fix layout weaknesses
 - Fix empty/dead spaces
 - Fix weak hero composition
+- Shorten an overly long main hero headline if needed
 - Fix incomplete or weak navigation
 - Fix weak or underdeveloped footer
 - Ensure mobile hamburger menu works
@@ -490,14 +509,15 @@ IMPORTANT:
 SELF-CHECK CRITERIA:
 1. Are there dead spaces or awkward empty areas?
 2. Does the hero feel filled and intentional?
-3. Is the navigation complete with CTA?
-4. Is the footer truly premium and complete?
-5. Does mobile menu work?
-6. Does tablet layout look polished?
-7. Do images feel relevant?
-8. Is the section rhythm visually balanced?
-9. Does the page feel production-ready?
-10. Are there enough meaningful sections?
+3. Is the main hero headline short and visually strong?
+4. Is the navigation complete with CTA?
+5. Is the footer truly premium and complete?
+6. Does mobile menu work?
+7. Does tablet layout look polished?
+8. Do images feel relevant?
+9. Is the section rhythm visually balanced?
+10. Does the page feel production-ready?
+11. Are there enough meaningful sections?
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}

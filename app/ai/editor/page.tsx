@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
 import JSZip from "jszip";
 
 type GeneratorResponse = {
@@ -427,10 +426,6 @@ export default function AiEditorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
-  const [buildType, setBuildType] = useState("");
-  const [model, setModel] = useState("");
-  const [briefLabel, setBriefLabel] = useState("");
-
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedSectionType, setSelectedSectionType] = useState<string | null>(null);
 
@@ -482,8 +477,6 @@ export default function AiEditorPage() {
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
-    const storedBuildType = sessionStorage.getItem("ai_webgen_build_type") ?? "";
-    const storedModel = sessionStorage.getItem("ai_webgen_model") ?? "";
 
     if (initialPrompt) {
       setPrompt(initialPrompt);
@@ -496,9 +489,6 @@ export default function AiEditorPage() {
         },
       ]);
     }
-
-    if (storedBuildType) setBuildType(storedBuildType);
-    if (storedModel) setModel(storedModel);
 
     if (autostart && initialPrompt && !autostartRef.current) {
       autostartRef.current = true;
@@ -604,7 +594,6 @@ export default function AiEditorPage() {
     setHtml("");
     setCss("");
     setJs("");
-    setBriefLabel("");
     setSelectedSectionId(null);
     setSelectedSectionType(null);
     setProgress(0);
@@ -618,8 +607,6 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: finalPrompt,
-          buildType,
-          model,
           chatHistory: getChatHistoryPayload(),
         }),
       });
@@ -643,15 +630,6 @@ export default function AiEditorPage() {
           text: "Návrh je připraven. Klikni na sekci v náhledu nebo mi napiš změnu.",
         },
       ]);
-
-      if (data.brief) {
-        const bits = [
-          data.brief.industry,
-          data.brief.style,
-          data.brief.layoutTone,
-        ].filter(Boolean);
-        setBriefLabel(bits.join(" • "));
-      }
     } catch (e: any) {
       stopSmoothProgress(false, "Generování selhalo");
       setError(e?.message ?? "Generování selhalo");
@@ -816,7 +794,8 @@ export default function AiEditorPage() {
         }
 
         @keyframes zyviaPulse {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 0.72;
             transform: scale(1);
           }
@@ -848,23 +827,29 @@ export default function AiEditorPage() {
       <div className="relative z-10 flex h-full flex-col">
         <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Link
-                href="/ai"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-              >
-                <Icon icon="solar:arrow-left-linear" width={16} />
-                Zpět
-              </Link>
-
-              <img
-                src="/zyvia-logo.svg"
-                alt="Zyvia"
-                className="h-5 w-auto opacity-90"
-              />
-            </div>
+            <img
+              src="/zyvia-logo.svg"
+              alt="Zyvia"
+              className="h-[1.35rem] w-auto opacity-95"
+            />
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+              >
+                <Icon
+                  icon={
+                    isFullscreen
+                      ? "solar:minimize-square-3-linear"
+                      : "solar:maximize-square-3-linear"
+                  }
+                  width={16}
+                />
+                {isFullscreen ? "Ukončit full screen" : "Full screen"}
+              </button>
+
               <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
                 <button
                   type="button"
@@ -908,18 +893,6 @@ export default function AiEditorPage() {
 
               <button
                 type="button"
-                onClick={() => setIsFullscreen((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-              >
-                <Icon
-                  icon={isFullscreen ? "solar:minimize-square-3-linear" : "solar:maximize-square-3-linear"}
-                  width={16}
-                />
-                {isFullscreen ? "Ukončit full screen" : "Full screen"}
-              </button>
-
-              <button
-                type="button"
                 onClick={focusEditInput}
                 disabled={!html}
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
@@ -951,7 +924,13 @@ export default function AiEditorPage() {
           </div>
         </header>
 
-        <div className={`min-h-0 flex-1 ${isFullscreen ? "grid grid-cols-1" : "grid grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)]"}`}>
+        <div
+          className={`min-h-0 flex-1 ${
+            isFullscreen
+              ? "grid grid-cols-1"
+              : "grid grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)]"
+          }`}
+        >
           {!isFullscreen && (
             <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
               <div className="flex h-full flex-col">
@@ -1038,7 +1017,11 @@ export default function AiEditorPage() {
                         "0 10px 24px rgba(124,92,255,0.20), 0 0 28px rgba(90,209,255,0.08)",
                     }}
                   >
-                    {loading ? "Generuji…" : improving ? "Probíhá úprava…" : "Regenerovat návrh"}
+                    {loading
+                      ? "Generuji…"
+                      : improving
+                      ? "Probíhá úprava…"
+                      : "Regenerovat návrh"}
                     <Icon icon="solar:arrow-up-linear" width={16} />
                   </button>
                 </div>
@@ -1163,7 +1146,7 @@ export default function AiEditorPage() {
 
           <main className="min-h-0 bg-[#050507]">
             <div className="flex h-full min-h-0 flex-col">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
+              <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1189,26 +1172,15 @@ export default function AiEditorPage() {
                     Kód
                   </button>
                 </div>
-
-                {(buildType || model) && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {buildType && (
-                      <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-                        {buildType}
-                      </div>
-                    )}
-                    {model && (
-                      <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-                        {model}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="min-h-0 flex-1">
                 {activeTab === "preview" ? (
-                  <div className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"}`}>
+                  <div
+                    className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${
+                      isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"
+                    }`}
+                  >
                     {previewDocument ? (
                       <div className={`${previewWidthClass} h-full`}>
                         <iframe

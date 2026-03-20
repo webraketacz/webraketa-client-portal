@@ -235,6 +235,7 @@ Pravidla:
 - pokud footer působí slabě, zahrň to do changeSummary
 - pokud tablet spacing nebo menu zalamování působí špatně, zahrň to do changeSummary
 - pokud obrázky významově nesedí, navrhni nové
+- pokud je hlavní hero headline zbytečně dlouhý, zahrň jeho zkrácení do changeSummary
 
 PŮVODNÍ PROMPT:
 ${params.prompt}
@@ -350,6 +351,8 @@ IMPROVEMENT RULES:
 - strengthen footer if it feels weak
 - avoid repeating the same rounded card language everywhere if the design needs more variety
 - use industry-appropriate typography and shape logic
+- shorten an overly long hero headline when needed
+- prefer cleaner and shorter section titles where possible
 
 ANTI-GAP RULES:
 - remove dead space and awkward empty areas
@@ -379,6 +382,7 @@ FINAL QA BEFORE OUTPUT:
 - balanced hero and section compositions
 - coherent imagery
 - polished responsive result
+- short and strong hero headline
 
 Return only final JSON object.
 `;
@@ -424,6 +428,7 @@ CHECKLIST:
 - industry-appropriate typography and shape language
 - no repetitive lazy box treatment
 - enough content density and section richness
+- shorter and cleaner hero headline if needed
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
