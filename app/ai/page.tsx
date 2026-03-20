@@ -17,24 +17,17 @@ const BUILD_TYPES = [
   { id: "premium", label: "Premium brand", icon: "solar:star-line-duotone" },
 ];
 
-const AGENTS = [
-  { id: "synto-core", label: "Synto Core", sub: "Vyvážený agent" },
-  { id: "synto-convert", label: "Synto Convert", sub: "Silnější CTA a konverze" },
-  { id: "synto-brand", label: "Synto Brand", sub: "Více vizuální směr" },
-];
-
 const MODELS = [
-  { id: "gpt-5.4", label: "GPT-5.4" },
+  { id: "openai-gpt-4", label: "ChatGPT 4" },
+  { id: "gemini-3.1-pro", label: "Gemini 3.1 Pro" },
   { id: "claude-4.5", label: "Claude 4.5" },
-  { id: "gemini-2.0", label: "Gemini 2.0" },
 ];
 
 export default function AiLandingPage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [buildType, setBuildType] = useState("landing");
-  const [agent, setAgent] = useState("synto-core");
-  const [model, setModel] = useState("gpt-5.4");
+  const [model, setModel] = useState("openai-gpt-4");
 
   const canContinue = useMemo(() => prompt.trim().length >= 12, [prompt]);
 
@@ -45,7 +38,6 @@ export default function AiLandingPage() {
     sessionStorage.setItem("ai_webgen_prompt", finalPrompt);
     sessionStorage.setItem("ai_webgen_autostart", "1");
     sessionStorage.setItem("ai_webgen_build_type", buildType);
-    sessionStorage.setItem("ai_webgen_agent", agent);
     sessionStorage.setItem("ai_webgen_model", model);
 
     router.push("/ai/editor");
@@ -59,7 +51,7 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(32px, -24px, 0) scale(1.05);
+            transform: translate3d(42px, -26px, 0) scale(1.08);
           }
         }
 
@@ -68,17 +60,26 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(-40px, 28px, 0) scale(1.06);
+            transform: translate3d(-52px, 36px, 0) scale(1.1);
+          }
+        }
+
+        @keyframes syntoFloatC {
+          0% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          100% {
+            transform: translate3d(20px, 40px, 0) scale(1.06);
           }
         }
 
         @keyframes syntoGlowPulse {
           0%,
           100% {
-            opacity: 0.4;
+            opacity: 0.35;
           }
           50% {
-            opacity: 0.9;
+            opacity: 0.95;
           }
         }
 
@@ -90,35 +91,67 @@ export default function AiLandingPage() {
             background-position: 200% 50%;
           }
         }
+
+        @keyframes syntoGridDrift {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(24px, 18px, 0);
+          }
+        }
       `}</style>
 
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:42px_42px] opacity-[0.11]" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.06),transparent_22%)]" />
 
-      <div
-        className="pointer-events-none absolute left-[-140px] top-[-120px] h-[28rem] w-[28rem] rounded-full blur-[120px]"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(124,92,255,0.22) 0%, rgba(124,92,255,0.08) 35%, transparent 75%)",
-          animation: "syntoFloatA 16s ease-in-out infinite alternate",
-        }}
-      />
+        <div
+          className="absolute inset-0 opacity-[0.10]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)",
+            backgroundSize: "42px 42px",
+            animation: "syntoGridDrift 18s linear infinite alternate",
+          }}
+        />
 
-      <div
-        className="pointer-events-none absolute bottom-[-160px] right-[-100px] h-[30rem] w-[30rem] rounded-full blur-[130px]"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(90,209,255,0.18) 0%, rgba(90,209,255,0.07) 35%, transparent 75%)",
-          animation: "syntoFloatB 18s ease-in-out infinite alternate",
-        }}
-      />
+        <div
+          className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-full blur-[140px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(98,70,255,0.30) 0%, rgba(98,70,255,0.10) 36%, transparent 74%)",
+            animation: "syntoFloatA 16s ease-in-out infinite alternate",
+          }}
+        />
+
+        <div
+          className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-full blur-[150px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(42,169,255,0.22) 0%, rgba(42,169,255,0.09) 36%, transparent 76%)",
+            animation: "syntoFloatB 18s ease-in-out infinite alternate",
+          }}
+        />
+
+        <div
+          className="absolute left-[35%] top-[18%] h-[24rem] w-[24rem] rounded-full blur-[120px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(124,92,255,0.04) 30%, transparent 72%)",
+            animation: "syntoFloatC 14s ease-in-out infinite alternate",
+          }}
+        />
+
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_45%,rgba(0,0,0,0.35)_100%)]" />
+      </div>
 
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-6 py-8 md:px-8 lg:px-10">
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center">
             <img
               src="/synto-logo.svg"
               alt="Synto"
-              className="h-10 w-auto md:h-11"
+              className="h-7 w-auto opacity-95 md:h-8"
             />
           </div>
 
@@ -135,7 +168,7 @@ export default function AiLandingPage() {
                   className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400"
                   style={{ animation: "syntoGlowPulse 1.8s ease-in-out infinite" }}
                 />
-                Vytvoř si svůj web zcela zdarma
+                Vytvoř si svůj web zdarma
               </div>
             </div>
 
@@ -143,13 +176,14 @@ export default function AiLandingPage() {
               <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
                 Co vytvoříme dnes?
               </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-zinc-400">
-                Popiš projekt, zvol styl generování a nech Synto vytvořit hotový web
-                včetně stylů a exportu.
-              </p>
+
+              <div className="mx-auto mt-5 max-w-2xl space-y-1 text-base leading-8 text-zinc-400 md:text-lg">
+                <p>Popiš svůj projekt a vyber si styl generování.</p>
+                <p>Synto ti připraví hotový web včetně stylů a exportu.</p>
+              </div>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.86)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
+            <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.82)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
               <div className="mb-3 flex flex-wrap gap-2">
                 {BUILD_TYPES.map((type) => (
                   <button
@@ -172,9 +206,11 @@ export default function AiLandingPage() {
                 className="rounded-[1.7rem] p-[1px]"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(124,92,255,0.8), rgba(90,209,255,0.52), rgba(124,92,255,0.8))",
+                    "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(90,209,255,0.48), rgba(124,92,255,0.85))",
                   backgroundSize: "200% 200%",
                   animation: "syntoBorderShift 6s linear infinite",
+                  boxShadow:
+                    "0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(90,209,255,0.06)",
                 }}
               >
                 <div className="rounded-[1.65rem] bg-[#0B0B10]">
@@ -187,28 +223,12 @@ export default function AiLandingPage() {
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  AI agent
-                </div>
+              <div className="mt-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                    AI model
+                  </div>
 
-                {AGENTS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setAgent(item.id)}
-                    className={`rounded-full border px-3 py-2 text-left transition ${
-                      agent === item.id
-                        ? "border-cyan-400/30 bg-cyan-500/10 text-white"
-                        : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    <div className="text-sm font-medium">{item.label}</div>
-                    <div className="text-[11px] text-zinc-500">{item.sub}</div>
-                  </button>
-                ))}
-
-                <div className="ml-auto flex flex-wrap gap-2">
                   {MODELS.map((item) => (
                     <button
                       key={item.id}
@@ -221,21 +241,6 @@ export default function AiLandingPage() {
                       }`}
                     >
                       {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div className="flex flex-1 flex-wrap gap-2">
-                  {QUICK_PROMPTS.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setPrompt(item)}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-zinc-300 transition duration-200 hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
-                    >
-                      {item}
                     </button>
                   ))}
                 </div>
@@ -255,6 +260,25 @@ export default function AiLandingPage() {
                   Generovat web
                   <Icon icon="solar:arrow-right-linear" width={18} />
                 </button>
+              </div>
+
+              <div className="mt-5 border-t border-white/8 pt-5">
+                <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                  Rychlé prompty
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {QUICK_PROMPTS.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setPrompt(item)}
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-zinc-300 transition duration-200 hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
