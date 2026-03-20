@@ -38,15 +38,6 @@ const LOADING_MESSAGES = [
   "Finalizuji výstup…",
 ];
 
-const QUICK_CHAT_ACTIONS = [
-  "Uprav hero sekci",
-  "Přidej více prostoru mezi sekcemi",
-  "Vylepši CTA",
-  "Udělej design více luxusní",
-  "Zlepši mobile verzi",
-  "Přidej důvěryhodnější reference",
-];
-
 function buildPreviewDocument(html: string, css: string, js: string) {
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -482,7 +473,7 @@ export default function AiEditorPage() {
                       ? "bg-white/[0.10] text-white"
                       : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
                   }`}
-                  title="Mobile"
+                  title="Mobil"
                 >
                   <Icon icon="solar:smartphone-linear" width={18} />
                 </button>
@@ -495,7 +486,7 @@ export default function AiEditorPage() {
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
               >
                 <Icon icon="solar:pen-2-linear" width={16} />
-                Edit
+                Upravit
               </button>
 
               <button
@@ -515,7 +506,7 @@ export default function AiEditorPage() {
                 className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
               >
                 <Icon icon="solar:upload-linear" width={16} />
-                {publishing ? "Publikuji…" : "Publish"}
+                {publishing ? "Publikuji…" : "Publikovat"}
               </button>
             </div>
           </div>
@@ -634,21 +625,8 @@ export default function AiEditorPage() {
               </div>
 
               <div className="border-t border-white/8 px-4 py-4">
-                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Rychlé úpravy
-                </div>
-
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {QUICK_CHAT_ACTIONS.map((action) => (
-                    <button
-                      key={action}
-                      type="button"
-                      onClick={() => setChatInput(action)}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-                    >
-                      {action}
-                    </button>
-                  ))}
+                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  Upravit návrh
                 </div>
 
                 <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
@@ -658,7 +636,7 @@ export default function AiEditorPage() {
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={onChatKeyDown}
                     placeholder="Napiš úpravu návrhu… například: Uprav hero, přidej více prostoru, vylepši CTA."
-                    className="h-24 w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                    className="h-16 w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
                   />
 
                   <div className="mt-3 flex items-center justify-between gap-3">
@@ -673,7 +651,7 @@ export default function AiEditorPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                     >
                       <Icon icon="solar:pen-2-linear" width={16} />
-                      {improving ? "Aplikuji…" : "Apply"}
+                      {improving ? "Aplikuji…" : "Použít"}
                     </button>
                   </div>
                 </div>
@@ -751,19 +729,19 @@ export default function AiEditorPage() {
                       readOnly
                       value={html}
                       className="h-full min-h-[220px] resize-none rounded-xl border border-white/8 bg-[#0b0b10] p-4 font-mono text-xs leading-6 text-zinc-200 outline-none"
-                      placeholder="HTML output"
+                      placeholder="HTML výstup"
                     />
                     <textarea
                       readOnly
                       value={css}
                       className="h-full min-h-[220px] resize-none rounded-xl border border-white/8 bg-[#0b0b10] p-4 font-mono text-xs leading-6 text-zinc-200 outline-none"
-                      placeholder="CSS output"
+                      placeholder="CSS výstup"
                     />
                     <textarea
                       readOnly
                       value={js}
                       className="h-full min-h-[220px] resize-none rounded-xl border border-white/8 bg-[#0b0b10] p-4 font-mono text-xs leading-6 text-zinc-200 outline-none"
-                      placeholder="JS output"
+                      placeholder="JS výstup"
                     />
                   </div>
                 )}
