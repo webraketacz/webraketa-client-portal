@@ -58,7 +58,7 @@ function buildPreviewDocument(html: string, css: string, js: string) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Soho Preview</title>
+  <title>Zyvia Preview</title>
   <style>
 ${css}
   </style>
@@ -98,7 +98,7 @@ ${html}
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "soho-export.zip";
+  a.download = "zyvia-export.zip";
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -135,7 +135,7 @@ export default function AiEditorPage() {
     {
       id: "system-initial",
       role: "system",
-      text: "Soho je připraven upravit layout, sekce, CTA, spacing i vizuální styl.",
+      text: "Zyvia je připravena upravit layout, sekce, CTA, spacing i vizuální styl.",
     },
   ]);
 
@@ -433,7 +433,7 @@ export default function AiEditorPage() {
   return (
     <div className="relative h-dvh overflow-hidden bg-[#050507] text-zinc-100">
       <style jsx global>{`
-        @keyframes sohoEditorFloatA {
+        @keyframes zyviaEditorFloatA {
           0% {
             transform: translate3d(0, 0, 0) scale(1);
           }
@@ -442,7 +442,7 @@ export default function AiEditorPage() {
           }
         }
 
-        @keyframes sohoEditorFloatB {
+        @keyframes zyviaEditorFloatB {
           0% {
             transform: translate3d(0, 0, 0) scale(1);
           }
@@ -458,7 +458,7 @@ export default function AiEditorPage() {
         style={{
           background:
             "radial-gradient(circle, rgba(124,92,255,0.18) 0%, rgba(124,92,255,0.05) 35%, transparent 75%)",
-          animation: "sohoEditorFloatA 16s ease-in-out infinite alternate",
+          animation: "zyviaEditorFloatA 16s ease-in-out infinite alternate",
         }}
       />
       <div
@@ -466,7 +466,7 @@ export default function AiEditorPage() {
         style={{
           background:
             "radial-gradient(circle, rgba(90,209,255,0.14) 0%, rgba(90,209,255,0.05) 35%, transparent 75%)",
-          animation: "sohoEditorFloatB 18s ease-in-out infinite alternate",
+          animation: "zyviaEditorFloatB 18s ease-in-out infinite alternate",
         }}
       />
 
@@ -483,8 +483,8 @@ export default function AiEditorPage() {
               </Link>
 
               <img
-                src="/soho-export.svg"
-                alt="Soho"
+                src="/zyvia-logo.svg"
+                alt="Zyvia"
                 className="h-5 w-auto opacity-90"
               />
             </div>
@@ -785,7 +785,7 @@ export default function AiEditorPage() {
                       <div className={`${previewWidthClass} h-full`}>
                         <iframe
                           key={iframeKey}
-                          title="Soho preview"
+                          title="Zyvia preview"
                           className="h-full min-h-[720px] w-full bg-white"
                           srcDoc={previewDocument}
                           sandbox="allow-scripts allow-same-origin"
