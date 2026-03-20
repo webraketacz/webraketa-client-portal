@@ -26,7 +26,7 @@ type ChatMessage = {
   text: string;
 };
 
-const LOADING_MESSAGES = [
+const GENERATE_LOADING_MESSAGES = [
   "Rozumím zadání…",
   "Analyzuji obor a cílový dojem…",
   "Připravuji strukturu webu…",
@@ -36,6 +36,17 @@ const LOADING_MESSAGES = [
   "Ladím responzivitu…",
   "Dolaďuji CTA a detaily…",
   "Finalizuji výstup…",
+];
+
+const IMPROVE_LOADING_MESSAGES = [
+  "Analyzuji úpravy…",
+  "Porovnávám aktuální návrh…",
+  "Vyhodnocuji změny textů a layoutu…",
+  "Připravuji úpravy struktury a stylu…",
+  "Aplikuji změny do HTML a CSS…",
+  "Kontroluji konzistenci návrhu…",
+  "Ladím výsledný vzhled…",
+  "Finalizuji upravený výstup…",
 ];
 
 function buildPreviewDocument(html: string, css: string, js: string) {
@@ -187,26 +198,29 @@ export default function AiEditorPage() {
     };
   }, []);
 
-  function startSmoothProgress() {
+  function startSmoothProgress(mode: "generate" | "improve") {
     if (progressRef.current) window.clearInterval(progressRef.current);
+
+    const source =
+      mode === "generate" ? GENERATE_LOADING_MESSAGES : IMPROVE_LOADING_MESSAGES;
 
     loadingMessageRef.current = 0;
     setProgress(2);
-    setStatus(LOADING_MESSAGES[0]);
+    setStatus(source[0]);
 
     progressRef.current = window.setInterval(() => {
-      loadingMessageRef.current =
-        (loadingMessageRef.current + 1) % LOADING_MESSAGES.length;
-      setStatus(LOADING_MESSAGES[loadingMessageRef.current]);
+      loadingMessageRef.current = (loadingMessageRef.current + 1) % source.length;
+      setStatus(source[loadingMessageRef.current]);
 
       setProgress((prev) => {
-        const next = prev + Math.random() * 2.8 + 0.8;
+        const speed = mode === "generate" ? Math.random() * 2.8 + 0.8 : Math.random() * 3.2 + 1.0;
+        const next = prev + speed;
         return next >= 98 ? 98 : next;
       });
     }, 900);
   }
 
-  function stopSmoothProgress(success = true) {
+  function stopSmoothProgress(success = true, finalStatus?: string) {
     if (progressRef.current) {
       window.clearInterval(progressRef.current);
       progressRef.current = null;
@@ -214,9 +228,9 @@ export default function AiEditorPage() {
 
     if (success) {
       setProgress(100);
-      setStatus("Hotovo");
+      setStatus(finalStatus || "Hotovo");
     } else {
-      setStatus("Generování selhalo");
+      setStatus(finalStatus || "Operace selhala");
     }
   }
 
@@ -235,7 +249,7 @@ export default function AiEditorPage() {
     setProgress(0);
     setActiveTab("preview");
 
-    startSmoothProgress();
+    startSmoothProgress("generate");
 
     try {
       const res = await fetch("/api/generate", {
@@ -255,7 +269,7 @@ export default function AiEditorPage() {
         throw new Error(data?.error ?? "Generování selhalo");
       }
 
-      stopSmoothProgress(true);
+      stopSmoothProgress(true, "Web byl úspěšně vygenerován");
       setHtml(data.html);
       setCss(data.css);
       setJs(data.js);
@@ -278,7 +292,7 @@ export default function AiEditorPage() {
         setBriefLabel(bits.join(" • "));
       }
     } catch (e: any) {
-      stopSmoothProgress(false);
+      stopSmoothProgress(false, "Generování selhalo");
       setError(e?.message ?? "Generování selhalo");
     } finally {
       setTimeout(() => setLoading(false), 250);
@@ -305,6 +319,8 @@ export default function AiEditorPage() {
       },
     ]);
 
+    startSmoothProgress("improve");
+
     try {
       const res = await fetch("/api/improve", {
         method: "POST",
@@ -325,6 +341,7 @@ export default function AiEditorPage() {
         throw new Error(data?.error ?? "Úprava designu selhala");
       }
 
+      stopSmoothProgress(true, "Úpravy byly úspěšně aplikovány");
       setHtml(data.html);
       setCss(data.css);
       setJs(data.js);
@@ -340,9 +357,10 @@ export default function AiEditorPage() {
         },
       ]);
     } catch (e: any) {
+      stopSmoothProgress(false, "Úpravy se nepodařilo dokončit");
       setError(e?.message ?? "Úprava designu selhala");
     } finally {
-      setImproving(false);
+      setTimeout(() => setImproving(false), 250);
     }
   }
 
@@ -531,9 +549,9 @@ export default function AiEditorPage() {
               <div className="border-b border-white/8 px-4 py-4">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-sm font-medium text-white">Projekt</div>
-                  {loading && (
+                  {(loading || improving) && (
                     <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
-                      Generuji
+                      {loading ? "Generuji" : "Upravuji"}
                     </div>
                   )}
                 </div>
@@ -551,7 +569,7 @@ export default function AiEditorPage() {
                 <button
                   type="button"
                   onClick={() => handleGenerate()}
-                  disabled={loading || prompt.trim().length < 12}
+                  disabled={loading || improving || prompt.trim().length < 12}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
                   style={{
                     background:
@@ -560,7 +578,7 @@ export default function AiEditorPage() {
                       "0 10px 24px rgba(124,92,255,0.20), 0 0 28px rgba(90,209,255,0.08)",
                   }}
                 >
-                  {loading ? "Generuji…" : "Regenerovat návrh"}
+                  {loading ? "Generuji…" : improving ? "Probíhá úprava…" : "Regenerovat návrh"}
                   <Icon icon="solar:arrow-up-linear" width={16} />
                 </button>
               </div>
@@ -605,7 +623,11 @@ export default function AiEditorPage() {
                     </div>
 
                     <div className="mt-3 text-xs leading-6 text-zinc-500">
-                      Probíhá generování návrhu a průběžná optimalizace výstupu.
+                      {loading
+                        ? "Probíhá generování návrhu a průběžná optimalizace výstupu."
+                        : improving
+                        ? "Probíhá zpracování úprav a aplikace změn do návrhu."
+                        : "Editor je připraven pro další úpravy."}
                     </div>
                   </div>
 
@@ -660,11 +682,11 @@ export default function AiEditorPage() {
                     <button
                       type="button"
                       onClick={() => handleImprove()}
-                      disabled={!html || improving || chatInput.trim().length < 3}
+                      disabled={!html || loading || improving || chatInput.trim().length < 3}
                       className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                     >
                       <Icon icon="solar:pen-2-linear" width={16} />
-                      {improving ? "Aplikuji…" : "Použít"}
+                      {improving ? "Upravuji…" : "Použít"}
                     </button>
                   </div>
                 </div>
