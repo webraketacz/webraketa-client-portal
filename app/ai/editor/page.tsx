@@ -141,6 +141,13 @@ export default function AiEditorPage() {
     return buildPreviewDocument(html, css, js);
   }, [html, css, js]);
 
+  function getChatHistoryPayload() {
+    return messages.slice(-12).map((message) => ({
+      role: message.role,
+      text: message.text,
+    }));
+  }
+
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
@@ -234,7 +241,12 @@ export default function AiEditorPage() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: finalPrompt, buildType, model }),
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          buildType,
+          model,
+          chatHistory: getChatHistoryPayload(),
+        }),
       });
 
       const data: GeneratorResponse & { error?: string } = await res.json();
@@ -303,6 +315,7 @@ export default function AiEditorPage() {
           html,
           css,
           js,
+          chatHistory: getChatHistoryPayload(),
         }),
       });
 

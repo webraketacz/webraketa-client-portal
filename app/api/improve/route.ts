@@ -19,19 +19,10 @@ type ImagePlanItem = {
   orientation: "landscape" | "portrait" | "square";
 };
 
-type DesignBrief = {
-  industry: string;
-  audience: string;
-  style: string;
-  layoutTone: string;
-  styleDirection: string;
-  layoutArchetype: string;
-  palette: string[];
-  sections: string[];
-  headlineAngle: string;
-  differentiators: string[];
-  imagePlan: ImagePlanItem[];
-  iconPlan: string[];
+type WebsiteBundle = {
+  html: string;
+  css: string;
+  js: string;
 };
 
 type ResolvedAsset = {
@@ -43,10 +34,10 @@ type ResolvedAsset = {
   photographerUrl?: string;
 };
 
-type WebsiteBundle = {
-  html: string;
-  css: string;
-  js: string;
+type ImprovePlan = {
+  changeSummary: string;
+  preserveRules: string[];
+  imageRefreshPlan: ImagePlanItem[];
 };
 
 function extractJson(raw: string) {
@@ -167,7 +158,7 @@ async function searchPexelsImage(
 }
 
 async function resolveImageAssets(imagePlan: ImagePlanItem[]): Promise<ResolvedAsset[]> {
-  const limitedPlan = imagePlan.slice(0, 5);
+  const limitedPlan = imagePlan.slice(0, 4);
 
   const resolved = await Promise.all(
     limitedPlan.map(async (item) => {
@@ -196,36 +187,31 @@ function formatChatHistory(history: ChatHistoryItem[]) {
   if (!history?.length) return "Žádná historie chatu.";
 
   return history
-    .slice(-10)
+    .slice(-12)
     .map((item, index) => `${index + 1}. [${item.role}] ${item.text}`)
     .join("\n");
 }
 
-function plannerPrompt(params: {
+function improvePlannerPrompt(params: {
   prompt: string;
-  buildType?: string;
-  model?: string;
+  instruction: string;
   chatHistory?: ChatHistoryItem[];
+  html: string;
+  css: string;
+  js: string;
 }) {
   return `
-Jsi senior brand stratég, creative director a UX architekt.
+Jsi senior AI design editor a web creative director.
 
-Tvým úkolem je připravit detailní design plán pro AI generování webu.
+Tvým úkolem je pochopit změnu, kterou uživatel chce provést nad již existujícím webem.
+
 Nesmíš vrátit markdown. Nesmíš vrátit nic kromě JSON objektu.
 
-Vrať PŘESNĚ tento JSON formát:
+Vrať PŘESNĚ tento JSON:
 {
-  "industry": "string",
-  "audience": "string",
-  "style": "string",
-  "layoutTone": "string",
-  "styleDirection": "string",
-  "layoutArchetype": "string",
-  "palette": ["string", "string", "string"],
-  "sections": ["string", "string", "string"],
-  "headlineAngle": "string",
-  "differentiators": ["string", "string", "string"],
-  "imagePlan": [
+  "changeSummary": "string",
+  "preserveRules": ["string", "string", "string"],
+  "imageRefreshPlan": [
     {
       "slot": "hero",
       "query": "string",
@@ -233,41 +219,44 @@ Vrať PŘESNĚ tento JSON formát:
       "mood": "string",
       "orientation": "landscape"
     }
-  ],
-  "iconPlan": ["string", "string", "string"]
+  ]
 }
 
-Důležitá pravidla:
-- styleDirection musí být KONKRÉTNÍ vizuální směr, ne obecná fráze
-- layoutArchetype musí být konkrétní kompoziční archetyp, např.:
-  "editorial split hero", "centered conversion hero", "asymmetric showcase", "image-led premium", "clinical modular", "luxury dark showcase"
-- imagePlan musí být užitečný a realistický
-- navrhni 3 až 5 obrázků
-- query musí být v angličtině kvůli image search
-- sections navrhni podle skutečné potřeby projektu
-- differentiators musí být použitelné přímo na webu
-- iconPlan má být seznam témat ikon, ne názvy knihoven
-- výsledek nesmí být generický a nesmí vždy směřovat do stejného layoutu
+Pravidla:
+- preserveRules musí popsat, co se má zachovat
+- imageRefreshPlan vyplň jen pokud změna vyžaduje nové nebo lepší fotky
+- query piš anglicky
+- pokud nejsou nové fotky potřeba, vrať prázdné pole
 
-KONTEKST:
-- Build type: ${params.buildType || "neuvedeno"}
-- Zvolený model: ${params.model || "neuvedeno"}
+PŮVODNÍ PROMPT:
+${params.prompt}
+
+INSTRUKCE UŽIVATELE:
+${params.instruction}
 
 HISTORIE CHATU:
 ${formatChatHistory(params.chatHistory || [])}
 
-ZADÁNÍ KLIENTA:
-${params.prompt}
+AKTUÁLNÍ HTML:
+${params.html}
+
+AKTUÁLNÍ CSS:
+${params.css}
+
+AKTUÁLNÍ JS:
+${params.js}
 `;
 }
 
-function renderPrompt(params: {
+function improveRenderPrompt(params: {
   prompt: string;
-  buildType?: string;
-  model?: string;
-  brief: DesignBrief;
-  assets: ResolvedAsset[];
+  instruction: string;
+  html: string;
+  css: string;
+  js: string;
   chatHistory?: ChatHistoryItem[];
+  plan: ImprovePlan;
+  assets: ResolvedAsset[];
 }) {
   const assetsText =
     params.assets.length > 0
@@ -277,10 +266,10 @@ function renderPrompt(params: {
               `${index + 1}. slot=${asset.slot}; url=${asset.url}; alt=${asset.alt}; source=${asset.source}`
           )
           .join("\n")
-      : "Žádné assets nejsou k dispozici.";
+      : "Žádné nové assets nejsou k dispozici.";
 
   return `
-You are an elite web designer, UX designer and frontend developer.
+You are an elite web designer and frontend engineer.
 
 Return ONLY a valid JSON object.
 No markdown.
@@ -294,6 +283,10 @@ Return this exact JSON shape:
   "js": "string"
 }
 
+TASK:
+You are improving an existing website bundle, not blindly recreating a new one from zero.
+Preserve the strong parts. Apply the requested changes with precision.
+
 CRITICAL OUTPUT RULES:
 - html must contain ONLY the body markup content
 - do not return <!DOCTYPE html>
@@ -301,69 +294,47 @@ CRITICAL OUTPUT RULES:
 - css must contain ALL styling needed for the website
 - js must contain vanilla JavaScript only
 - do not use external libraries
-- do not use Tailwind CDN
-- do not use Bootstrap
-- do not rely on remote CSS
-- the result must look production-ready and polished
-- the website must render correctly in an iframe
-- the website must remain complete even if JS is minimal
-- wrap major sections using semantic <section> tags
-- add data-section-id and data-section-type to major sections
-  example:
-  <section data-section-id="hero" data-section-type="hero">...</section>
+- keep semantic sections with data-section-id and data-section-type
+- maintain responsive layout
+- preserve working structure unless the instruction requires structural change
 
-PROJECT CONTEXT:
-- Original prompt: ${params.prompt}
-- Build type: ${params.buildType || "neuvedeno"}
-- Preferred model label: ${params.model || "neuvedeno"}
+ORIGINAL PROJECT PROMPT:
+${params.prompt}
+
+CURRENT USER INSTRUCTION:
+${params.instruction}
 
 CHAT HISTORY:
 ${formatChatHistory(params.chatHistory || [])}
 
-DESIGN BRIEF:
-- Industry: ${params.brief.industry}
-- Audience: ${params.brief.audience}
-- Style: ${params.brief.style}
-- Layout tone: ${params.brief.layoutTone}
-- Style direction: ${params.brief.styleDirection}
-- Layout archetype: ${params.brief.layoutArchetype}
-- Palette: ${params.brief.palette.join(", ")}
-- Sections: ${params.brief.sections.join(", ")}
-- Headline angle: ${params.brief.headlineAngle}
-- Differentiators: ${params.brief.differentiators.join(", ")}
-- Icon themes: ${params.brief.iconPlan.join(", ")}
+CHANGE SUMMARY:
+${params.plan.changeSummary}
 
-AVAILABLE IMAGE ASSETS:
+PRESERVE RULES:
+${params.plan.preserveRules.join("\n")}
+
+NEW IMAGE ASSETS:
 ${assetsText}
 
-STRICT DESIGN RULES:
-- make the composition clearly reflect the chosen styleDirection and layoutArchetype
-- avoid the same generic layout patterns
-- do not always default to the same soft minimal clinic style
-- use distinct visual rhythm, contrast and hierarchy
-- make it feel like a premium commercial website
-- use strong spacing system and typography hierarchy
-- create meaningful section contrast
-- use the provided images where appropriate
-- do not dump all images at once without purpose
-- if images are available, hero or showcase should use at least one meaningful image
-- use Czech copy, not lorem ipsum
-- use real CTA language
-- keep navigation, hero, trust, showcase/process, CTA, contact and footer unless clearly not suitable
-- use inline SVGs when icons are needed
-- ensure responsive design
-- avoid school-project aesthetics
-- avoid giant empty blank blocks
-- do not create weak default cards-only layouts
-- buttons and forms must look polished
+CURRENT HTML:
+${params.html}
 
-OUTPUT QUALITY RULES:
-- make the layout visibly different depending on business type
-- clinical websites should feel calm and high-trust, but not repetitive
-- luxury projects should feel editorial or premium, not plain
-- tech projects should feel sharper and more conversion-driven
-- hospitality should feel warmer and more atmospheric
-- automotive should feel stronger, bolder and more dramatic
+CURRENT CSS:
+${params.css}
+
+CURRENT JS:
+${params.js}
+
+IMPROVEMENT RULES:
+- preserve the good parts of the design
+- improve visual quality where needed
+- improve spacing, hierarchy, contrast and clarity
+- if new images are provided and relevant, use them meaningfully
+- do not break the page
+- do not remove major sections unless clearly requested
+- keep the website polished and production-like
+- use Czech copy
+- maintain or improve responsiveness
 
 Return only final JSON object.
 `;
@@ -374,66 +345,74 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const prompt = typeof body?.prompt === "string" ? body.prompt : "";
-    const buildType = typeof body?.buildType === "string" ? body.buildType : "";
-    const model = typeof body?.model === "string" ? body.model : "";
+    const instruction = typeof body?.instruction === "string" ? body.instruction : "";
+    const html = typeof body?.html === "string" ? body.html : "";
+    const css = typeof body?.css === "string" ? body.css : "";
+    const js = typeof body?.js === "string" ? body.js : "";
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
 
-    if (!prompt || prompt.trim().length < 8) {
-      return Response.json({ error: "Missing or invalid prompt" }, { status: 400 });
+    if (!prompt.trim()) {
+      return Response.json({ error: "Chybí původní prompt." }, { status: 400 });
+    }
+
+    if (instruction.trim().length < 3) {
+      return Response.json({ error: "Instrukce pro úpravu je příliš krátká." }, { status: 400 });
+    }
+
+    if (!html.trim() || !css.trim()) {
+      return Response.json({ error: "Není co upravovat." }, { status: 400 });
     }
 
     const planner = await client.responses.create({
       model: "gpt-5.4",
       instructions:
-        "You are a precise design strategist. Return only valid JSON. No markdown.",
-      input: plannerPrompt({
+        "You are a precise AI design editor. Return only valid JSON. No markdown.",
+      input: improvePlannerPrompt({
         prompt,
-        buildType,
-        model,
+        instruction,
         chatHistory,
+        html,
+        css,
+        js,
       }),
     });
 
     const plannerText = cleanJsonOutput(planner.output_text?.trim() ?? "");
-    const brief = JSON.parse(extractJson(plannerText)) as DesignBrief;
+    const plan = JSON.parse(extractJson(plannerText)) as ImprovePlan;
 
-    const assets = await resolveImageAssets(brief.imagePlan || []);
+    const assets = await resolveImageAssets(plan.imageRefreshPlan || []);
 
-    const renderer = await client.responses.create({
+    const improved = await client.responses.create({
       model: "gpt-5.4",
       instructions:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
-      input: renderPrompt({
+      input: improveRenderPrompt({
         prompt,
-        buildType,
-        model,
-        brief,
-        assets,
+        instruction,
+        html,
+        css,
+        js,
         chatHistory,
+        plan,
+        assets,
       }),
     });
 
-    const rendererText = cleanJsonOutput(renderer.output_text?.trim() ?? "");
-    const bundle = JSON.parse(extractJson(rendererText)) as WebsiteBundle;
+    const text = cleanJsonOutput(improved.output_text?.trim() ?? "");
+    const bundle = JSON.parse(extractJson(text)) as WebsiteBundle;
     const safeBundle = sanitizeBundle(bundle);
 
     return Response.json({
       html: safeBundle.html,
       css: safeBundle.css,
       js: safeBundle.js,
-      brief: {
-        industry: brief.industry,
-        audience: brief.audience,
-        style: `${brief.style} • ${brief.styleDirection}`,
-        layoutTone: `${brief.layoutTone} • ${brief.layoutArchetype}`,
-      },
       assets,
     });
   } catch (e: any) {
     return Response.json(
-      { error: e?.message ?? "Server error" },
+      { error: e?.message ?? "Improve route failed" },
       { status: 500 }
     );
   }
