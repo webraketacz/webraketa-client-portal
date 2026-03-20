@@ -421,10 +421,13 @@ export default function AiEditorPage() {
 
       if (data.sectionId) {
         setMessages((prev) => {
+          const text = `Vybraná sekce: ${prettifySectionLabel(
+            data.sectionId,
+            data.sectionType || ""
+          )}`;
+
           const alreadyExists = prev.some(
-            (message) =>
-              message.role === "system" &&
-              message.text === `Vybraná sekce: ${prettifySectionLabel(data.sectionId, data.sectionType || "")}`
+            (message) => message.role === "system" && message.text === text
           );
 
           if (alreadyExists) return prev;
@@ -434,7 +437,7 @@ export default function AiEditorPage() {
             {
               id: `section-select-${Date.now()}`,
               role: "system",
-              text: `Vybraná sekce: ${prettifySectionLabel(data.sectionId, data.sectionType || "")}`,
+              text,
             },
           ];
         });
@@ -822,7 +825,7 @@ export default function AiEditorPage() {
             <div className="flex h-full flex-col">
               <div className="border-b border-white/8 px-4 py-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="text-sm font-medium text-white">Projekt</div>
+                  <div className="text-sm font-medium text-white">Editor</div>
                   {(loading || improving) && (
                     <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
                       {loading ? "Generuji" : "Upravuji"}
@@ -830,18 +833,8 @@ export default function AiEditorPage() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-zinc-300">
-                  {prompt || "Zatím není zadání"}
-                </div>
-
-                {briefLabel && (
-                  <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-xs leading-6 text-zinc-500">
-                    {briefLabel}
-                  </div>
-                )}
-
                 {selectedSectionMeta && (
-                  <div className="mt-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3">
+                  <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3">
                     <div className="text-xs uppercase tracking-[0.16em] text-cyan-200/80">
                       Vybraná sekce
                     </div>
@@ -870,26 +863,12 @@ export default function AiEditorPage() {
                       >
                         Přegenerovat
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("move-up")}
-                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
-                      >
-                        Posunout výš
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("move-down")}
-                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
-                      >
-                        Posunout níž
-                      </button>
                     </div>
                   </div>
                 )}
 
                 {availableSections.length > 0 && (
-                  <div className="mt-3">
+                  <div className={selectedSectionMeta ? "mt-3" : ""}>
                     <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
                       Sekce stránky
                     </div>
