@@ -100,7 +100,10 @@ function makeSeed(input: string) {
     .slice(0, 48);
 }
 
-function fallbackImageUrl(query: string, orientation: "landscape" | "portrait" | "square") {
+function fallbackImageUrl(
+  query: string,
+  orientation: "landscape" | "portrait" | "square"
+) {
   const seed = makeSeed(query) || "zyvia";
   const size =
     orientation === "portrait"
@@ -167,7 +170,7 @@ async function searchPexelsImage(
 }
 
 async function resolveImageAssets(imagePlan: ImagePlanItem[]): Promise<ResolvedAsset[]> {
-  const limitedPlan = imagePlan.slice(0, 5);
+  const limitedPlan = imagePlan.slice(0, 6);
 
   const resolved = await Promise.all(
     limitedPlan.map(async (item) => {
@@ -240,14 +243,25 @@ Vrať PŘESNĚ tento JSON formát:
 Důležitá pravidla:
 - styleDirection musí být KONKRÉTNÍ vizuální směr, ne obecná fráze
 - layoutArchetype musí být konkrétní kompoziční archetyp, např.:
-  "editorial split hero", "centered conversion hero", "asymmetric showcase", "image-led premium", "clinical modular", "luxury dark showcase"
+  "editorial split hero", "centered conversion hero", "asymmetric showcase", "image-led premium", "clinical modular", "luxury dark showcase", "balanced commerce hero", "center-logo navigation", "brand-led magazine"
 - imagePlan musí být užitečný a realistický
-- navrhni 3 až 5 obrázků
+- navrhni 4 až 6 obrázků
 - query musí být v angličtině kvůli image search
+- queries musí obsahově odpovídat zadání a nesmí být generické
 - sections navrhni podle skutečné potřeby projektu
 - differentiators musí být použitelné přímo na webu
 - iconPlan má být seznam témat ikon, ne názvy knihoven
 - výsledek nesmí být generický a nesmí vždy směřovat do stejného layoutu
+
+DŮLEŽITÉ UX ZÁSADY:
+- web nesmí mít prázdná mrtvá místa
+- každá sekce musí být kompozičně zaplněná a vizuálně vyvážená
+- obrázky musí významově sedět k byznysu
+- navigation musí být plnohodnotná, ne odfláknutá
+- pokud se hodí center-logo nebo jiný styl loga v navigaci, klidně ho navrhni
+- vždy počítej s CTA tlačítkem v menu
+- mobile menu musí být řešeno hamburgerem
+- layout musí počítat i s mobile verzí už ve fázi plánování
 
 KONTEKST:
 - Build type: ${params.buildType || "neuvedeno"}
@@ -309,8 +323,11 @@ CRITICAL OUTPUT RULES:
 - the website must remain complete even if JS is minimal
 - wrap major sections using semantic <section> tags
 - add data-section-id and data-section-type to major sections
-  example:
-  <section data-section-id="hero" data-section-type="hero">...</section>
+- add a fully working mobile hamburger navigation
+- include a CTA button in the main navigation
+- navigation must be complete and visually polished
+- logo placement can vary: left aligned, centered, split navigation, editorial, premium brand lockup
+- do not always default to the same navbar layout
 
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
@@ -357,6 +374,35 @@ STRICT DESIGN RULES:
 - do not create weak default cards-only layouts
 - buttons and forms must look polished
 
+ANTI-GAP / COMPOSITION RULES:
+- never leave a large empty area next to or under an image without supporting content
+- if a section has a tall image, pair it with content, stat cards, quote card, feature overlays, product info, trust metrics or CTA blocks
+- every major hero must feel intentionally filled, not half-empty
+- image blocks must use object-fit cover or a balanced composition
+- if a card or image container is large, its content must visually justify its size
+- avoid sections where only one corner has content and the rest is dead space
+- keep sections vertically balanced
+- avoid awkward whitespace especially on desktop
+- if a layout risks looking empty, restructure it into a denser and more premium composition
+
+NAVIGATION RULES:
+- navigation must always include:
+  1. logo/brand
+  2. at least 4 meaningful links when suitable
+  3. one strong CTA button
+- on mobile, use a real hamburger toggle with open/close JavaScript
+- mobile menu must slide down or appear as a clean panel
+- mobile nav must remain usable and polished
+- do not hide navigation quality on smaller screens
+
+IMAGE RULES:
+- choose the most semantically fitting provided images
+- do not use random landscapes or abstract visuals unless the prompt genuinely supports it
+- if the project is pet food, use dog-related product or lifestyle imagery
+- if the project is SaaS, use dashboard/product/modern team or abstract tech imagery that still feels relevant
+- if the project is healthcare, use trustworthy environment/people visuals
+- images must support selling the product, not distract from it
+
 OUTPUT QUALITY RULES:
 - make the layout visibly different depending on business type
 - clinical websites should feel calm and high-trust, but not repetitive
@@ -364,6 +410,17 @@ OUTPUT QUALITY RULES:
 - tech projects should feel sharper and more conversion-driven
 - hospitality should feel warmer and more atmospheric
 - automotive should feel stronger, bolder and more dramatic
+- ecommerce/product landing pages should feel sales-oriented, benefit-led and visually complete
+
+FINAL QA BEFORE OUTPUT:
+- no obvious empty spaces
+- complete navigation with CTA
+- functional mobile menu
+- visually coherent image usage
+- balanced hero section
+- polished footer
+- responsive layout
+- commercial quality result
 
 Return only final JSON object.
 `;

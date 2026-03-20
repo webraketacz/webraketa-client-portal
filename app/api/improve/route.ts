@@ -91,7 +91,10 @@ function makeSeed(input: string) {
     .slice(0, 48);
 }
 
-function fallbackImageUrl(query: string, orientation: "landscape" | "portrait" | "square") {
+function fallbackImageUrl(
+  query: string,
+  orientation: "landscape" | "portrait" | "square"
+) {
   const seed = makeSeed(query) || "zyvia";
   const size =
     orientation === "portrait"
@@ -227,6 +230,9 @@ Pravidla:
 - imageRefreshPlan vyplň jen pokud změna vyžaduje nové nebo lepší fotky
 - query piš anglicky
 - pokud nejsou nové fotky potřeba, vrať prázdné pole
+- pokud web obsahuje prázdná místa, nevyvážené bloky nebo slabé menu, zahrň to do changeSummary
+- pokud chybí kvalitní mobilní menu, ber to jako chybu k opravě
+- pokud obrázky významově nesedí, navrhni nové
 
 PŮVODNÍ PROMPT:
 ${params.prompt}
@@ -297,6 +303,9 @@ CRITICAL OUTPUT RULES:
 - keep semantic sections with data-section-id and data-section-type
 - maintain responsive layout
 - preserve working structure unless the instruction requires structural change
+- keep a complete polished navigation with CTA
+- keep or improve a working mobile hamburger menu
+- logo placement can vary if the redesign benefits from it
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -336,6 +345,34 @@ IMPROVEMENT RULES:
 - use Czech copy
 - maintain or improve responsiveness
 
+ANTI-GAP RULES:
+- remove dead space and awkward empty areas
+- if an image block feels too empty around it, add supporting content or rebalance the composition
+- avoid oversized containers with not enough content inside
+- ensure sections feel intentionally composed
+- fix layouts where image and text do not feel proportionally balanced
+- avoid large blank areas under images, cards or stat blocks
+
+NAVIGATION RULES:
+- keep at least one strong CTA button in navigation
+- ensure mobile hamburger menu works with JavaScript
+- mobile menu should open and close cleanly
+- menu must remain visually polished after edits
+
+IMAGE RULES:
+- if current images are semantically weak, replace them with stronger ones
+- do not keep irrelevant generic photos
+- use object-fit cover where needed
+- ensure image placement supports the section instead of weakening it
+
+FINAL QA BEFORE OUTPUT:
+- no obvious empty spaces
+- complete navigation with CTA
+- working mobile menu
+- balanced hero and section compositions
+- coherent imagery
+- polished responsive result
+
 Return only final JSON object.
 `;
 }
@@ -358,7 +395,10 @@ export async function POST(req: Request) {
     }
 
     if (instruction.trim().length < 3) {
-      return Response.json({ error: "Instrukce pro úpravu je příliš krátká." }, { status: 400 });
+      return Response.json(
+        { error: "Instrukce pro úpravu je příliš krátká." },
+        { status: 400 }
+      );
     }
 
     if (!html.trim() || !css.trim()) {
