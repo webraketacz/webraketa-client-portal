@@ -19,7 +19,6 @@ type GeneratorResponse = {
 
 type ViewMode = "desktop" | "tablet" | "mobile";
 type ActiveTab = "preview" | "code";
-type EditMode = "quick" | "style" | "structure" | "content";
 
 type ChatMessage = {
   id: string;
@@ -27,29 +26,25 @@ type ChatMessage = {
   text: string;
 };
 
-const LOADING_STEPS = [
-  "Analyzuji zadání a směr projektu…",
-  "Navrhuji strukturu jednotlivých sekcí…",
-  "Připravuji vizuální styl a kompozici…",
-  "Generuji HTML, CSS a interakce…",
-  "Ladím responzivitu a CTA prvky…",
-  "Finalizuji export a preview…",
+const LOADING_MESSAGES = [
+  "Rozumím zadání…",
+  "Analyzuji obor a cílový dojem…",
+  "Připravuji strukturu webu…",
+  "Navrhuji sekce a kompozici…",
+  "Generuji layout a vizuální směr…",
+  "Tvořím HTML, CSS a interakce…",
+  "Ladím responzivitu…",
+  "Dolaďuji CTA a detaily…",
+  "Finalizuji výstup…",
 ];
 
-const EDIT_MODES: { id: EditMode; label: string }[] = [
-  { id: "quick", label: "Quick edit" },
-  { id: "style", label: "Style" },
-  { id: "structure", label: "Structure" },
-  { id: "content", label: "Content" },
-];
-
-const SECTION_ACTIONS = [
-  "Hero",
-  "Služby",
-  "Reference",
-  "CTA",
-  "Kontakt",
-  "Footer",
+const QUICK_CHAT_ACTIONS = [
+  "Uprav hero sekci",
+  "Přidej více prostoru mezi sekcemi",
+  "Vylepši CTA",
+  "Udělej design více luxusní",
+  "Zlepši mobile verzi",
+  "Přidej důvěryhodnější reference",
 ];
 
 function buildPreviewDocument(html: string, css: string, js: string) {
@@ -125,7 +120,6 @@ export default function AiEditorPage() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
-  const [editMode, setEditMode] = useState<EditMode>("quick");
 
   const [buildType, setBuildType] = useState("");
   const [model, setModel] = useState("");
@@ -142,6 +136,7 @@ export default function AiEditorPage() {
   const [chatInput, setChatInput] = useState("");
 
   const progressRef = useRef<number | null>(null);
+  const loadingMessageRef = useRef<number>(0);
   const autostartRef = useRef(false);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -197,34 +192,20 @@ export default function AiEditorPage() {
   function startSmoothProgress() {
     if (progressRef.current) window.clearInterval(progressRef.current);
 
-    let stepIndex = 0;
-    setProgress(3);
-    setStatus(LOADING_STEPS[0]);
+    loadingMessageRef.current = 0;
+    setProgress(2);
+    setStatus(LOADING_MESSAGES[0]);
 
     progressRef.current = window.setInterval(() => {
+      loadingMessageRef.current =
+        (loadingMessageRef.current + 1) % LOADING_MESSAGES.length;
+      setStatus(LOADING_MESSAGES[loadingMessageRef.current]);
+
       setProgress((prev) => {
-        const next = Math.min(prev + Math.random() * 4.2 + 1.3, 94);
-
-        if (next > 15 && stepIndex < 1) {
-          stepIndex = 1;
-          setStatus(LOADING_STEPS[1]);
-        } else if (next > 32 && stepIndex < 2) {
-          stepIndex = 2;
-          setStatus(LOADING_STEPS[2]);
-        } else if (next > 50 && stepIndex < 3) {
-          stepIndex = 3;
-          setStatus(LOADING_STEPS[3]);
-        } else if (next > 70 && stepIndex < 4) {
-          stepIndex = 4;
-          setStatus(LOADING_STEPS[4]);
-        } else if (next > 84 && stepIndex < 5) {
-          stepIndex = 5;
-          setStatus(LOADING_STEPS[5]);
-        }
-
-        return next;
+        const next = prev + Math.random() * 2.8 + 0.8;
+        return next >= 98 ? 98 : next;
       });
-    }, 700);
+    }, 900);
   }
 
   function stopSmoothProgress(success = true) {
@@ -259,8 +240,6 @@ export default function AiEditorPage() {
     startSmoothProgress();
 
     try {
-      const startedAt = Date.now();
-
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -273,13 +252,6 @@ export default function AiEditorPage() {
         throw new Error(data?.error ?? "Generování selhalo");
       }
 
-      const elapsed = Date.now() - startedAt;
-      const minDelay = 7000;
-
-      if (elapsed < minDelay) {
-        await new Promise((resolve) => setTimeout(resolve, minDelay - elapsed));
-      }
-
       stopSmoothProgress(true);
       setHtml(data.html);
       setCss(data.css);
@@ -290,7 +262,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Napiš mi změnu a já ji aplikuji do návrhu.",
+          text: "Návrh je připraven. Napiš mi změnu a já ji upravím.",
         },
       ]);
 
@@ -336,7 +308,7 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          instruction: `${editMode.toUpperCase()}: ${instruction}`,
+          instruction,
           html,
           css,
           js,
@@ -395,21 +367,6 @@ export default function AiEditorPage() {
     } finally {
       setPublishing(false);
     }
-  }
-
-  function handleSectionAction(section: string) {
-    const sectionPromptMap: Record<string, string> = {
-      Hero: "Uprav hero sekci, aby byla výraznější a vizuálně silnější.",
-      Služby: "Uprav sekci služeb, aby byla přehlednější a lépe strukturovaná.",
-      Reference: "Přidej nebo vylepši reference a prvky důvěryhodnosti.",
-      CTA: "Vylepši CTA sekci, aby byla konverznější a vizuálně výraznější.",
-      Kontakt: "Uprav kontaktní sekci, aby byla přehlednější a použitelnější.",
-      Footer: "Vylepši footer, aby působil více premium a kompletně.",
-    };
-
-    const text = sectionPromptMap[section] ?? `Uprav sekci ${section}.`;
-    setChatInput(text);
-    chatInputRef.current?.focus();
   }
 
   function focusEditInput() {
@@ -490,17 +447,46 @@ export default function AiEditorPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {buildType && (
-                <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-                  {buildType}
-                </div>
-              )}
+              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("desktop")}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                    viewMode === "desktop"
+                      ? "bg-white/[0.10] text-white"
+                      : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                  title="Desktop"
+                >
+                  <Icon icon="solar:monitor-linear" width={18} />
+                </button>
 
-              {model && (
-                <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-                  {model}
-                </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setViewMode("tablet")}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                    viewMode === "tablet"
+                      ? "bg-white/[0.10] text-white"
+                      : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                  title="Tablet"
+                >
+                  <Icon icon="solar:tablet-linear" width={18} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("mobile")}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                    viewMode === "mobile"
+                      ? "bg-white/[0.10] text-white"
+                      : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                  title="Mobile"
+                >
+                  <Icon icon="solar:smartphone-linear" width={18} />
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -535,7 +521,7 @@ export default function AiEditorPage() {
           </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)]">
           <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
             <div className="flex h-full flex-col">
               <div className="border-b border-white/8 px-4 py-4">
@@ -573,46 +559,6 @@ export default function AiEditorPage() {
                   {loading ? "Generuji…" : "Regenerovat návrh"}
                   <Icon icon="solar:arrow-up-linear" width={16} />
                 </button>
-              </div>
-
-              <div className="border-b border-white/8 px-4 py-4">
-                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Edit mode
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {EDIT_MODES.map((mode) => (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setEditMode(mode.id)}
-                      className={`rounded-full border px-3 py-2 text-sm transition ${
-                        editMode === mode.id
-                          ? "border-white/15 bg-white/[0.10] text-white"
-                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Section actions
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {SECTION_ACTIONS.map((section) => (
-                    <button
-                      key={section}
-                      type="button"
-                      onClick={() => handleSectionAction(section)}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-                    >
-                      {section}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -654,17 +600,8 @@ export default function AiEditorPage() {
                       />
                     </div>
 
-                    <div className="mt-3 space-y-1.5 text-xs text-zinc-500">
-                      {LOADING_STEPS.map((step, index) => (
-                        <div key={step} className="flex items-center gap-2">
-                          <span
-                            className={`inline-block h-1.5 w-1.5 rounded-full ${
-                              progress > index * 16 ? "bg-emerald-400" : "bg-zinc-700"
-                            }`}
-                          />
-                          <span>{step}</span>
-                        </div>
-                      ))}
+                    <div className="mt-3 text-xs leading-6 text-zinc-500">
+                      Probíhá generování návrhu a průběžná optimalizace výstupu.
                     </div>
                   </div>
 
@@ -697,8 +634,21 @@ export default function AiEditorPage() {
               </div>
 
               <div className="border-t border-white/8 px-4 py-4">
-                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Upravit návrh
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  Rychlé úpravy
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {QUICK_CHAT_ACTIONS.map((action) => (
+                    <button
+                      key={action}
+                      type="button"
+                      onClick={() => setChatInput(action)}
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+                    >
+                      {action}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
@@ -760,22 +710,20 @@ export default function AiEditorPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {(["desktop", "tablet", "mobile"] as ViewMode[]).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setViewMode(mode)}
-                      className={`rounded-full px-3 py-2 text-xs uppercase tracking-[0.14em] transition ${
-                        viewMode === mode
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
+                {(buildType || model) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {buildType && (
+                      <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+                        {buildType}
+                      </div>
+                    )}
+                    {model && (
+                      <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+                        {model}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="min-h-0 flex-1">
