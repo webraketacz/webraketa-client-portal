@@ -305,7 +305,6 @@ CRITICAL OUTPUT RULES:
 - preserve working structure unless the instruction requires structural change
 - keep a complete polished navigation with CTA
 - keep or improve a working mobile hamburger menu
-- logo placement can vary if the redesign benefits from it
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -357,12 +356,10 @@ NAVIGATION RULES:
 - keep at least one strong CTA button in navigation
 - ensure mobile hamburger menu works with JavaScript
 - mobile menu should open and close cleanly
-- menu must remain visually polished after edits
 
 IMAGE RULES:
 - if current images are semantically weak, replace them with stronger ones
 - do not keep irrelevant generic photos
-- use object-fit cover where needed
 - ensure image placement supports the section instead of weakening it
 
 FINAL QA BEFORE OUTPUT:
@@ -375,6 +372,64 @@ FINAL QA BEFORE OUTPUT:
 
 Return only final JSON object.
 `;
+}
+
+function selfCheckPrompt(params: {
+  prompt: string;
+  instruction: string;
+  html: string;
+  css: string;
+  js: string;
+}) {
+  return `
+You are a brutally honest senior web design QA reviewer and frontend fixer.
+
+Review the improved website bundle and repair any remaining weak points.
+
+Return ONLY a valid JSON object:
+{
+  "html": "string",
+  "css": "string",
+  "js": "string"
+}
+
+IMPORTANT:
+- Preserve the intended user change
+- Fix layout weaknesses
+- Fix empty/dead spaces
+- Fix weak hero or section composition
+- Fix incomplete or weak navigation
+- Ensure mobile hamburger menu works
+- Keep Czech copy
+- Keep semantic sections and metadata
+- Return final repaired bundle only
+
+ORIGINAL PROJECT PROMPT:
+${params.prompt}
+
+USER INSTRUCTION:
+${params.instruction}
+
+CURRENT HTML:
+${params.html}
+
+CURRENT CSS:
+${params.css}
+
+CURRENT JS:
+${params.js}
+`;
+}
+
+async function runJsonModel(input: string, instructions: string) {
+  const result = await client.responses.create({
+    model: "gpt-5.4",
+    instructions,
+    input,
+  });
+
+  const text = cleanJsonOutput(result.output_text?.trim() ?? "");
+  return JSON.parse(extractJson(text)) as WebsiteBundle;
 }
 
 export async function POST(req: Request) {
@@ -424,11 +479,8 @@ export async function POST(req: Request) {
 
     const assets = await resolveImageAssets(plan.imageRefreshPlan || []);
 
-    const improved = await client.responses.create({
-      model: "gpt-5.4",
-      instructions:
-        "You are an elite web designer and frontend engineer. Return only valid JSON.",
-      input: improveRenderPrompt({
+    const improvedBundle = await runJsonModel(
+      improveRenderPrompt({
         prompt,
         instruction,
         html,
@@ -438,16 +490,28 @@ export async function POST(req: Request) {
         plan,
         assets,
       }),
-    });
+      "You are an elite web designer and frontend engineer. Return only valid JSON."
+    );
 
-    const text = cleanJsonOutput(improved.output_text?.trim() ?? "");
-    const bundle = JSON.parse(extractJson(text)) as WebsiteBundle;
-    const safeBundle = sanitizeBundle(bundle);
+    const safeImproved = sanitizeBundle(improvedBundle);
+
+    const checkedBundle = await runJsonModel(
+      selfCheckPrompt({
+        prompt,
+        instruction,
+        html: safeImproved.html,
+        css: safeImproved.css,
+        js: safeImproved.js,
+      }),
+      "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
+    );
+
+    const safeFinal = sanitizeBundle(checkedBundle);
 
     return Response.json({
-      html: safeBundle.html,
-      css: safeBundle.css,
-      js: safeBundle.js,
+      html: safeFinal.html,
+      css: safeFinal.css,
+      js: safeFinal.js,
       assets,
     });
   } catch (e: any) {

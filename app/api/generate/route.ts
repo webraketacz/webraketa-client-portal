@@ -242,8 +242,7 @@ Vrať PŘESNĚ tento JSON formát:
 
 Důležitá pravidla:
 - styleDirection musí být KONKRÉTNÍ vizuální směr, ne obecná fráze
-- layoutArchetype musí být konkrétní kompoziční archetyp, např.:
-  "editorial split hero", "centered conversion hero", "asymmetric showcase", "image-led premium", "clinical modular", "luxury dark showcase", "balanced commerce hero", "center-logo navigation", "brand-led magazine"
+- layoutArchetype musí být konkrétní kompoziční archetyp
 - imagePlan musí být užitečný a realistický
 - navrhni 4 až 6 obrázků
 - query musí být v angličtině kvůli image search
@@ -251,14 +250,12 @@ Důležitá pravidla:
 - sections navrhni podle skutečné potřeby projektu
 - differentiators musí být použitelné přímo na webu
 - iconPlan má být seznam témat ikon, ne názvy knihoven
-- výsledek nesmí být generický a nesmí vždy směřovat do stejného layoutu
 
 DŮLEŽITÉ UX ZÁSADY:
 - web nesmí mít prázdná mrtvá místa
 - každá sekce musí být kompozičně zaplněná a vizuálně vyvážená
 - obrázky musí významově sedět k byznysu
-- navigation musí být plnohodnotná, ne odfláknutá
-- pokud se hodí center-logo nebo jiný styl loga v navigaci, klidně ho navrhni
+- navigation musí být plnohodnotná
 - vždy počítej s CTA tlačítkem v menu
 - mobile menu musí být řešeno hamburgerem
 - layout musí počítat i s mobile verzí už ve fázi plánování
@@ -316,18 +313,12 @@ CRITICAL OUTPUT RULES:
 - js must contain vanilla JavaScript only
 - do not use external libraries
 - do not use Tailwind CDN
-- do not use Bootstrap
 - do not rely on remote CSS
-- the result must look production-ready and polished
-- the website must render correctly in an iframe
-- the website must remain complete even if JS is minimal
 - wrap major sections using semantic <section> tags
 - add data-section-id and data-section-type to major sections
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
 - navigation must be complete and visually polished
-- logo placement can vary: left aligned, centered, split navigation, editorial, premium brand lockup
-- do not always default to the same navbar layout
 
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
@@ -355,35 +346,23 @@ ${assetsText}
 
 STRICT DESIGN RULES:
 - make the composition clearly reflect the chosen styleDirection and layoutArchetype
-- avoid the same generic layout patterns
-- do not always default to the same soft minimal clinic style
 - use distinct visual rhythm, contrast and hierarchy
-- make it feel like a premium commercial website
-- use strong spacing system and typography hierarchy
 - create meaningful section contrast
 - use the provided images where appropriate
-- do not dump all images at once without purpose
-- if images are available, hero or showcase should use at least one meaningful image
 - use Czech copy, not lorem ipsum
-- use real CTA language
 - keep navigation, hero, trust, showcase/process, CTA, contact and footer unless clearly not suitable
 - use inline SVGs when icons are needed
 - ensure responsive design
-- avoid school-project aesthetics
 - avoid giant empty blank blocks
-- do not create weak default cards-only layouts
 - buttons and forms must look polished
 
 ANTI-GAP / COMPOSITION RULES:
 - never leave a large empty area next to or under an image without supporting content
-- if a section has a tall image, pair it with content, stat cards, quote card, feature overlays, product info, trust metrics or CTA blocks
 - every major hero must feel intentionally filled, not half-empty
 - image blocks must use object-fit cover or a balanced composition
-- if a card or image container is large, its content must visually justify its size
 - avoid sections where only one corner has content and the rest is dead space
 - keep sections vertically balanced
 - avoid awkward whitespace especially on desktop
-- if a layout risks looking empty, restructure it into a denser and more premium composition
 
 NAVIGATION RULES:
 - navigation must always include:
@@ -392,25 +371,11 @@ NAVIGATION RULES:
   3. one strong CTA button
 - on mobile, use a real hamburger toggle with open/close JavaScript
 - mobile menu must slide down or appear as a clean panel
-- mobile nav must remain usable and polished
-- do not hide navigation quality on smaller screens
 
 IMAGE RULES:
 - choose the most semantically fitting provided images
-- do not use random landscapes or abstract visuals unless the prompt genuinely supports it
-- if the project is pet food, use dog-related product or lifestyle imagery
-- if the project is SaaS, use dashboard/product/modern team or abstract tech imagery that still feels relevant
-- if the project is healthcare, use trustworthy environment/people visuals
+- do not use random irrelevant imagery
 - images must support selling the product, not distract from it
-
-OUTPUT QUALITY RULES:
-- make the layout visibly different depending on business type
-- clinical websites should feel calm and high-trust, but not repetitive
-- luxury projects should feel editorial or premium, not plain
-- tech projects should feel sharper and more conversion-driven
-- hospitality should feel warmer and more atmospheric
-- automotive should feel stronger, bolder and more dramatic
-- ecommerce/product landing pages should feel sales-oriented, benefit-led and visually complete
 
 FINAL QA BEFORE OUTPUT:
 - no obvious empty spaces
@@ -424,6 +389,72 @@ FINAL QA BEFORE OUTPUT:
 
 Return only final JSON object.
 `;
+}
+
+function selfCheckPrompt(params: {
+  prompt: string;
+  html: string;
+  css: string;
+  js: string;
+}) {
+  return `
+You are a brutally honest senior web design QA reviewer and frontend fixer.
+
+Your task:
+Review the provided website bundle and improve weak parts before final delivery.
+
+Return ONLY a valid JSON object:
+{
+  "html": "string",
+  "css": "string",
+  "js": "string"
+}
+
+IMPORTANT:
+- Preserve the overall direction unless it is clearly broken
+- Fix layout weaknesses
+- Fix empty/dead spaces
+- Fix weak hero composition
+- Fix incomplete or weak navigation
+- Ensure mobile hamburger menu works
+- Improve section balance if needed
+- Keep Czech copy
+- Keep semantic sections and data-section-id/data-section-type
+- Do not explain changes
+- Return final repaired bundle only
+
+SELF-CHECK CRITERIA:
+1. Are there dead spaces or awkward empty areas?
+2. Does the hero feel filled and intentional?
+3. Is the navigation complete with CTA?
+4. Does mobile menu work?
+5. Do images feel relevant?
+6. Is the section rhythm visually balanced?
+7. Does the page feel production-ready?
+
+ORIGINAL PROJECT PROMPT:
+${params.prompt}
+
+CURRENT HTML:
+${params.html}
+
+CURRENT CSS:
+${params.css}
+
+CURRENT JS:
+${params.js}
+`;
+}
+
+async function runJsonModel(input: string, instructions: string) {
+  const result = await client.responses.create({
+    model: "gpt-5.4",
+    instructions,
+    input,
+  });
+
+  const text = cleanJsonOutput(result.output_text?.trim() ?? "");
+  return JSON.parse(extractJson(text)) as WebsiteBundle;
 }
 
 export async function POST(req: Request) {
@@ -458,11 +489,8 @@ export async function POST(req: Request) {
 
     const assets = await resolveImageAssets(brief.imagePlan || []);
 
-    const renderer = await client.responses.create({
-      model: "gpt-5.4",
-      instructions:
-        "You are an elite web designer and frontend engineer. Return only valid JSON.",
-      input: renderPrompt({
+    const renderedBundle = await runJsonModel(
+      renderPrompt({
         prompt,
         buildType,
         model,
@@ -470,16 +498,27 @@ export async function POST(req: Request) {
         assets,
         chatHistory,
       }),
-    });
+      "You are an elite web designer and frontend engineer. Return only valid JSON."
+    );
 
-    const rendererText = cleanJsonOutput(renderer.output_text?.trim() ?? "");
-    const bundle = JSON.parse(extractJson(rendererText)) as WebsiteBundle;
-    const safeBundle = sanitizeBundle(bundle);
+    const safeRendered = sanitizeBundle(renderedBundle);
+
+    const checkedBundle = await runJsonModel(
+      selfCheckPrompt({
+        prompt,
+        html: safeRendered.html,
+        css: safeRendered.css,
+        js: safeRendered.js,
+      }),
+      "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
+    );
+
+    const safeFinal = sanitizeBundle(checkedBundle);
 
     return Response.json({
-      html: safeBundle.html,
-      css: safeBundle.css,
-      js: safeBundle.js,
+      html: safeFinal.html,
+      css: safeFinal.css,
+      js: safeFinal.js,
       brief: {
         industry: brief.industry,
         audience: brief.audience,
