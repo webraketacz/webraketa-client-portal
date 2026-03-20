@@ -251,14 +251,41 @@ Důležitá pravidla:
 - differentiators musí být použitelné přímo na webu
 - iconPlan má být seznam témat ikon, ne názvy knihoven
 
-DŮLEŽITÉ UX ZÁSADY:
+DŮLEŽITÉ UX A ART DIRECTION ZÁSADY:
 - web nesmí mít prázdná mrtvá místa
 - každá sekce musí být kompozičně zaplněná a vizuálně vyvážená
 - obrázky musí významově sedět k byznysu
 - navigation musí být plnohodnotná
+- footer musí být propracovaný a bohatý na relevantní odkazy
 - vždy počítej s CTA tlačítkem v menu
 - mobile menu musí být řešeno hamburgerem
 - layout musí počítat i s mobile verzí už ve fázi plánování
+- tablet verze musí být promyšlená, zejména spacing, zalamování a navigace
+- nevol stále stejný styl karet, oken a bloků
+- zvažuj různé typy navigace: left logo, centered logo, split nav, premium editorial nav
+- zvažuj různé typy hero layoutu, nejen běžný split screen
+- cílem je premium commercial quality
+
+OBOROVÉ STYLING PRAVIDLO:
+- právník / advokát / právní kancelář:
+  - seriózní a důstojná typografie
+  - menší radius nebo bez radiusů
+  - pevnější a architektoničtější grid
+  - méně „startup glow“, více autority a klidu
+- klinika:
+  - čistota, důvěra, vzdušnost, ale ne sterilní nuda
+- luxury / premium:
+  - editorial rhythm, výrazná hierarchie, velké kvalitní bloky
+- SaaS / tech:
+  - přesná konverzní struktura, modernější UI language
+- ecommerce / produkt:
+  - benefit-first struktura, produktové bloky, trust, FAQ, CTA
+
+STRUKTURNÍ PRAVIDLO:
+- web by měl mít ideálně 8 až 10 propracovaných sekcí, pokud to dává smysl pro typ projektu
+- sekce nemají být výplň, ale kvalitní a funkční
+- header a footer se počítají jako důležité části výsledku
+- footer musí být vždy dotažený, ne minimalisticky odbytý
 
 KONTEKST:
 - Build type: ${params.buildType || "neuvedeno"}
@@ -319,6 +346,8 @@ CRITICAL OUTPUT RULES:
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
 - navigation must be complete and visually polished
+- footer must be complete and visually polished
+- footer must include multiple useful groups of links or structured info where appropriate
 
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
@@ -350,11 +379,11 @@ STRICT DESIGN RULES:
 - create meaningful section contrast
 - use the provided images where appropriate
 - use Czech copy, not lorem ipsum
-- keep navigation, hero, trust, showcase/process, CTA, contact and footer unless clearly not suitable
-- use inline SVGs when icons are needed
-- ensure responsive design
+- ensure responsive design across desktop, tablet and mobile
 - avoid giant empty blank blocks
 - buttons and forms must look polished
+- do not default to the same card style, same radius, same hero shape or same content rhythm every time
+- actively vary block treatment, spacing language, card logic and layout composition
 
 ANTI-GAP / COMPOSITION RULES:
 - never leave a large empty area next to or under an image without supporting content
@@ -362,15 +391,46 @@ ANTI-GAP / COMPOSITION RULES:
 - image blocks must use object-fit cover or a balanced composition
 - avoid sections where only one corner has content and the rest is dead space
 - keep sections vertically balanced
-- avoid awkward whitespace especially on desktop
+- avoid awkward whitespace especially on desktop and tablet
+- tablet layout must be actively tuned so navigation and content spacing do not look broken
+- if there are many nav links, resolve them elegantly on tablet
+- avoid “same box repeated everywhere” composition
 
-NAVIGATION RULES:
-- navigation must always include:
-  1. logo/brand
-  2. at least 4 meaningful links when suitable
-  3. one strong CTA button
-- on mobile, use a real hamburger toggle with open/close JavaScript
-- mobile menu must slide down or appear as a clean panel
+HEADER RULES:
+- header must feel premium and deliberate
+- use a complete navigation with brand/logo, links and CTA
+- mobile header must include functional hamburger
+- tablet header spacing and wrapping must be handled carefully
+- you may use centered logo or alternative premium navigation structures when appropriate
+
+FOOTER RULES:
+- footer must always be well designed, not an afterthought
+- footer should include structured columns, useful links, trust/contact info, legal links, CTA or summary where suitable
+- footer should visually match the brand tone
+- footer must feel complete and commercial-grade
+- do not output a weak minimal footer unless the concept truly requires it
+
+TYPOGRAPHY & SHAPE LOGIC:
+- choose typography and corner treatment based on industry
+- for legal / law / attorney / notary / advisory:
+  - use more authoritative, elegant, serious typography
+  - use smaller radius or squared blocks where appropriate
+  - reduce playful startup aesthetics
+  - emphasize order, trust and gravitas
+- for startups and saas:
+  - cleaner UI geometry, modern contrast, conversion rhythm
+- for premium/luxury:
+  - editorial hierarchy, refined spacing, less generic UI feel
+- for healthcare:
+  - clean and calm but still rich and intentional
+- do not use the same visual system for every industry
+
+STRUCTURE RULES:
+- target at least 8 strong sections when appropriate
+- target up to 10 or more sections for richer commercial websites if the prompt supports it
+- make sections meaningful, not filler
+- include strong header and strong footer as part of the experience
+- build a complete page, not just a hero plus a few blocks
 
 IMAGE RULES:
 - choose the most semantically fitting provided images
@@ -379,13 +439,15 @@ IMAGE RULES:
 
 FINAL QA BEFORE OUTPUT:
 - no obvious empty spaces
-- complete navigation with CTA
+- complete premium navigation with CTA
+- complete premium footer
 - functional mobile menu
+- tablet spacing checked
 - visually coherent image usage
 - balanced hero section
-- polished footer
 - responsive layout
 - commercial quality result
+- enough meaningful sections
 
 Return only final JSON object.
 `;
@@ -416,7 +478,9 @@ IMPORTANT:
 - Fix empty/dead spaces
 - Fix weak hero composition
 - Fix incomplete or weak navigation
+- Fix weak or underdeveloped footer
 - Ensure mobile hamburger menu works
+- Ensure tablet spacing is polished
 - Improve section balance if needed
 - Keep Czech copy
 - Keep semantic sections and data-section-id/data-section-type
@@ -427,10 +491,13 @@ SELF-CHECK CRITERIA:
 1. Are there dead spaces or awkward empty areas?
 2. Does the hero feel filled and intentional?
 3. Is the navigation complete with CTA?
-4. Does mobile menu work?
-5. Do images feel relevant?
-6. Is the section rhythm visually balanced?
-7. Does the page feel production-ready?
+4. Is the footer truly premium and complete?
+5. Does mobile menu work?
+6. Does tablet layout look polished?
+7. Do images feel relevant?
+8. Is the section rhythm visually balanced?
+9. Does the page feel production-ready?
+10. Are there enough meaningful sections?
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -453,8 +520,16 @@ async function runJsonModel(input: string, instructions: string) {
     input,
   });
 
-  const text = cleanJsonOutput(result.output_text?.trim() ?? "");
-  return JSON.parse(extractJson(text)) as WebsiteBundle;
+  const rawText = result.output_text?.trim() ?? "";
+  const cleaned = cleanJsonOutput(rawText);
+
+  try {
+    return JSON.parse(extractJson(cleaned)) as WebsiteBundle;
+  } catch {
+    throw new Error(
+      `Model nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
+    );
+  }
 }
 
 export async function POST(req: Request) {
@@ -503,17 +578,24 @@ export async function POST(req: Request) {
 
     const safeRendered = sanitizeBundle(renderedBundle);
 
-    const checkedBundle = await runJsonModel(
-      selfCheckPrompt({
-        prompt,
-        html: safeRendered.html,
-        css: safeRendered.css,
-        js: safeRendered.js,
-      }),
-      "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
-    );
+    let safeFinal = safeRendered;
 
-    const safeFinal = sanitizeBundle(checkedBundle);
+    try {
+      const checkedBundle = await runJsonModel(
+        selfCheckPrompt({
+          prompt,
+          html: safeRendered.html,
+          css: safeRendered.css,
+          js: safeRendered.js,
+        }),
+        "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
+      );
+
+      safeFinal = sanitizeBundle(checkedBundle);
+    } catch (selfCheckError) {
+      console.error("Self-check pass failed in /api/generate:", selfCheckError);
+      safeFinal = safeRendered;
+    }
 
     return Response.json({
       html: safeFinal.html,

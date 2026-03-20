@@ -232,6 +232,8 @@ Pravidla:
 - pokud nejsou nové fotky potřeba, vrať prázdné pole
 - pokud web obsahuje prázdná místa, nevyvážené bloky nebo slabé menu, zahrň to do changeSummary
 - pokud chybí kvalitní mobilní menu, ber to jako chybu k opravě
+- pokud footer působí slabě, zahrň to do changeSummary
+- pokud tablet spacing nebo menu zalamování působí špatně, zahrň to do changeSummary
 - pokud obrázky významově nesedí, navrhni nové
 
 PŮVODNÍ PROMPT:
@@ -305,6 +307,7 @@ CRITICAL OUTPUT RULES:
 - preserve working structure unless the instruction requires structural change
 - keep a complete polished navigation with CTA
 - keep or improve a working mobile hamburger menu
+- keep or improve a premium footer
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -343,6 +346,10 @@ IMPROVEMENT RULES:
 - keep the website polished and production-like
 - use Czech copy
 - maintain or improve responsiveness
+- improve tablet spacing and menu behavior if needed
+- strengthen footer if it feels weak
+- avoid repeating the same rounded card language everywhere if the design needs more variety
+- use industry-appropriate typography and shape logic
 
 ANTI-GAP RULES:
 - remove dead space and awkward empty areas
@@ -356,16 +363,19 @@ NAVIGATION RULES:
 - keep at least one strong CTA button in navigation
 - ensure mobile hamburger menu works with JavaScript
 - mobile menu should open and close cleanly
+- tablet spacing and wrapping must feel polished
 
-IMAGE RULES:
-- if current images are semantically weak, replace them with stronger ones
-- do not keep irrelevant generic photos
-- ensure image placement supports the section instead of weakening it
+FOOTER RULES:
+- footer must feel complete and premium
+- include meaningful link groups or structured footer information when suitable
+- footer should not feel like an afterthought
 
 FINAL QA BEFORE OUTPUT:
 - no obvious empty spaces
 - complete navigation with CTA
+- complete footer
 - working mobile menu
+- polished tablet spacing
 - balanced hero and section compositions
 - coherent imagery
 - polished responsive result
@@ -399,10 +409,21 @@ IMPORTANT:
 - Fix empty/dead spaces
 - Fix weak hero or section composition
 - Fix incomplete or weak navigation
+- Fix incomplete or weak footer
 - Ensure mobile hamburger menu works
+- Ensure tablet spacing is polished
 - Keep Czech copy
 - Keep semantic sections and metadata
 - Return final repaired bundle only
+
+CHECKLIST:
+- premium header
+- premium footer
+- tablet spacing
+- mobile menu
+- industry-appropriate typography and shape language
+- no repetitive lazy box treatment
+- enough content density and section richness
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -428,8 +449,16 @@ async function runJsonModel(input: string, instructions: string) {
     input,
   });
 
-  const text = cleanJsonOutput(result.output_text?.trim() ?? "");
-  return JSON.parse(extractJson(text)) as WebsiteBundle;
+  const rawText = result.output_text?.trim() ?? "";
+  const cleaned = cleanJsonOutput(rawText);
+
+  try {
+    return JSON.parse(extractJson(cleaned)) as WebsiteBundle;
+  } catch {
+    throw new Error(
+      `Model nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
+    );
+  }
 }
 
 export async function POST(req: Request) {
@@ -495,18 +524,25 @@ export async function POST(req: Request) {
 
     const safeImproved = sanitizeBundle(improvedBundle);
 
-    const checkedBundle = await runJsonModel(
-      selfCheckPrompt({
-        prompt,
-        instruction,
-        html: safeImproved.html,
-        css: safeImproved.css,
-        js: safeImproved.js,
-      }),
-      "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
-    );
+    let safeFinal = safeImproved;
 
-    const safeFinal = sanitizeBundle(checkedBundle);
+    try {
+      const checkedBundle = await runJsonModel(
+        selfCheckPrompt({
+          prompt,
+          instruction,
+          html: safeImproved.html,
+          css: safeImproved.css,
+          js: safeImproved.js,
+        }),
+        "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
+      );
+
+      safeFinal = sanitizeBundle(checkedBundle);
+    } catch (selfCheckError) {
+      console.error("Self-check pass failed in /api/improve:", selfCheckError);
+      safeFinal = safeImproved;
+    }
 
     return Response.json({
       html: safeFinal.html,
