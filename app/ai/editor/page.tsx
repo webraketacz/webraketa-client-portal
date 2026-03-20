@@ -18,6 +18,8 @@ type GeneratorResponse = {
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
+type ActiveTab = "preview" | "code";
+type EditMode = "quick" | "style" | "structure" | "content";
 
 type ChatMessage = {
   id: string;
@@ -32,6 +34,22 @@ const LOADING_STEPS = [
   "Generuji HTML, CSS a interakce…",
   "Ladím responzivitu a CTA prvky…",
   "Finalizuji export a preview…",
+];
+
+const EDIT_MODES: { id: EditMode; label: string }[] = [
+  { id: "quick", label: "Quick edit" },
+  { id: "style", label: "Style" },
+  { id: "structure", label: "Structure" },
+  { id: "content", label: "Content" },
+];
+
+const SECTION_ACTIONS = [
+  "Hero",
+  "Služby",
+  "Reference",
+  "CTA",
+  "Kontakt",
+  "Footer",
 ];
 
 function buildPreviewDocument(html: string, css: string, js: string) {
@@ -93,35 +111,39 @@ export default function AiEditorPage() {
   const [html, setHtml] = useState("");
   const [css, setCss] = useState("");
   const [js, setJs] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [improving, setImproving] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState("");
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Připraveno");
-  const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
-  const [viewMode, setViewMode] = useState<ViewMode>("desktop");
 
-  const [improvePrompt, setImprovePrompt] = useState("");
-  const [publishedUrl, setPublishedUrl] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("desktop");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
+  const [editMode, setEditMode] = useState<EditMode>("quick");
+
   const [buildType, setBuildType] = useState("");
   const [model, setModel] = useState("");
   const [briefLabel, setBriefLabel] = useState("");
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: "system-1",
+      id: "system-initial",
       role: "system",
       text: "Synto je připraven upravit layout, sekce, CTA, spacing i vizuální styl.",
     },
   ]);
 
+  const [chatInput, setChatInput] = useState("");
+
   const progressRef = useRef<number | null>(null);
   const autostartRef = useRef(false);
-  const improveInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const iframeKey = useMemo(
     () => `${html.length}-${css.length}-${js.length}`,
@@ -242,11 +264,7 @@ export default function AiEditorPage() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          buildType,
-          model,
-        }),
+        body: JSON.stringify({ prompt: finalPrompt, buildType, model }),
       });
 
       const data: GeneratorResponse & { error?: string } = await res.json();
@@ -272,7 +290,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Můžeš ho dál upravit přes levý panel.",
+          text: "Návrh je připraven. Napiš mi změnu a já ji aplikuji do návrhu.",
         },
       ]);
 
@@ -292,11 +310,11 @@ export default function AiEditorPage() {
     }
   }
 
-  async function handleImprove() {
+  async function handleImprove(instructionOverride?: string) {
     if (!html || !css) return;
-    if (improvePrompt.trim().length < 6) return;
 
-    const instruction = improvePrompt.trim();
+    const instruction = (instructionOverride ?? chatInput).trim();
+    if (instruction.length < 3) return;
 
     setImproving(true);
     setError(null);
@@ -318,7 +336,7 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          instruction,
+          instruction: `${editMode.toUpperCase()}: ${instruction}`,
           html,
           css,
           js,
@@ -334,8 +352,8 @@ export default function AiEditorPage() {
       setHtml(data.html);
       setCss(data.css);
       setJs(data.js);
+      setChatInput("");
       setActiveTab("preview");
-      setImprovePrompt("");
 
       setMessages((prev) => [
         ...prev,
@@ -379,16 +397,38 @@ export default function AiEditorPage() {
     }
   }
 
+  function handleSectionAction(section: string) {
+    const sectionPromptMap: Record<string, string> = {
+      Hero: "Uprav hero sekci, aby byla výraznější a vizuálně silnější.",
+      Služby: "Uprav sekci služeb, aby byla přehlednější a lépe strukturovaná.",
+      Reference: "Přidej nebo vylepši reference a prvky důvěryhodnosti.",
+      CTA: "Vylepši CTA sekci, aby byla konverznější a vizuálně výraznější.",
+      Kontakt: "Uprav kontaktní sekci, aby byla přehlednější a použitelnější.",
+      Footer: "Vylepši footer, aby působil více premium a kompletně.",
+    };
+
+    const text = sectionPromptMap[section] ?? `Uprav sekci ${section}.`;
+    setChatInput(text);
+    chatInputRef.current?.focus();
+  }
+
   function focusEditInput() {
-    improveInputRef.current?.focus();
+    chatInputRef.current?.focus();
+  }
+
+  function onChatKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleImprove();
+    }
   }
 
   const previewWidthClass =
     viewMode === "desktop"
       ? "w-full"
       : viewMode === "tablet"
-      ? "mx-auto w-[900px] max-w-full"
-      : "mx-auto w-[420px] max-w-full";
+      ? "mx-auto w-[920px] max-w-full"
+      : "mx-auto w-[430px] max-w-full";
 
   return (
     <div className="relative h-dvh overflow-hidden bg-[#050507] text-zinc-100">
@@ -412,12 +452,12 @@ export default function AiEditorPage() {
         }
       `}</style>
 
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.09]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.08]" />
       <div
         className="pointer-events-none absolute left-[-120px] top-[-120px] h-[24rem] w-[24rem] rounded-full blur-[120px]"
         style={{
           background:
-            "radial-gradient(circle, rgba(124,92,255,0.20) 0%, rgba(124,92,255,0.06) 35%, transparent 75%)",
+            "radial-gradient(circle, rgba(124,92,255,0.18) 0%, rgba(124,92,255,0.05) 35%, transparent 75%)",
           animation: "syntoEditorFloatA 16s ease-in-out infinite alternate",
         }}
       />
@@ -425,13 +465,13 @@ export default function AiEditorPage() {
         className="pointer-events-none absolute bottom-[-140px] right-[-100px] h-[28rem] w-[28rem] rounded-full blur-[120px]"
         style={{
           background:
-            "radial-gradient(circle, rgba(90,209,255,0.16) 0%, rgba(90,209,255,0.05) 35%, transparent 75%)",
+            "radial-gradient(circle, rgba(90,209,255,0.14) 0%, rgba(90,209,255,0.05) 35%, transparent 75%)",
           animation: "syntoEditorFloatB 18s ease-in-out infinite alternate",
         }}
       />
 
       <div className="relative z-10 flex h-full flex-col">
-        <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl md:px-5">
+        <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Link
@@ -447,7 +487,9 @@ export default function AiEditorPage() {
                 alt="Synto"
                 className="h-6 w-auto opacity-95 md:h-7"
               />
+            </div>
 
+            <div className="flex flex-wrap items-center gap-2">
               {buildType && (
                 <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
                   {buildType}
@@ -457,14 +499,6 @@ export default function AiEditorPage() {
               {model && (
                 <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
                   {model}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {briefLabel && (
-                <div className="max-w-[48rem] truncate rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs text-zinc-400">
-                  {briefLabel}
                 </div>
               )}
 
@@ -485,7 +519,7 @@ export default function AiEditorPage() {
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
               >
                 <Icon icon="solar:download-linear" width={16} />
-                Export ZIP
+                Export
               </button>
 
               <button
@@ -502,27 +536,27 @@ export default function AiEditorPage() {
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/85 backdrop-blur-2xl">
-            <div className="flex h-full flex-col px-4 py-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-sm font-medium text-white">Chat</div>
-                {loading && (
-                  <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
-                    Generuji
+          <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
+            <div className="flex h-full flex-col">
+              <div className="border-b border-white/8 px-4 py-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-sm font-medium text-white">Projekt</div>
+                  {loading && (
+                    <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
+                      Generuji
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-zinc-300">
+                  {prompt || "Zatím není zadání"}
+                </div>
+
+                {briefLabel && (
+                  <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-xs leading-6 text-zinc-500">
+                    {briefLabel}
                   </div>
                 )}
-              </div>
-
-              <div className="mb-4 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Zadání
-                </div>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Popiš, co chceš vytvořit."
-                  className="h-24 w-full resize-none rounded-xl border border-white/8 bg-[#06070a] p-3 text-sm text-white outline-none placeholder:text-zinc-500"
-                />
 
                 <button
                   type="button"
@@ -541,7 +575,47 @@ export default function AiEditorPage() {
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+              <div className="border-b border-white/8 px-4 py-4">
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  Edit mode
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {EDIT_MODES.map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setEditMode(mode.id)}
+                      className={`rounded-full border px-3 py-2 text-sm transition ${
+                        editMode === mode.id
+                          ? "border-white/15 bg-white/[0.10] text-white"
+                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  Section actions
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {SECTION_ACTIONS.map((section) => (
+                    <button
+                      key={section}
+                      type="button"
+                      onClick={() => handleSectionAction(section)}
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+                    >
+                      {section}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                 <div className="space-y-3">
                   {messages.map((message) => {
                     const isUser = message.role === "user";
@@ -593,56 +667,67 @@ export default function AiEditorPage() {
                       ))}
                     </div>
                   </div>
+
+                  {publishedUrl && (
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+                      <div className="mb-1 font-medium">Web publikován</div>
+                      <a
+                        href={publishedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="break-all underline underline-offset-4"
+                      >
+                        {publishedUrl}
+                      </a>
+                    </div>
+                  )}
+
+                  {publishError && (
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                      {publishError}
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                <div className="mb-2 text-sm font-medium text-white">Upravit návrh</div>
+              <div className="border-t border-white/8 px-4 py-4">
+                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  Upravit návrh
+                </div>
 
-                <textarea
-                  ref={improveInputRef}
-                  value={improvePrompt}
-                  onChange={(e) => setImprovePrompt(e.target.value)}
-                  placeholder="Např. Přidej výraznější hero, více vzduchu mezi sekcemi, luxusnější CTA a kvalitnější fotky."
-                  className="h-24 w-full resize-none rounded-xl border border-white/8 bg-[#06070a] p-3 text-sm text-white outline-none placeholder:text-zinc-500"
-                />
+                <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                  <textarea
+                    ref={chatInputRef}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={onChatKeyDown}
+                    placeholder="Napiš úpravu návrhu… například: Uprav hero, přidej více prostoru, vylepši CTA."
+                    className="h-24 w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                  />
 
-                <button
-                  type="button"
-                  onClick={handleImprove}
-                  disabled={!html || improving || improvePrompt.trim().length < 6}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
-                >
-                  <Icon icon="solar:pen-2-linear" width={16} />
-                  {improving ? "Aplikuji úpravu…" : "Použít úpravu"}
-                </button>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-xs text-zinc-500">
+                      Enter odešle úpravu
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleImprove()}
+                      disabled={!html || improving || chatInput.trim().length < 3}
+                      className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
+                    >
+                      <Icon icon="solar:pen-2-linear" width={16} />
+                      {improving ? "Aplikuji…" : "Apply"}
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              {publishedUrl && (
-                <div className="mt-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-                  <div className="mb-1 font-medium">Web publikován</div>
-                  <a
-                    href={publishedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="break-all underline underline-offset-4"
-                  >
-                    {publishedUrl}
-                  </a>
-                </div>
-              )}
-
-              {publishError && (
-                <div className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-                  {publishError}
-                </div>
-              )}
-
-              {error && (
-                <div className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-                  {error}
-                </div>
-              )}
             </div>
           </aside>
 
@@ -695,7 +780,7 @@ export default function AiEditorPage() {
 
               <div className="min-h-0 flex-1">
                 {activeTab === "preview" ? (
-                  <div className="flex h-full min-h-0 items-stretch justify-center overflow-auto px-3 py-0 md:px-4">
+                  <div className="flex h-full min-h-0 items-stretch justify-center overflow-auto px-2 py-0 md:px-3">
                     {previewDocument ? (
                       <div className={`${previewWidthClass} h-full`}>
                         <iframe
@@ -713,7 +798,7 @@ export default function AiEditorPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="grid h-full min-h-0 gap-3 px-3 py-3 md:grid-cols-3 md:px-4">
+                  <div className="grid h-full min-h-0 gap-3 px-3 py-3 md:grid-cols-3">
                     <textarea
                       readOnly
                       value={html}
