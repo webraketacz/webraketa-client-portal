@@ -4,10 +4,29 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import JSZip from "jszip";
 
+type AssetPlanItem = {
+  slot: string;
+  query: string;
+  placement: string;
+  mood: string;
+  orientation: "landscape" | "portrait" | "square";
+};
+
+type ResolvedAsset = {
+  slot: string;
+  url: string;
+  alt: string;
+  source: "pexels" | "unsplash" | "fallback";
+  photographer?: string;
+  photographerUrl?: string;
+};
+
 type GeneratorResponse = {
   html: string;
   css: string;
   js: string;
+  assetPlan?: AssetPlanItem[];
+  assets?: ResolvedAsset[];
   brief?: {
     industry?: string;
     audience?: string;
@@ -17,6 +36,12 @@ type GeneratorResponse = {
   error?: string;
   selectedSectionId?: string;
   changedOnlySelectedSection?: boolean;
+  twoStepMode?: boolean;
+};
+
+type AssetResolveResponse = {
+  assets: ResolvedAsset[];
+  error?: string;
 };
 
 type PublishResponse = {
@@ -194,6 +219,40 @@ async function parseApiResponse<T>(res: Response): Promise<T> {
     throw new Error(
       cleaned || "Server nevrátil JSON. Pravděpodobně došlo k chybě na backendu."
     );
+  }
+}
+
+function replaceImageAssetsInHtml(html: string, assets: ResolvedAsset[]) {
+  if (!html || !assets?.length) return html;
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
+
+    assets.forEach((asset) => {
+      const node = doc.body.querySelector(
+        `[data-image-slot="${asset.slot}"]`
+      ) as HTMLElement | null;
+
+      if (!node) return;
+
+      if (node.tagName.toLowerCase() === "img") {
+        const img = node as HTMLImageElement;
+        img.src = asset.url;
+        img.alt = asset.alt || img.alt || "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        return;
+      }
+
+      node.style.backgroundImage = `url("${asset.url}")`;
+      node.setAttribute("aria-label", asset.alt || "");
+      node.setAttribute("role", "img");
+    });
+
+    return doc.body.innerHTML;
+  } catch {
+    return html;
   }
 }
 
@@ -507,7 +566,6 @@ function BuilderPlaceholder({ status }: { status: string }) {
     <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-6">
       <div className="relative h-full min-h-[680px] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06070b]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
-
         <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-full bg-violet-500/10 blur-[80px]" />
         <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-full bg-cyan-500/10 blur-[90px]" />
 
@@ -611,6 +669,7 @@ export default function AiEditorPage() {
   const [publishing, setPublishing] = useState(false);
   const [improving, setImproving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [resolvingAssets, setResolvingAssets] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -682,6 +741,53 @@ export default function AiEditorPage() {
       behavior: smooth ? "smooth" : "auto",
       block: "end",
     });
+  }
+
+  async function resolveAssetsAndPatchHtml(
+    assetPlan: AssetPlanItem[] | undefined,
+    currentPrompt: string
+  ) {
+    if (!assetPlan?.length) return;
+
+    setResolvingAssets(true);
+
+    try {
+      const res = await fetch("/api/resolve-assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: currentPrompt, assetPlan }),
+      });
+
+      const data = await parseApiResponse<AssetResolveResponse>(res);
+
+      if (!res.ok) {
+        throw new Error(data?.error ?? "Dohledání obrázků selhalo");
+      }
+
+      if (data.assets?.length) {
+        setHtml((prev) => replaceImageAssetsInHtml(prev, data.assets));
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assets-resolved-${Date.now()}`,
+            role: "system",
+            text: `Obrázky byly doplněny (${data.assets.map((a) => a.source).join(", ")}).`,
+          },
+        ]);
+      }
+    } catch (e: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assets-failed-${Date.now()}`,
+          role: "system",
+          text: `Layout zůstal zachovaný, ale obrázky se nepodařilo dohledat: ${e?.message ?? "neznámá chyba"}`,
+        },
+      ]);
+    } finally {
+      setResolvingAssets(false);
+    }
   }
 
   useEffect(() => {
@@ -778,10 +884,10 @@ export default function AiEditorPage() {
   }, [messages.length]);
 
   useEffect(() => {
-    if (loading || improving) {
+    if (loading || improving || resolvingAssets) {
       scrollChatToBottom(true);
     }
-  }, [loading, improving, progress, status]);
+  }, [loading, improving, resolvingAssets, progress, status]);
 
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
@@ -889,6 +995,8 @@ export default function AiEditorPage() {
           text: "Návrh je připraven. Klikni na sekci nebo přímo na text v náhledu a proveď úpravu.",
         },
       ]);
+
+      void resolveAssetsAndPatchHtml(data.assetPlan, finalPrompt);
     } catch (e: any) {
       stopSmoothProgress(false, "Generování selhalo");
       setError(e?.message ?? "Generování selhalo");
@@ -968,6 +1076,8 @@ export default function AiEditorPage() {
           text: `Úprava byla aplikována pouze do sekce ${selectedSectionMeta?.label || selectedSectionId}.`,
         },
       ]);
+
+      void resolveAssetsAndPatchHtml(data.assetPlan, prompt);
     } catch (e: any) {
       stopSmoothProgress(false, "Úpravy se nepodařilo dokončit");
       setError(e?.message ?? "Úprava designu selhala");
@@ -1194,9 +1304,13 @@ export default function AiEditorPage() {
                 <div className="border-b border-white/8 px-4 py-4">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="text-sm font-medium text-white">Editor</div>
-                    {(loading || improving) && (
+                    {(loading || improving || resolvingAssets) && (
                       <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
-                        {loading ? "Generuji" : "Upravuji"}
+                        {loading
+                          ? "Generuji"
+                          : improving
+                          ? "Upravuji"
+                          : "Doplňuji obrázky"}
                       </div>
                     )}
                   </div>
@@ -1265,7 +1379,7 @@ export default function AiEditorPage() {
                   <button
                     type="button"
                     onClick={() => handleGenerate()}
-                    disabled={loading || improving || prompt.trim().length < 12}
+                    disabled={loading || improving || resolvingAssets || prompt.trim().length < 12}
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{
                       background:
@@ -1278,6 +1392,8 @@ export default function AiEditorPage() {
                       ? "Generuji…"
                       : improving
                       ? "Probíhá úprava…"
+                      : resolvingAssets
+                      ? "Doplňuji obrázky…"
                       : "Regenerovat návrh"}
                     <Icon icon="solar:arrow-up-linear" width={16} />
                   </button>
@@ -1324,9 +1440,11 @@ export default function AiEditorPage() {
 
                       <div className="mt-3 text-xs leading-6 text-zinc-500">
                         {loading
-                          ? "Probíhá generování návrhu a průběžná optimalizace výstupu."
+                          ? "Probíhá generování layoutu."
                           : improving
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
+                          : resolvingAssets
+                          ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráš konkrétní sekce nebo texty pro úpravy."
                           : "Klikni do náhledu na konkrétní sekci nebo text, který chceš upravit."}
@@ -1390,7 +1508,7 @@ export default function AiEditorPage() {
                       <button
                         type="button"
                         onClick={() => handleImprove()}
-                        disabled={!html || loading || improving || chatInput.trim().length < 3}
+                        disabled={!html || loading || improving || resolvingAssets || chatInput.trim().length < 3}
                         className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:pen-2-linear" width={16} />

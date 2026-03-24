@@ -7,12 +7,14 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-4.1";
+
 type ChatHistoryItem = {
   role: "system" | "user" | "assistant";
   text: string;
 };
 
-type ImagePlanItem = {
+type AssetPlanItem = {
   slot: string;
   query: string;
   placement: string;
@@ -24,6 +26,7 @@ type SectionBundle = {
   sectionHtml: string;
   sectionCss: string;
   sectionJs: string;
+  assetPlan: AssetPlanItem[];
 };
 
 type WebsiteBundle = {
@@ -31,51 +34,6 @@ type WebsiteBundle = {
   css: string;
   js: string;
 };
-
-type ResolvedAsset = {
-  slot: string;
-  url: string;
-  alt: string;
-  source: "pexels" | "unsplash" | "fallback";
-  photographer?: string;
-  photographerUrl?: string;
-};
-
-type ImprovePlan = {
-  changeSummary: string;
-  preserveRules: string[];
-  imageRefreshPlan: ImagePlanItem[];
-};
-
-type IndustryImageRules = {
-  preferred: string[];
-  banned: string[];
-  fallbackQueries: string[];
-};
-
-const OPENAI_PLANNER_MODEL = "gpt-4.1-mini";
-const OPENAI_RENDER_MODEL = "gpt-4.1";
-const IMAGE_FETCH_TIMEOUT_MS = 3500;
-
-async function withTimeout<T>(
-  promiseFactory: (signal?: AbortSignal) => Promise<T>,
-  timeoutMs: number,
-  errorMessage: string
-): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await promiseFactory(controller.signal);
-  } catch (error: any) {
-    if (error?.name === "AbortError") {
-      throw new Error(errorMessage);
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
 
 async function createStructuredObject<T>({
   model,
@@ -93,7 +51,7 @@ async function createStructuredObject<T>({
   const completion = await client.chat.completions.create({
     model,
     messages: [
-      { role: "system", content: system },
+      { role: "developer", content: system },
       { role: "user", content: user },
     ],
     response_format: {
@@ -124,17 +82,16 @@ async function createStructuredObject<T>({
   }
 }
 
-const improvePlanSchema = {
+const sectionBundleSchema = {
   type: "object",
   additionalProperties: false,
   properties: {
-    changeSummary: { type: "string" },
-    preserveRules: {
+    sectionHtml: { type: "string" },
+    sectionCss: { type: "string" },
+    sectionJs: { type: "string" },
+    assetPlan: {
       type: "array",
-      items: { type: "string" },
-    },
-    imageRefreshPlan: {
-      type: "array",
+      maxItems: 2,
       items: {
         type: "object",
         additionalProperties: false,
@@ -152,18 +109,7 @@ const improvePlanSchema = {
       },
     },
   },
-  required: ["changeSummary", "preserveRules", "imageRefreshPlan"],
-};
-
-const sectionBundleSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    sectionHtml: { type: "string" },
-    sectionCss: { type: "string" },
-    sectionJs: { type: "string" },
-  },
-  required: ["sectionHtml", "sectionCss", "sectionJs"],
+  required: ["sectionHtml", "sectionCss", "sectionJs", "assetPlan"],
 };
 
 function cleanCodeBlock(raw: string) {
@@ -205,399 +151,21 @@ function sanitizeSectionBundle(bundle: SectionBundle): SectionBundle {
     sectionHtml,
     sectionCss,
     sectionJs,
+    assetPlan: Array.isArray(bundle.assetPlan) ? bundle.assetPlan.slice(0, 2) : [],
   };
-}
-
-function makeSeed(input: string) {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-}
-
-function fallbackImageUrl(
-  query: string,
-  orientation: "landscape" | "portrait" | "square"
-) {
-  const seed = makeSeed(query) || "zyvia";
-  const size =
-    orientation === "portrait"
-      ? "900/1200"
-      : orientation === "square"
-      ? "1200/1200"
-      : "1600/1000";
-
-  return `https://picsum.photos/seed/${seed}/${size}`;
-}
-
-function normalizeText(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function getIndustryImageRules(industry: string, prompt: string): IndustryImageRules {
-  const text = normalizeText(`${industry} ${prompt}`);
-
-  if (
-    text.includes("prav") ||
-    text.includes("advokat") ||
-    text.includes("law") ||
-    text.includes("legal") ||
-    text.includes("attorney") ||
-    text.includes("notar")
-  ) {
-    return {
-      preferred: [
-        "lawyer",
-        "attorney",
-        "legal",
-        "law office",
-        "office",
-        "consultation",
-        "meeting",
-        "business",
-        "corporate",
-        "documents",
-        "desk",
-        "interior",
-        "professional",
-        "team",
-        "client",
-      ],
-      banned: [
-        "mountain",
-        "forest",
-        "nature",
-        "beach",
-        "landscape",
-        "waterfall",
-        "travel",
-        "animal",
-        "dog",
-        "cat",
-      ],
-      fallbackQueries: [
-        "lawyer office consultation",
-        "attorney meeting client",
-        "law firm interior",
-      ],
-    };
-  }
-
-  if (
-    text.includes("realit") ||
-    text.includes("reality") ||
-    text.includes("property") ||
-    text.includes("estate")
-  ) {
-    return {
-      preferred: [
-        "interior",
-        "property",
-        "apartment",
-        "real estate",
-        "home",
-        "building",
-        "architecture",
-        "luxury",
-        "office",
-      ],
-      banned: ["forest", "mountain", "waterfall", "dog", "cat", "travel"],
-      fallbackQueries: [
-        "luxury apartment interior",
-        "modern real estate office",
-        "premium property exterior",
-      ],
-    };
-  }
-
-  return {
-    preferred: [
-      "business",
-      "office",
-      "professional",
-      "interior",
-      "team",
-      "workspace",
-      "modern",
-      "meeting",
-      "client",
-    ],
-    banned: [
-      "mountain",
-      "forest",
-      "beach",
-      "waterfall",
-      "wildlife",
-      "animal",
-      "travel",
-      "camping",
-    ],
-    fallbackQueries: [
-      "modern business office",
-      "professional team meeting",
-      "premium office interior",
-    ],
-  };
-}
-
-function scoreImageRelevance(
-  alt: string,
-  query: string,
-  rules: IndustryImageRules
-): number {
-  const haystack = normalizeText(`${alt} ${query}`);
-  let score = 0;
-
-  for (const preferred of rules.preferred) {
-    if (haystack.includes(normalizeText(preferred))) score += 2;
-  }
-
-  for (const banned of rules.banned) {
-    if (haystack.includes(normalizeText(banned))) score -= 5;
-  }
-
-  return score;
-}
-
-function isImageRelevantForIndustry(
-  alt: string,
-  query: string,
-  rules: IndustryImageRules
-) {
-  return scoreImageRelevance(alt, query, rules) >= 1;
-}
-
-async function searchPexelsCandidates(
-  query: string,
-  orientation: "landscape" | "portrait" | "square"
-) {
-  const apiKey = process.env.PEXELS_API_KEY;
-  if (!apiKey) return [];
-
-  try {
-    return await withTimeout(
-      async (signal) => {
-        const url = new URL("https://api.pexels.com/v1/search");
-        url.searchParams.set("query", query);
-        url.searchParams.set("per_page", "3");
-        url.searchParams.set("orientation", orientation);
-
-        const res = await fetch(url.toString(), {
-          headers: {
-            Authorization: apiKey,
-          },
-          cache: "no-store",
-          signal,
-        });
-
-        if (!res.ok) return [];
-
-        const data = (await res.json()) as {
-          photos?: Array<{
-            alt?: string;
-            photographer?: string;
-            photographer_url?: string;
-            src?: {
-              large2x?: string;
-              large?: string;
-              original?: string;
-            };
-          }>;
-        };
-
-        return (data.photos || [])
-          .map((photo) => {
-            const imageUrl =
-              photo?.src?.large2x ||
-              photo?.src?.large ||
-              photo?.src?.original ||
-              "";
-
-            if (!imageUrl) return null;
-
-            return {
-              slot: "",
-              url: imageUrl,
-              alt: photo.alt || query,
-              source: "pexels" as const,
-              photographer: photo.photographer,
-              photographerUrl: photo.photographer_url,
-            };
-          })
-          .filter(Boolean) as ResolvedAsset[];
-      },
-      IMAGE_FETCH_TIMEOUT_MS,
-      "Pexels timeout"
-    );
-  } catch {
-    return [];
-  }
-}
-
-async function searchUnsplashCandidates(
-  query: string,
-  orientation: "landscape" | "portrait" | "square"
-) {
-  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-  if (!accessKey) return [];
-
-  try {
-    return await withTimeout(
-      async (signal) => {
-        const orientationMap =
-          orientation === "portrait"
-            ? "portrait"
-            : orientation === "square"
-            ? "squarish"
-            : "landscape";
-
-        const url = new URL("https://api.unsplash.com/search/photos");
-        url.searchParams.set("query", query);
-        url.searchParams.set("per_page", "3");
-        url.searchParams.set("orientation", orientationMap);
-
-        const res = await fetch(url.toString(), {
-          headers: {
-            Authorization: `Client-ID ${accessKey}`,
-          },
-          cache: "no-store",
-          signal,
-        });
-
-        if (!res.ok) return [];
-
-        const data = (await res.json()) as {
-          results?: Array<{
-            alt_description?: string;
-            description?: string;
-            urls?: {
-              regular?: string;
-              full?: string;
-            };
-            user?: {
-              name?: string;
-              links?: {
-                html?: string;
-              };
-            };
-          }>;
-        };
-
-        return (data.results || [])
-          .map((photo) => {
-            const imageUrl = photo?.urls?.regular || photo?.urls?.full || "";
-            if (!imageUrl) return null;
-
-            return {
-              slot: "",
-              url: imageUrl,
-              alt: photo.alt_description || photo.description || query,
-              source: "unsplash" as const,
-              photographer: photo.user?.name,
-              photographerUrl: photo.user?.links?.html,
-            };
-          })
-          .filter(Boolean) as ResolvedAsset[];
-      },
-      IMAGE_FETCH_TIMEOUT_MS,
-      "Unsplash timeout"
-    );
-  } catch {
-    return [];
-  }
-}
-
-async function findRelevantImage(params: {
-  query: string;
-  orientation: "landscape" | "portrait" | "square";
-  rules: IndustryImageRules;
-}) {
-  const [pexelsCandidates, unsplashCandidates] = await Promise.all([
-    searchPexelsCandidates(params.query, params.orientation),
-    searchUnsplashCandidates(params.query, params.orientation),
-  ]);
-
-  const candidates = [...pexelsCandidates, ...unsplashCandidates];
-
-  return (
-    candidates
-      .sort(
-        (a, b) =>
-          scoreImageRelevance(b.alt, params.query, params.rules) -
-          scoreImageRelevance(a.alt, params.query, params.rules)
-      )
-      .find((candidate) =>
-        isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
-      ) || null
-  );
-}
-
-async function resolveImageAssets(
-  imagePlan: ImagePlanItem[],
-  prompt: string
-): Promise<ResolvedAsset[]> {
-  const limitedPlan = imagePlan.slice(0, 2);
-  const rules = getIndustryImageRules(prompt, prompt);
-
-  const resolved = await Promise.all(
-    limitedPlan.map(async (item, index) => {
-      try {
-        const directMatch = await findRelevantImage({
-          query: item.query,
-          orientation: item.orientation,
-          rules,
-        });
-
-        if (directMatch) {
-          return {
-            ...directMatch,
-            slot: item.slot,
-          };
-        }
-
-        const safeFallbackQuery =
-          rules.fallbackQueries[index % rules.fallbackQueries.length];
-
-        return {
-          slot: item.slot,
-          url: fallbackImageUrl(safeFallbackQuery, item.orientation),
-          alt: safeFallbackQuery,
-          source: "fallback" as const,
-        };
-      } catch {
-        const safeFallbackQuery =
-          rules.fallbackQueries[index % rules.fallbackQueries.length];
-
-        return {
-          slot: item.slot,
-          url: fallbackImageUrl(safeFallbackQuery, item.orientation),
-          alt: safeFallbackQuery,
-          source: "fallback" as const,
-        };
-      }
-    })
-  );
-
-  return resolved;
 }
 
 function formatChatHistory(history: ChatHistoryItem[]) {
   if (!history?.length) return "Žádná historie chatu.";
 
   return history
-    .slice(-12)
+    .slice(-10)
     .map((item, index) => `${index + 1}. [${item.role}] ${item.text}`)
     .join("\n");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function extractSectionById(html: string, sectionId: string) {
@@ -648,9 +216,9 @@ function ensureSectionScope(sectionHtml: string, selectedSectionId: string) {
     );
   }
 
-  const allIds = [
-    ...normalized.matchAll(/data-section-id=(["'])(.*?)\1/g),
-  ].map((match) => match[2]);
+  const allIds = [...normalized.matchAll(/data-section-id=(["'])(.*?)\1/g)].map(
+    (match) => match[2]
+  );
 
   const uniqueIds = Array.from(new Set(allIds));
 
@@ -710,58 +278,6 @@ function upsertManagedBlock(params: {
   return [cleanedBase, wrappedBlock].filter(Boolean).join("\n\n").trim();
 }
 
-function improvePlannerPrompt(params: {
-  prompt: string;
-  instruction: string;
-  selectedSectionId: string;
-  selectedSectionHtml: string;
-  chatHistory?: ChatHistoryItem[];
-  html: string;
-  css: string;
-  js: string;
-}) {
-  return `
-Jsi senior AI design editor a web creative director.
-
-Tvým úkolem je pochopit změnu, kterou uživatel chce provést nad JEDNOU konkrétní sekcí již existujícího webu.
-
-Vrať přesně strukturovaný JSON podle schématu.
-
-DŮLEŽITÉ:
-- Upravuje se pouze sekce "${params.selectedSectionId}"
-- Nesmíš navrhovat změny, které vyžadují přegenerování celého webu
-- preserveRules musí výslovně připomínat, že vše mimo vybranou sekci se zachovává beze změny
-- imageRefreshPlan vyplň jen pokud změna vyžaduje nové nebo lepší fotky uvnitř této sekce
-- query piš anglicky
-- pokud nejsou nové fotky potřeba, vrať prázdné pole
-- pokud je instrukce čistě textová, nesnaž se předělávat layout mimo sekci
-
-PŮVODNÍ PROMPT:
-${params.prompt}
-
-INSTRUKCE UŽIVATELE:
-${params.instruction}
-
-VYBRANÁ SEKCE:
-${params.selectedSectionId}
-
-HTML VYBRANÉ SEKCE:
-${params.selectedSectionHtml}
-
-HISTORIE CHATU:
-${formatChatHistory(params.chatHistory || [])}
-
-CELKOVÉ HTML WEBU (jen pro kontext, ne pro kompletní přepis):
-${params.html}
-
-AKTUÁLNÍ CSS:
-${params.css}
-
-AKTUÁLNÍ JS:
-${params.js}
-`;
-}
-
 function improveRenderPrompt(params: {
   prompt: string;
   instruction: string;
@@ -771,19 +287,7 @@ function improveRenderPrompt(params: {
   css: string;
   js: string;
   chatHistory?: ChatHistoryItem[];
-  plan: ImprovePlan;
-  assets: ResolvedAsset[];
 }) {
-  const assetsText =
-    params.assets.length > 0
-      ? params.assets
-          .map(
-            (asset, index) =>
-              `${index + 1}. slot=${asset.slot}; url=${asset.url}; alt=${asset.alt}; source=${asset.source}`
-          )
-          .join("\n")
-      : "Žádné nové assets nejsou k dispozici.";
-
   return `
 You are an elite web designer and frontend engineer.
 
@@ -792,7 +296,7 @@ Return ONLY a structured JSON object matching the schema.
 YOU ARE EDITING ONLY ONE SECTION OF AN EXISTING WEBSITE.
 
 CRITICAL RULES:
-- return ONLY sectionHtml, sectionCss and sectionJs
+- return ONLY sectionHtml, sectionCss, sectionJs and assetPlan
 - do NOT rewrite the whole page
 - do NOT output other sections
 - sectionHtml must contain exactly one root <section>
@@ -804,7 +308,13 @@ CRITICAL RULES:
 - sectionCss and sectionJs may be empty strings if not needed
 - use Czech copy
 - preserve semantic structure
-- keep result production-safe
+- keep result lightweight and production-safe
+
+IMAGE RULES:
+- if you use a new image in this section, add data-image-slot="<slot>" to the image element
+- assetPlan may contain up to 2 items
+- assetPlan.slot values must match the slot values used in sectionHtml
+- if no new image is needed, return an empty assetPlan array
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -820,15 +330,6 @@ ${params.selectedSectionHtml}
 
 CHAT HISTORY:
 ${formatChatHistory(params.chatHistory || [])}
-
-CHANGE SUMMARY:
-${params.plan.changeSummary}
-
-PRESERVE RULES:
-${params.plan.preserveRules.join("\n")}
-
-NEW IMAGE ASSETS:
-${assetsText}
 
 FULL HTML FOR CONTEXT ONLY:
 ${params.html}
@@ -889,27 +390,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const plan = await createStructuredObject<ImprovePlan>({
-      model: OPENAI_PLANNER_MODEL,
-      system: "You are a precise AI design editor. Return only valid JSON.",
-      user: improvePlannerPrompt({
-        prompt,
-        instruction,
-        selectedSectionId,
-        selectedSectionHtml,
-        chatHistory,
-        html,
-        css,
-        js,
-      }),
-      schemaName: "improve_plan",
-      schema: improvePlanSchema,
-    });
-
-    const assets = await resolveImageAssets(plan.imageRefreshPlan || [], prompt);
-
     const improvedSection = await createStructuredObject<SectionBundle>({
-      model: OPENAI_RENDER_MODEL,
+      model: WEB_MODEL,
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
       user: improveRenderPrompt({
@@ -921,10 +403,8 @@ export async function POST(req: Request) {
         css,
         js,
         chatHistory,
-        plan,
-        assets,
       }),
-      schemaName: "improve_section_bundle",
+      schemaName: "improve_section_bundle_two_step",
       schema: sectionBundleSchema,
     });
 
@@ -961,9 +441,11 @@ export async function POST(req: Request) {
       html: safeFinalBundle.html,
       css: safeFinalBundle.css,
       js: safeFinalBundle.js,
-      assets,
+      assetPlan: safeImprovedSection.assetPlan,
+      assets: [],
       selectedSectionId,
       changedOnlySelectedSection: true,
+      twoStepMode: true,
     });
   } catch (e: any) {
     console.error("/api/improve fatal error:", e);
