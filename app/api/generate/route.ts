@@ -24,6 +24,49 @@ type AssetPlanItem = {
   orientation: "landscape" | "portrait" | "square";
 };
 
+type SpeedMode = "fast" | "balanced" | "premium";
+type LayoutPreference =
+  | "auto"
+  | "editorial"
+  | "split"
+  | "asymmetrical"
+  | "story"
+  | "grid"
+  | "luxury";
+type VisualStyle =
+  | "auto"
+  | "clean"
+  | "premium"
+  | "bold"
+  | "editorial"
+  | "luxury"
+  | "playful";
+type AnimationLevel = "minimal" | "subtle" | "rich" | "expressive";
+type FontMood =
+  | "auto"
+  | "geometric"
+  | "editorial"
+  | "luxury"
+  | "trustworthy"
+  | "tech"
+  | "friendly";
+type IconStyle =
+  | "auto"
+  | "minimal"
+  | "outlined"
+  | "solid"
+  | "custom";
+
+type GenerationPreferences = {
+  speedMode?: SpeedMode;
+  layoutPreference?: LayoutPreference;
+  visualStyle?: VisualStyle;
+  animationLevel?: AnimationLevel;
+  fontMood?: FontMood;
+  iconStyle?: IconStyle;
+  contactItems?: string[];
+};
+
 type GeneratedWebsiteBundle = {
   html: string;
   css: string;
@@ -51,6 +94,78 @@ function logStep(
       ...(extra || {}),
     })
   );
+}
+
+function makeDeterministicChoice<T>(input: string, items: T[]): T {
+  const safeItems = items.length ? items : ["" as T];
+  let hash = 0;
+
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+
+  return safeItems[hash % safeItems.length];
+}
+
+function resolveCreativeDirection(
+  prompt: string,
+  prefs: GenerationPreferences
+) {
+  const layoutPool: LayoutPreference[] = [
+    "editorial",
+    "split",
+    "asymmetrical",
+    "story",
+    "grid",
+    "luxury",
+  ];
+
+  const visualPool: VisualStyle[] = [
+    "clean",
+    "premium",
+    "bold",
+    "editorial",
+    "luxury",
+    "playful",
+  ];
+
+  const fontPool: FontMood[] = [
+    "geometric",
+    "editorial",
+    "luxury",
+    "trustworthy",
+    "tech",
+    "friendly",
+  ];
+
+  const iconPool: IconStyle[] = ["minimal", "outlined", "solid", "custom"];
+
+  const fallbackLayout = makeDeterministicChoice(`${prompt}-layout`, layoutPool);
+  const fallbackVisual = makeDeterministicChoice(`${prompt}-visual`, visualPool);
+  const fallbackFont = makeDeterministicChoice(`${prompt}-font`, fontPool);
+  const fallbackIcon = makeDeterministicChoice(`${prompt}-icon`, iconPool);
+
+  return {
+    speedMode: prefs.speedMode || "balanced",
+    layoutPreference:
+      prefs.layoutPreference && prefs.layoutPreference !== "auto"
+        ? prefs.layoutPreference
+        : fallbackLayout,
+    visualStyle:
+      prefs.visualStyle && prefs.visualStyle !== "auto"
+        ? prefs.visualStyle
+        : fallbackVisual,
+    animationLevel: prefs.animationLevel || "subtle",
+    fontMood:
+      prefs.fontMood && prefs.fontMood !== "auto"
+        ? prefs.fontMood
+        : fallbackFont,
+    iconStyle:
+      prefs.iconStyle && prefs.iconStyle !== "auto"
+        ? prefs.iconStyle
+        : fallbackIcon,
+    contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
+  };
 }
 
 async function createStructuredObject<T>({
@@ -125,7 +240,7 @@ const generatedWebsiteSchema = {
     js: { type: "string" },
     assetPlan: {
       type: "array",
-      maxItems: 3,
+      maxItems: 4,
       items: {
         type: "object",
         additionalProperties: false,
@@ -160,7 +275,7 @@ function sanitizeAssetPlan(assetPlan: unknown): AssetPlanItem[] {
   if (!Array.isArray(assetPlan)) return [];
 
   return assetPlan
-    .slice(0, 3)
+    .slice(0, 4)
     .filter((item): item is AssetPlanItem => {
       if (!item || typeof item !== "object") return false;
       const candidate = item as AssetPlanItem;
@@ -206,14 +321,16 @@ function renderPrompt(params: {
   buildType?: string;
   model?: string;
   chatHistory?: ChatHistoryItem[];
+  preferences: ReturnType<typeof resolveCreativeDirection>;
 }) {
   return `
-You are a world-class commercial web designer and senior frontend developer.
+You are a world-class commercial web designer, art director and senior frontend developer.
 
 Return ONLY a structured JSON object matching the schema.
 
-GOAL:
-Create a premium, visually polished, conversion-focused website that feels like it was designed by a strong human designer for the given industry.
+PRIMARY GOAL:
+Create a premium commercial website that feels custom-designed for this exact business.
+It must not feel like a recycled template.
 
 OUTPUT RULES:
 - html must contain ONLY body markup content
@@ -229,26 +346,76 @@ OUTPUT RULES:
 - data-section-id values must be stable, unique and human-readable
 - do not create duplicate data-section-id values
 - do not nest one editable section inside another editable section
-- use these ids when relevant: navigation, hero, about, services, properties, references, process, contact, footer
 - navigation must be its own section with data-section-id="navigation"
 - footer must be its own section with data-section-id="footer"
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
-- navigation must be complete and visually polished
 - footer must be complete and visually polished
 
-DESIGN QUALITY RULES:
-- design must feel premium, modern and balanced
-- avoid generic template look
-- use strong hierarchy, spacing and composition
+LAYOUT VARIETY RULES:
+- DO NOT default to the same structure every time
+- DO NOT always make "hero + 3 stat cards + image + generic services grid"
+- choose a composition that strongly reflects the requested layout direction
+- possible layout directions include:
+  - editorial storytelling
+  - split-screen conversion hero
+  - asymmetrical luxury composition
+  - strong grid-based business layout
+  - section-led narrative flow
+  - premium magazine-like real estate rhythm
+- make this generation clearly distinct from common previous outputs
+
+SELECTED CREATIVE DIRECTION:
+- Speed mode: ${params.preferences.speedMode}
+- Layout preference: ${params.preferences.layoutPreference}
+- Visual style: ${params.preferences.visualStyle}
+- Animation level: ${params.preferences.animationLevel}
+- Font mood: ${params.preferences.fontMood}
+- Icon style: ${params.preferences.iconStyle}
+- Contact items to show: ${
+    params.preferences.contactItems.length
+      ? params.preferences.contactItems.join(", ")
+      : "phone, email, office, CTA form"
+  }
+
+FONT DIRECTION RULES:
+- use CSS font stacks that match the mood
+- geometric: clean modern sans feeling
+- editorial: elegant serif headlines + neutral body
+- luxury: refined contrast, premium serif display feeling
+- trustworthy: humanist / calm professional feel
+- tech: precise modern UI font feeling
+- friendly: soft approachable rounded feeling
+- use font styling differences visibly across different industries
+
+ICON RULES:
+- create beautiful inline SVG icons directly in the HTML where useful
+- icon style must match: ${params.preferences.iconStyle}
+- icons should feel custom and premium, not generic emoji
+- use icons in benefits, trust points, process, contact or stats if meaningful
+
+ANIMATION RULES:
+- use ${params.preferences.animationLevel} animation intensity
+- minimal: mostly hover only
+- subtle: elegant transitions and light reveal effects
+- rich: reveal effects, button motion, animated gradients or moving accents
+- expressive: stronger motion, animated borders, layered effects, premium hero movement
+- keep animations tasteful and performant
+- use IntersectionObserver for reveal effects when useful
+- buttons, borders, highlights, gradients and cards may animate if done elegantly
+
+VISUAL DESIGN RULES:
+- adapt styling to the industry
+- legal / consulting: structured, elegant, authoritative
+- real estate: editorial luxury, premium imagery, refined spacing
+- healthcare: trustworthy, light, calm and clean
+- tech / SaaS: sharper UI, stronger product feel
+- beauty / premium: softer, refined, more atmospheric
 - do not create giant empty spaces
-- use tasteful gradients, surfaces, borders and shadows only when appropriate
-- adapt styling to the industry:
-  - legal / advisory: more structured, elegant, serious, authoritative
-  - real estate: premium editorial feeling, strong imagery blocks, elegant spacing
-  - healthcare: clean, calm, trustworthy, bright and professional
-  - tech / SaaS: sharper conversion structure, modern UI feel
-  - beauty / luxury: softer rhythm, refined typography, premium presentation
+- use stronger composition and section rhythm
+- create more visually different blocks across sections
+- combine surfaces, lines, gradients, subtle glows, borders, dividers and layered backgrounds where appropriate
+- do not make every section the same card grid
 
 COPY RULES:
 - use Czech copy
@@ -259,12 +426,16 @@ COPY RULES:
 - make sections feel relevant to the business, not generic filler
 
 IMAGE RULES:
-- also return assetPlan with at most 3 realistic images
+- also return assetPlan with at most 4 realistic images
 - if an image is needed in html, use a normal <img> and add data-image-slot="<slot>"
 - slot values in html must exactly match assetPlan.slot values
 - use image slots only where visually meaningful
 - queries must be concrete and in English
 - if no image is needed, return an empty assetPlan array
+
+CONTACT RULES:
+- if contact items were requested, reflect them in the contact section and footer
+- make the contact section more useful than generic placeholders
 
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
@@ -281,6 +452,9 @@ FINAL QA:
 - working mobile menu
 - responsive desktop, tablet and mobile
 - balanced layout
+- clear layout distinctiveness
+- custom-feeling icons
+- stronger animation detail
 - short strong hero headline
 `;
 }
@@ -300,6 +474,11 @@ export async function POST(req: Request) {
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
+    const generationPreferences =
+      body?.generationPreferences &&
+      typeof body.generationPreferences === "object"
+        ? (body.generationPreferences as GenerationPreferences)
+        : {};
 
     if (!prompt || prompt.trim().length < 8) {
       return Response.json(
@@ -307,6 +486,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const resolvedPreferences = resolveCreativeDirection(
+      prompt,
+      generationPreferences
+    );
 
     console.log(
       JSON.stringify({
@@ -316,6 +500,7 @@ export async function POST(req: Request) {
         model: WEB_MODEL,
         promptLength: prompt.length,
         chatHistoryCount: chatHistory.length,
+        generationPreferences: resolvedPreferences,
       })
     );
 
@@ -330,8 +515,9 @@ export async function POST(req: Request) {
         buildType,
         model,
         chatHistory,
+        preferences: resolvedPreferences,
       }),
-      schemaName: "website_bundle_two_step",
+      schemaName: "website_bundle_two_step_v2",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -362,13 +548,14 @@ export async function POST(req: Request) {
       brief: {
         industry: "",
         audience: "",
-        style: "Two-step generation",
-        layoutTone: "Structured JSON render",
+        style: `${resolvedPreferences.visualStyle} • ${resolvedPreferences.fontMood}`,
+        layoutTone: `${resolvedPreferences.layoutPreference} • ${resolvedPreferences.animationLevel}`,
       },
       assets: [],
       twoStepMode: true,
       modelUsed: WEB_MODEL,
       requestId,
+      generationPreferences: resolvedPreferences,
     });
   } catch (e: any) {
     console.error(

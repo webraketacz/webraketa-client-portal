@@ -21,6 +21,50 @@ type ResolvedAsset = {
   photographerUrl?: string;
 };
 
+type SpeedMode = "fast" | "balanced" | "premium";
+type LayoutPreference =
+  | "auto"
+  | "editorial"
+  | "split"
+  | "asymmetrical"
+  | "story"
+  | "grid"
+  | "luxury";
+type VisualStyle =
+  | "auto"
+  | "clean"
+  | "premium"
+  | "bold"
+  | "editorial"
+  | "luxury"
+  | "playful";
+type AnimationLevel = "minimal" | "subtle" | "rich" | "expressive";
+type FontMood =
+  | "auto"
+  | "geometric"
+  | "editorial"
+  | "luxury"
+  | "trustworthy"
+  | "tech"
+  | "friendly";
+type IconStyle =
+  | "auto"
+  | "minimal"
+  | "outlined"
+  | "solid"
+  | "custom";
+
+type GenerationPreferences = {
+  speedMode: SpeedMode;
+  layoutPreference: LayoutPreference;
+  visualStyle: VisualStyle;
+  animationLevel: AnimationLevel;
+  fontMood: FontMood;
+  iconStyle: IconStyle;
+  contactItems: string[];
+  sourcePrompt?: string;
+};
+
 type GeneratorResponse = {
   html: string;
   css: string;
@@ -71,6 +115,17 @@ type EditableTextSelection = {
   sectionId: string;
 };
 
+const CONTACT_ITEM_OPTIONS = [
+  "telefon",
+  "email",
+  "adresa kanceláře",
+  "otevírací doba",
+  "mapa",
+  "kontaktní formulář",
+  "sociální sítě",
+  "IČ / firemní údaje",
+];
+
 const GENERATE_LOADING_MESSAGES = [
   "Rozumím zadání…",
   "Analyzuji obor a cílový dojem…",
@@ -95,6 +150,19 @@ const IMPROVE_LOADING_MESSAGES = [
   "Aktualizuji sekce a CTA…",
   "Finalizuji upravený výstup…",
 ];
+
+function createDefaultPreferences(prompt = ""): GenerationPreferences {
+  return {
+    speedMode: "balanced",
+    layoutPreference: "auto",
+    visualStyle: "auto",
+    animationLevel: "subtle",
+    fontMood: "auto",
+    iconStyle: "auto",
+    contactItems: ["telefon", "email", "kontaktní formulář"],
+    sourcePrompt: prompt,
+  };
+}
 
 function prettifySectionLabel(id: string, type: string) {
   const source = type || id || "sekce";
@@ -617,24 +685,6 @@ function BuilderPlaceholder({ status }: { status: string }) {
                 </div>
               </div>
             </div>
-
-            <div className="mt-5 grid gap-5 md:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-[1.6rem] border border-white/10 bg-white/[0.03] p-5 animate-[zyviaPulse_3s_ease-in-out_infinite]"
-                  style={{ animationDelay: `${item * 0.16}s` }}
-                >
-                  <div className="mb-4 h-28 rounded-[1.2rem] border border-white/10 bg-gradient-to-br from-white/5 to-violet-400/5" />
-                  <div className="h-5 w-28 rounded-full bg-white/10" />
-                  <div className="mt-4 space-y-3">
-                    <div className="h-4 w-[90%] rounded-full bg-white/6" />
-                    <div className="h-4 w-[76%] rounded-full bg-white/6" />
-                    <div className="h-4 w-[64%] rounded-full bg-white/6" />
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="relative z-10 mt-6 border-t border-white/8 px-2 pt-6">
@@ -653,6 +703,235 @@ function BuilderPlaceholder({ status }: { status: string }) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GenerationBriefModal({
+  open,
+  value,
+  onClose,
+  onChange,
+  onSubmit,
+}: {
+  open: boolean;
+  value: GenerationPreferences;
+  onClose: () => void;
+  onChange: (next: GenerationPreferences) => void;
+  onSubmit: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 px-4 py-6">
+      <div className="w-full max-w-4xl rounded-[2rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <div className="text-lg font-semibold text-white">
+              Upřesnit generování webu
+            </div>
+            <div className="mt-1 text-sm text-zinc-400">
+              Tohle je nová vrstva briefu. Díky ní bude generátor tvořit výrazně
+              odlišnější layouty, fonty, animace i ikonografii.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Zavřít"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
+          >
+            <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
+          </button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <div className="mb-2 text-sm font-medium text-white">
+              Chcete rychlý web, nebo pomalejší generování s lepším výsledkem?
+            </div>
+            <select
+              value={value.speedMode}
+              onChange={(e) =>
+                onChange({ ...value, speedMode: e.target.value as SpeedMode })
+              }
+              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="fast">Rychlý</option>
+              <option value="balanced">Vyvážený</option>
+              <option value="premium">Pomalejší, ale lepší</option>
+            </select>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <div className="mb-2 text-sm font-medium text-white">
+              Jaký layout chcete preferovat?
+            </div>
+            <select
+              value={value.layoutPreference}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  layoutPreference: e.target.value as LayoutPreference,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="auto">Auto / překvap mě</option>
+              <option value="editorial">Editorial</option>
+              <option value="split">Split screen</option>
+              <option value="asymmetrical">Asymetrický</option>
+              <option value="story">Storytelling</option>
+              <option value="grid">Grid / business</option>
+              <option value="luxury">Luxury / premium</option>
+            </select>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <div className="mb-2 text-sm font-medium text-white">
+              Jaký vizuální styl chcete?
+            </div>
+            <select
+              value={value.visualStyle}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  visualStyle: e.target.value as VisualStyle,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="auto">Auto</option>
+              <option value="clean">Čistý</option>
+              <option value="premium">Premium</option>
+              <option value="bold">Výrazný</option>
+              <option value="editorial">Editorial</option>
+              <option value="luxury">Luxury</option>
+              <option value="playful">Hravý</option>
+            </select>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <div className="mb-2 text-sm font-medium text-white">
+              Jak moc animací?
+            </div>
+            <select
+              value={value.animationLevel}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  animationLevel: e.target.value as AnimationLevel,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="minimal">Minimálně</option>
+              <option value="subtle">Jemně</option>
+              <option value="rich">Více animací</option>
+              <option value="expressive">Výrazně a efektně</option>
+            </select>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <div className="mb-2 text-sm font-medium text-white">
+              Jaký font mood chcete?
+            </div>
+            <select
+              value={value.fontMood}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  fontMood: e.target.value as FontMood,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="auto">Auto</option>
+              <option value="geometric">Geometric</option>
+              <option value="editorial">Editorial</option>
+              <option value="luxury">Luxury</option>
+              <option value="trustworthy">Důvěryhodný</option>
+              <option value="tech">Tech</option>
+              <option value="friendly">Friendly</option>
+            </select>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <div className="mb-2 text-sm font-medium text-white">
+              Jaké ikony chcete?
+            </div>
+            <select
+              value={value.iconStyle}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  iconStyle: e.target.value as IconStyle,
+                })
+              }
+              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="auto">Auto</option>
+              <option value="minimal">Minimal</option>
+              <option value="outlined">Outlined</option>
+              <option value="solid">Solid</option>
+              <option value="custom">Custom / dekorativní</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+          <div className="mb-3 text-sm font-medium text-white">
+            Jaké informace chcete zobrazit v kontaktech?
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {CONTACT_ITEM_OPTIONS.map((item) => {
+              const active = value.contactItems.includes(item);
+
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...value,
+                      contactItems: active
+                        ? value.contactItems.filter((entry) => entry !== item)
+                        : [...value.contactItems, item],
+                    })
+                  }
+                  className={`rounded-full border px-3 py-2 text-xs transition ${
+                    active
+                      ? "border-cyan-400/30 bg-cyan-500/10 text-white"
+                      : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                >
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+          >
+            Zavřít
+          </button>
+
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-5 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+          >
+            Potvrdit a generovat
+          </button>
         </div>
       </div>
     </div>
@@ -697,6 +976,13 @@ export default function AiEditorPage() {
   const [textModalOpen, setTextModalOpen] = useState(false);
   const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
   const [editedTextValue, setEditedTextValue] = useState("");
+
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
+  const [draftPreferences, setDraftPreferences] = useState<GenerationPreferences>(
+    createDefaultPreferences("")
+  );
+  const [confirmedPreferences, setConfirmedPreferences] =
+    useState<GenerationPreferences | null>(null);
 
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
@@ -796,6 +1082,7 @@ export default function AiEditorPage() {
 
     if (initialPrompt) {
       setPrompt(initialPrompt);
+      setDraftPreferences(createDefaultPreferences(initialPrompt));
       setMessages((prev) => [
         ...prev,
         {
@@ -811,7 +1098,7 @@ export default function AiEditorPage() {
       sessionStorage.removeItem("ai_webgen_autostart");
 
       setTimeout(() => {
-        handleGenerate(initialPrompt);
+        setBriefModalOpen(true);
       }, 300);
     }
   }, []);
@@ -944,9 +1231,35 @@ export default function AiEditorPage() {
     }
   }
 
-  async function handleGenerate(customPrompt?: string) {
+  function openBriefModalForPrompt() {
+    const next = createDefaultPreferences(prompt.trim() || prompt);
+    setDraftPreferences((prev) => ({
+      ...next,
+      ...prev,
+      sourcePrompt: prompt.trim() || prompt,
+    }));
+    setBriefModalOpen(true);
+  }
+
+  async function handleGenerate(customPrompt?: string, forcedPrefs?: GenerationPreferences) {
     const finalPrompt = (customPrompt ?? prompt).trim();
     if (finalPrompt.length < 12) return;
+
+    const effectivePrefs =
+      forcedPrefs ||
+      (confirmedPreferences?.sourcePrompt === finalPrompt
+        ? confirmedPreferences
+        : null);
+
+    if (!effectivePrefs) {
+      setDraftPreferences((prev) => ({
+        ...createDefaultPreferences(finalPrompt),
+        ...prev,
+        sourcePrompt: finalPrompt,
+      }));
+      setBriefModalOpen(true);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -968,6 +1281,7 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: finalPrompt,
+          generationPreferences: effectivePrefs,
           chatHistory: getChatHistoryPayload(),
         }),
       });
@@ -992,7 +1306,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Klikni na sekci nebo přímo na text v náhledu a proveď úpravu.",
+          text: "Návrh je připraven. Teď už můžeš klikat na sekce, upravovat texty a iterovat design.",
         },
       ]);
 
@@ -1139,7 +1453,7 @@ export default function AiEditorPage() {
     const sectionName = selectedSectionMeta.label;
     const prompts: Record<typeof type, string> = {
       text: `Uprav texty v sekci ${sectionName}, aby byly přesvědčivější a lépe strukturované.`,
-      visual: `Vylepši vizuál sekce ${sectionName}, přidej lepší hierarchii, spacing a výraznější kompozici.`,
+      visual: `Vylepši vizuál sekce ${sectionName}, přidej lepší hierarchii, spacing, animace a výraznější kompozici.`,
       regenerate: `Přegeneruj sekci ${sectionName} v novém, kvalitnějším layoutu, ale zachovej celkový styl webu.`,
     };
 
@@ -1260,6 +1574,15 @@ export default function AiEditorPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
+                onClick={openBriefModalForPrompt}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-sm text-violet-200 transition hover:bg-violet-500/15"
+              >
+                <Icon icon="solar:settings-linear" width={16} />
+                Brief
+              </button>
+
+              <button
+                type="button"
                 onClick={focusEditInput}
                 disabled={!html}
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
@@ -1314,6 +1637,20 @@ export default function AiEditorPage() {
                       </div>
                     )}
                   </div>
+
+                  {confirmedPreferences && (
+                    <div className="mb-3 rounded-2xl border border-violet-500/20 bg-violet-500/10 p-3 text-xs text-violet-100">
+                      <div className="mb-1 font-medium text-white">
+                        Aktivní brief
+                      </div>
+                      <div>
+                        {confirmedPreferences.layoutPreference} •{" "}
+                        {confirmedPreferences.visualStyle} •{" "}
+                        {confirmedPreferences.fontMood} •{" "}
+                        {confirmedPreferences.animationLevel}
+                      </div>
+                    </div>
+                  )}
 
                   {selectedSectionMeta && (
                     <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3">
@@ -1440,14 +1777,14 @@ export default function AiEditorPage() {
 
                       <div className="mt-3 text-xs leading-6 text-zinc-500">
                         {loading
-                          ? "Probíhá generování layoutu."
+                          ? "Probíhá generování layoutu podle rozšířeného briefu."
                           : improving
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráš konkrétní sekce nebo texty pro úpravy."
-                          : "Klikni do náhledu na konkrétní sekci nebo text, který chceš upravit."}
+                          : "Nejdřív si můžeš otevřít Brief a určit layout, fonty, animace a kontaktní obsah."}
                       </div>
                     </div>
 
@@ -1661,6 +1998,31 @@ export default function AiEditorPage() {
           </main>
         </div>
       </div>
+
+      <GenerationBriefModal
+        open={briefModalOpen}
+        value={draftPreferences}
+        onClose={() => setBriefModalOpen(false)}
+        onChange={setDraftPreferences}
+        onSubmit={() => {
+          const finalPrefs = {
+            ...draftPreferences,
+            sourcePrompt: prompt.trim() || prompt,
+          };
+
+          setConfirmedPreferences(finalPrefs);
+          setBriefModalOpen(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `brief-confirmed-${Date.now()}`,
+              role: "system",
+              text: `Brief potvrzen: ${finalPrefs.layoutPreference}, ${finalPrefs.visualStyle}, ${finalPrefs.fontMood}, ${finalPrefs.animationLevel}.`,
+            },
+          ]);
+          void handleGenerate(undefined, finalPrefs);
+        }}
+      />
 
       {textModalOpen && selectedText && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
