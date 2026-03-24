@@ -33,6 +33,7 @@ type LayoutPreference =
   | "story"
   | "grid"
   | "luxury";
+
 type VisualStyle =
   | "auto"
   | "clean"
@@ -41,7 +42,9 @@ type VisualStyle =
   | "editorial"
   | "luxury"
   | "playful";
+
 type AnimationLevel = "minimal" | "subtle" | "rich" | "expressive";
+
 type FontMood =
   | "auto"
   | "geometric"
@@ -50,12 +53,21 @@ type FontMood =
   | "trustworthy"
   | "tech"
   | "friendly";
+
 type IconStyle =
   | "auto"
   | "minimal"
   | "outlined"
   | "solid"
   | "custom";
+
+type DesignReference =
+  | "auto"
+  | "fintech-neon"
+  | "signal-orchestration"
+  | "angled-enterprise"
+  | "cinematic-resort"
+  | "luxury-editorial";
 
 type GenerationPreferences = {
   speedMode?: SpeedMode;
@@ -64,6 +76,7 @@ type GenerationPreferences = {
   animationLevel?: AnimationLevel;
   fontMood?: FontMood;
   iconStyle?: IconStyle;
+  designReference?: DesignReference;
   contactItems?: string[];
 };
 
@@ -97,14 +110,13 @@ function logStep(
 }
 
 function makeDeterministicChoice<T>(input: string, items: T[]): T {
-  const safeItems = items.length ? items : ["" as T];
   let hash = 0;
 
   for (let i = 0; i < input.length; i += 1) {
     hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
   }
 
-  return safeItems[hash % safeItems.length];
+  return items[hash % items.length];
 }
 
 function resolveCreativeDirection(
@@ -140,10 +152,32 @@ function resolveCreativeDirection(
 
   const iconPool: IconStyle[] = ["minimal", "outlined", "solid", "custom"];
 
+  const designReferencePool: DesignReference[] = [
+    "fintech-neon",
+    "signal-orchestration",
+    "angled-enterprise",
+    "cinematic-resort",
+    "luxury-editorial",
+  ];
+
+  const layoutSeedPool = [
+    "hero-left-ui-right",
+    "hero-center-dashboard-below",
+    "full-bleed-photo-editorial",
+    "angled-band-hero",
+    "stacked-storyflow",
+    "asymmetric-panel-composition",
+  ];
+
   const fallbackLayout = makeDeterministicChoice(`${prompt}-layout`, layoutPool);
   const fallbackVisual = makeDeterministicChoice(`${prompt}-visual`, visualPool);
   const fallbackFont = makeDeterministicChoice(`${prompt}-font`, fontPool);
   const fallbackIcon = makeDeterministicChoice(`${prompt}-icon`, iconPool);
+  const fallbackReference = makeDeterministicChoice(
+    `${prompt}-reference`,
+    designReferencePool
+  );
+  const layoutSeed = makeDeterministicChoice(`${prompt}-seed`, layoutSeedPool);
 
   return {
     speedMode: prefs.speedMode || "balanced",
@@ -164,8 +198,78 @@ function resolveCreativeDirection(
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
         : fallbackIcon,
+    designReference:
+      prefs.designReference && prefs.designReference !== "auto"
+        ? prefs.designReference
+        : fallbackReference,
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
+    layoutSeed,
   };
+}
+
+function getDesignReferenceRecipe(designReference: DesignReference) {
+  switch (designReference) {
+    case "fintech-neon":
+      return `
+REFERENCE FAMILY: FINTECH NEON
+- dark premium fintech look
+- deep navy / black base with electric cyan, indigo or violet accents
+- luminous vertical beams, soft glow columns or layered light bars
+- large conversion headline on one side
+- product / analytics / payment mockups on the other side
+- pill navigation, glassy panels, elegant CTA glow
+- tech-enterprise polish, not gamer aesthetic
+- sections can include dashboards, pricing, APIs, trust, platform blocks
+`;
+    case "signal-orchestration":
+      return `
+REFERENCE FAMILY: SIGNAL ORCHESTRATION
+- dark interface-led system design
+- glass navigation, cyan / teal glow, HUD feeling
+- radial arcs, rings, targeting lines, orchestration grid overlays
+- central hero with strong system-message headline
+- large product panel or observability dashboard below hero
+- elegant glowing dividers, segmented panels, data widgets
+- feels like high-end infrastructure / automation / orchestration software
+`;
+    case "angled-enterprise":
+      return `
+REFERENCE FAMILY: ANGLED ENTERPRISE
+- bold enterprise composition with slanted / angled section edges
+- dark premium sections separated by diagonal transitions
+- very strong content bands
+- large statistic rows and trust indicators
+- orbital glow, subtle sci-fi depth, but clean business readability
+- powerful sections for scale, uptime, compliance, platform, integrations
+`;
+    case "cinematic-resort":
+      return `
+REFERENCE FAMILY: CINEMATIC RESORT
+- immersive full-screen photography
+- editorial luxury composition
+- oversized condensed or elegant display headline
+- minimal top navigation
+- atmospheric overlays, dark transparent gradients, cinematic mood
+- overlay card modules, floating editorial content blocks
+- sections should feel luxurious, serene, tactile and experiential
+`;
+    case "luxury-editorial":
+      return `
+REFERENCE FAMILY: LUXURY EDITORIAL
+- premium editorial composition
+- refined serif or contrast typography
+- strong image-led sections
+- asymmetry, generous spacing, layered cards and elegant separators
+- refined call-to-action treatment
+- feels like boutique brand, high-end real estate, luxury services or hospitality
+`;
+    default:
+      return `
+REFERENCE FAMILY: AUTO
+- choose the strongest fitting premium commercial family for the business
+- do not fall back to a generic template
+`;
+  }
 }
 
 async function createStructuredObject<T>({
@@ -352,18 +456,10 @@ OUTPUT RULES:
 - include a CTA button in the main navigation
 - footer must be complete and visually polished
 
-LAYOUT VARIETY RULES:
-- DO NOT default to the same structure every time
-- DO NOT always make "hero + 3 stat cards + image + generic services grid"
-- choose a composition that strongly reflects the requested layout direction
-- possible layout directions include:
-  - editorial storytelling
-  - split-screen conversion hero
-  - asymmetrical luxury composition
-  - strong grid-based business layout
-  - section-led narrative flow
-  - premium magazine-like real estate rhythm
-- make this generation clearly distinct from common previous outputs
+DO NOT GENERATE THE SAME DEFAULT LAYOUT:
+- avoid repeating the same generic hero + cards + services pattern
+- strongly commit to one design family and one layout system
+- make the composition visibly distinct
 
 SELECTED CREATIVE DIRECTION:
 - Speed mode: ${params.preferences.speedMode}
@@ -372,50 +468,64 @@ SELECTED CREATIVE DIRECTION:
 - Animation level: ${params.preferences.animationLevel}
 - Font mood: ${params.preferences.fontMood}
 - Icon style: ${params.preferences.iconStyle}
+- Design reference: ${params.preferences.designReference}
+- Layout seed: ${params.preferences.layoutSeed}
 - Contact items to show: ${
     params.preferences.contactItems.length
       ? params.preferences.contactItems.join(", ")
       : "phone, email, office, CTA form"
   }
 
+${getDesignReferenceRecipe(params.preferences.designReference)}
+
+LAYOUT SYSTEM RULES:
+- use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
+- examples of acceptable layout systems:
+  - hero-left + product-UI-right
+  - centered hero + control panel below
+  - immersive image-first editorial hero
+  - dark angled band sections
+  - layered narrative flow with alternating section directions
+  - asymmetrical luxury panel rhythm
+- do not flatten everything into the same rectangular rhythm
+
 FONT DIRECTION RULES:
-- use CSS font stacks that match the mood
-- geometric: clean modern sans feeling
+- use CSS font stacks that visually suggest the chosen mood
+- geometric: clean modern sans
 - editorial: elegant serif headlines + neutral body
-- luxury: refined contrast, premium serif display feeling
-- trustworthy: humanist / calm professional feel
-- tech: precise modern UI font feeling
-- friendly: soft approachable rounded feeling
-- use font styling differences visibly across different industries
+- luxury: refined contrast display feeling
+- trustworthy: calm professional humanist feeling
+- tech: precise UI-driven modern feel
+- friendly: softer approachable tone
 
 ICON RULES:
-- create beautiful inline SVG icons directly in the HTML where useful
+- create elegant inline SVG icons directly in the HTML where useful
 - icon style must match: ${params.preferences.iconStyle}
-- icons should feel custom and premium, not generic emoji
-- use icons in benefits, trust points, process, contact or stats if meaningful
+- icons should feel custom and premium
+- use icons in benefits, trust points, process, stats or contact where meaningful
 
 ANIMATION RULES:
 - use ${params.preferences.animationLevel} animation intensity
-- minimal: mostly hover only
-- subtle: elegant transitions and light reveal effects
-- rich: reveal effects, button motion, animated gradients or moving accents
-- expressive: stronger motion, animated borders, layered effects, premium hero movement
-- keep animations tasteful and performant
+- minimal: mainly hover and tiny transitions
+- subtle: tasteful reveal and CTA motion
+- rich: reveal effects, animated highlights, gradient movement, card motion
+- expressive: stronger motion, animated borders, layered glows, premium hero movement
+- keep animations performant and elegant
 - use IntersectionObserver for reveal effects when useful
-- buttons, borders, highlights, gradients and cards may animate if done elegantly
 
-VISUAL DESIGN RULES:
-- adapt styling to the industry
-- legal / consulting: structured, elegant, authoritative
-- real estate: editorial luxury, premium imagery, refined spacing
-- healthcare: trustworthy, light, calm and clean
-- tech / SaaS: sharper UI, stronger product feel
-- beauty / premium: softer, refined, more atmospheric
-- do not create giant empty spaces
-- use stronger composition and section rhythm
-- create more visually different blocks across sections
-- combine surfaces, lines, gradients, subtle glows, borders, dividers and layered backgrounds where appropriate
-- do not make every section the same card grid
+VISUAL DEVICE RULES:
+- use stronger decorative systems where appropriate:
+  - moving gradient orbs
+  - soft light columns / light beams
+  - grid overlays
+  - glass surfaces
+  - radial arcs
+  - orbital glow rings
+  - angled separators
+  - cinematic overlays
+  - floating UI cards
+  - premium bordered chips
+- not all at once; choose a coherent set for the selected family
 
 COPY RULES:
 - use Czech copy
@@ -423,7 +533,7 @@ COPY RULES:
 - prefer roughly 3 to 8 words in the main hero headline
 - supporting text should stay concise
 - avoid lorem ipsum
-- make sections feel relevant to the business, not generic filler
+- make sections relevant to the business, not filler
 
 IMAGE RULES:
 - also return assetPlan with at most 4 realistic images
@@ -452,9 +562,10 @@ FINAL QA:
 - working mobile menu
 - responsive desktop, tablet and mobile
 - balanced layout
-- clear layout distinctiveness
+- visible design distinctiveness
+- strong compositional identity
 - custom-feeling icons
-- stronger animation detail
+- richer motion and detail
 - short strong hero headline
 `;
 }
@@ -517,7 +628,7 @@ export async function POST(req: Request) {
         chatHistory,
         preferences: resolvedPreferences,
       }),
-      schemaName: "website_bundle_two_step_v2",
+      schemaName: "website_bundle_reference_families_v3",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -548,8 +659,8 @@ export async function POST(req: Request) {
       brief: {
         industry: "",
         audience: "",
-        style: `${resolvedPreferences.visualStyle} • ${resolvedPreferences.fontMood}`,
-        layoutTone: `${resolvedPreferences.layoutPreference} • ${resolvedPreferences.animationLevel}`,
+        style: `${resolvedPreferences.visualStyle} • ${resolvedPreferences.fontMood} • ${resolvedPreferences.designReference}`,
+        layoutTone: `${resolvedPreferences.layoutPreference} • ${resolvedPreferences.animationLevel} • ${resolvedPreferences.layoutSeed}`,
       },
       assets: [],
       twoStepMode: true,
