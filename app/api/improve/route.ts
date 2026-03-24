@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
