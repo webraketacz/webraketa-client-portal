@@ -29,7 +29,7 @@ type ResolvedAsset = {
   slot: string;
   url: string;
   alt: string;
-  source: "pexels" | "fallback";
+  source: "pexels" | "unsplash" | "fallback";
   photographer?: string;
   photographerUrl?: string;
 };
@@ -38,6 +38,12 @@ type ImprovePlan = {
   changeSummary: string;
   preserveRules: string[];
   imageRefreshPlan: ImagePlanItem[];
+};
+
+type IndustryImageRules = {
+  preferred: string[];
+  banned: string[];
+  fallbackQueries: string[];
 };
 
 function extractJson(raw: string) {
@@ -106,16 +112,279 @@ function fallbackImageUrl(
   return `https://picsum.photos/seed/${seed}/${size}`;
 }
 
-async function searchPexelsImage(
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getIndustryImageRules(industry: string, prompt: string): IndustryImageRules {
+  const text = normalizeText(`${industry} ${prompt}`);
+
+  if (
+    text.includes("prav") ||
+    text.includes("advokat") ||
+    text.includes("law") ||
+    text.includes("legal") ||
+    text.includes("attorney") ||
+    text.includes("notar")
+  ) {
+    return {
+      preferred: [
+        "lawyer",
+        "attorney",
+        "legal",
+        "law office",
+        "office",
+        "consultation",
+        "meeting",
+        "business",
+        "corporate",
+        "documents",
+        "desk",
+        "interior",
+        "professional",
+        "team",
+        "client",
+      ],
+      banned: [
+        "mountain",
+        "mountains",
+        "forest",
+        "nature",
+        "beach",
+        "landscape",
+        "waterfall",
+        "hiking",
+        "travel",
+        "animal",
+        "dog",
+        "cat",
+        "camping",
+        "lake",
+      ],
+      fallbackQueries: [
+        "lawyer office consultation",
+        "attorney meeting client",
+        "law firm interior",
+        "legal documents desk",
+        "professional lawyer portrait",
+      ],
+    };
+  }
+
+  if (
+    text.includes("klin") ||
+    text.includes("doktor") ||
+    text.includes("ambul") ||
+    text.includes("medical") ||
+    text.includes("health") ||
+    text.includes("doctor")
+  ) {
+    return {
+      preferred: [
+        "doctor",
+        "medical",
+        "clinic",
+        "healthcare",
+        "consultation",
+        "patient",
+        "interior",
+        "clean",
+        "professional",
+        "nurse",
+        "team",
+      ],
+      banned: [
+        "mountain",
+        "forest",
+        "beach",
+        "landscape",
+        "travel",
+        "dog",
+        "cat",
+        "car",
+        "motorcycle",
+      ],
+      fallbackQueries: [
+        "doctor consultation clinic",
+        "modern clinic interior",
+        "healthcare professional portrait",
+        "medical team clean environment",
+      ],
+    };
+  }
+
+  if (
+    text.includes("saas") ||
+    text.includes("startup") ||
+    text.includes("software") ||
+    text.includes("tech") ||
+    text.includes("app")
+  ) {
+    return {
+      preferred: [
+        "dashboard",
+        "software",
+        "technology",
+        "startup",
+        "team",
+        "office",
+        "laptop",
+        "workspace",
+        "product",
+        "interface",
+        "developer",
+      ],
+      banned: [
+        "mountain",
+        "forest",
+        "beach",
+        "waterfall",
+        "wedding",
+        "dog",
+        "cat",
+        "farm",
+      ],
+      fallbackQueries: [
+        "modern saas dashboard",
+        "startup team office",
+        "technology workspace laptop",
+        "software product interface",
+      ],
+    };
+  }
+
+  if (
+    text.includes("realit") ||
+    text.includes("reality") ||
+    text.includes("property") ||
+    text.includes("estate")
+  ) {
+    return {
+      preferred: [
+        "interior",
+        "property",
+        "apartment",
+        "real estate",
+        "home",
+        "building",
+        "architecture",
+        "luxury",
+        "office",
+      ],
+      banned: ["forest", "mountain", "waterfall", "dog", "cat", "travel"],
+      fallbackQueries: [
+        "luxury apartment interior",
+        "modern real estate office",
+        "premium property exterior",
+        "architectural building facade",
+      ],
+    };
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("hotel") ||
+    text.includes("cafe") ||
+    text.includes("gastro")
+  ) {
+    return {
+      preferred: [
+        "restaurant",
+        "food",
+        "chef",
+        "interior",
+        "dining",
+        "table",
+        "hospitality",
+        "kitchen",
+        "coffee",
+      ],
+      banned: ["mountain", "forest", "office documents", "lawyer", "dashboard"],
+      fallbackQueries: [
+        "restaurant interior premium",
+        "chef preparing food",
+        "elegant dining table",
+        "cafe interior aesthetic",
+      ],
+    };
+  }
+
+  return {
+    preferred: [
+      "business",
+      "office",
+      "professional",
+      "interior",
+      "team",
+      "workspace",
+      "modern",
+      "meeting",
+      "client",
+    ],
+    banned: [
+      "mountain",
+      "forest",
+      "beach",
+      "waterfall",
+      "wildlife",
+      "animal",
+      "travel",
+      "camping",
+    ],
+    fallbackQueries: [
+      "modern business office",
+      "professional team meeting",
+      "premium office interior",
+      "client consultation office",
+    ],
+  };
+}
+
+function scoreImageRelevance(
+  alt: string,
+  query: string,
+  rules: IndustryImageRules
+): number {
+  const haystack = normalizeText(`${alt} ${query}`);
+
+  let score = 0;
+
+  for (const preferred of rules.preferred) {
+    if (haystack.includes(normalizeText(preferred))) {
+      score += 2;
+    }
+  }
+
+  for (const banned of rules.banned) {
+    if (haystack.includes(normalizeText(banned))) {
+      score -= 5;
+    }
+  }
+
+  return score;
+}
+
+function isImageRelevantForIndustry(
+  alt: string,
+  query: string,
+  rules: IndustryImageRules
+) {
+  return scoreImageRelevance(alt, query, rules) >= 1;
+}
+
+async function searchPexelsCandidates(
   query: string,
   orientation: "landscape" | "portrait" | "square"
-): Promise<ResolvedAsset | null> {
+) {
   const apiKey = process.env.PEXELS_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return [];
 
   const url = new URL("https://api.pexels.com/v1/search");
   url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "1");
+  url.searchParams.set("per_page", "5");
   url.searchParams.set("orientation", orientation);
 
   const res = await fetch(url.toString(), {
@@ -125,9 +394,7 @@ async function searchPexelsImage(
     cache: "no-store",
   });
 
-  if (!res.ok) {
-    return null;
-  }
+  if (!res.ok) return [];
 
   const data = (await res.json()) as {
     photos?: Array<{
@@ -142,42 +409,172 @@ async function searchPexelsImage(
     }>;
   };
 
-  const photo = data.photos?.[0];
-  const imageUrl =
-    photo?.src?.large2x || photo?.src?.large || photo?.src?.original || "";
+  return (data.photos || [])
+    .map((photo) => {
+      const imageUrl =
+        photo?.src?.large2x || photo?.src?.large || photo?.src?.original || "";
 
-  if (!photo || !imageUrl) {
-    return null;
-  }
+      if (!imageUrl) return null;
 
-  return {
-    slot: "",
-    url: imageUrl,
-    alt: photo.alt || query,
-    source: "pexels",
-    photographer: photo.photographer,
-    photographerUrl: photo.photographer_url,
-  };
+      return {
+        slot: "",
+        url: imageUrl,
+        alt: photo.alt || query,
+        source: "pexels" as const,
+        photographer: photo.photographer,
+        photographerUrl: photo.photographer_url,
+      };
+    })
+    .filter(Boolean) as ResolvedAsset[];
 }
 
-async function resolveImageAssets(imagePlan: ImagePlanItem[]): Promise<ResolvedAsset[]> {
+async function searchUnsplashCandidates(
+  query: string,
+  orientation: "landscape" | "portrait" | "square"
+) {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (!accessKey) return [];
+
+  const orientationMap =
+    orientation === "portrait"
+      ? "portrait"
+      : orientation === "square"
+      ? "squarish"
+      : "landscape";
+
+  const url = new URL("https://api.unsplash.com/search/photos");
+  url.searchParams.set("query", query);
+  url.searchParams.set("per_page", "5");
+  url.searchParams.set("orientation", orientationMap);
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Client-ID ${accessKey}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as {
+    results?: Array<{
+      alt_description?: string;
+      description?: string;
+      urls?: {
+        regular?: string;
+        full?: string;
+      };
+      user?: {
+        name?: string;
+        links?: {
+          html?: string;
+        };
+      };
+    }>;
+  };
+
+  return (data.results || [])
+    .map((photo) => {
+      const imageUrl = photo?.urls?.regular || photo?.urls?.full || "";
+      if (!imageUrl) return null;
+
+      return {
+        slot: "",
+        url: imageUrl,
+        alt: photo.alt_description || photo.description || query,
+        source: "unsplash" as const,
+        photographer: photo.user?.name,
+        photographerUrl: photo.user?.links?.html,
+      };
+    })
+    .filter(Boolean) as ResolvedAsset[];
+}
+
+async function findRelevantImage(params: {
+  query: string;
+  orientation: "landscape" | "portrait" | "square";
+  rules: IndustryImageRules;
+}) {
+  const pexelsCandidates = await searchPexelsCandidates(
+    params.query,
+    params.orientation
+  );
+
+  const bestPexels = pexelsCandidates
+    .sort(
+      (a, b) =>
+        scoreImageRelevance(b.alt, params.query, params.rules) -
+        scoreImageRelevance(a.alt, params.query, params.rules)
+    )
+    .find((candidate) =>
+      isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
+    );
+
+  if (bestPexels) return bestPexels;
+
+  const unsplashCandidates = await searchUnsplashCandidates(
+    params.query,
+    params.orientation
+  );
+
+  const bestUnsplash = unsplashCandidates
+    .sort(
+      (a, b) =>
+        scoreImageRelevance(b.alt, params.query, params.rules) -
+        scoreImageRelevance(a.alt, params.query, params.rules)
+    )
+    .find((candidate) =>
+      isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
+    );
+
+  if (bestUnsplash) return bestUnsplash;
+
+  return null;
+}
+
+async function resolveImageAssets(
+  imagePlan: ImagePlanItem[],
+  prompt: string
+): Promise<ResolvedAsset[]> {
   const limitedPlan = imagePlan.slice(0, 4);
+  const rules = getIndustryImageRules(prompt, prompt);
 
   const resolved = await Promise.all(
-    limitedPlan.map(async (item) => {
-      const pexels = await searchPexelsImage(item.query, item.orientation);
+    limitedPlan.map(async (item, index) => {
+      const directMatch = await findRelevantImage({
+        query: item.query,
+        orientation: item.orientation,
+        rules,
+      });
 
-      if (pexels) {
+      if (directMatch) {
         return {
-          ...pexels,
+          ...directMatch,
           slot: item.slot,
+        };
+      }
+
+      const safeFallbackQuery =
+        rules.fallbackQueries[index % rules.fallbackQueries.length];
+
+      const saferMatch = await findRelevantImage({
+        query: safeFallbackQuery,
+        orientation: item.orientation,
+        rules,
+      });
+
+      if (saferMatch) {
+        return {
+          ...saferMatch,
+          slot: item.slot,
+          alt: saferMatch.alt || safeFallbackQuery,
         };
       }
 
       return {
         slot: item.slot,
-        url: fallbackImageUrl(item.query, item.orientation),
-        alt: item.query,
+        url: fallbackImageUrl(safeFallbackQuery, item.orientation),
+        alt: safeFallbackQuery,
         source: "fallback" as const,
       };
     })
@@ -234,7 +631,7 @@ Pravidla:
 - pokud chybí kvalitní mobilní menu, ber to jako chybu k opravě
 - pokud footer působí slabě, zahrň to do changeSummary
 - pokud tablet spacing nebo menu zalamování působí špatně, zahrň to do changeSummary
-- pokud obrázky významově nesedí, navrhni nové
+- pokud obrázky významově nesedí, navrhni konkrétnější image queries
 - pokud je hlavní hero headline zbytečně dlouhý, zahrň jeho zkrácení do changeSummary
 
 PŮVODNÍ PROMPT:
@@ -294,7 +691,6 @@ Return this exact JSON shape:
 
 TASK:
 You are improving an existing website bundle, not blindly recreating a new one from zero.
-Preserve the strong parts. Apply the requested changes with precision.
 
 CRITICAL OUTPUT RULES:
 - html must contain ONLY the body markup content
@@ -302,10 +698,8 @@ CRITICAL OUTPUT RULES:
 - do not return <html>, <head> or <body>
 - css must contain ALL styling needed for the website
 - js must contain vanilla JavaScript only
-- do not use external libraries
 - keep semantic sections with data-section-id and data-section-type
 - maintain responsive layout
-- preserve working structure unless the instruction requires structural change
 - keep a complete polished navigation with CTA
 - keep or improve a working mobile hamburger menu
 - keep or improve a premium footer
@@ -340,38 +734,9 @@ ${params.js}
 IMPROVEMENT RULES:
 - preserve the good parts of the design
 - improve visual quality where needed
-- improve spacing, hierarchy, contrast and clarity
 - if new images are provided and relevant, use them meaningfully
-- do not break the page
-- do not remove major sections unless clearly requested
-- keep the website polished and production-like
 - use Czech copy
-- maintain or improve responsiveness
-- improve tablet spacing and menu behavior if needed
-- strengthen footer if it feels weak
-- avoid repeating the same rounded card language everywhere if the design needs more variety
-- use industry-appropriate typography and shape logic
 - shorten an overly long hero headline when needed
-- prefer cleaner and shorter section titles where possible
-
-ANTI-GAP RULES:
-- remove dead space and awkward empty areas
-- if an image block feels too empty around it, add supporting content or rebalance the composition
-- avoid oversized containers with not enough content inside
-- ensure sections feel intentionally composed
-- fix layouts where image and text do not feel proportionally balanced
-- avoid large blank areas under images, cards or stat blocks
-
-NAVIGATION RULES:
-- keep at least one strong CTA button in navigation
-- ensure mobile hamburger menu works with JavaScript
-- mobile menu should open and close cleanly
-- tablet spacing and wrapping must feel polished
-
-FOOTER RULES:
-- footer must feel complete and premium
-- include meaningful link groups or structured footer information when suitable
-- footer should not feel like an afterthought
 
 FINAL QA BEFORE OUTPUT:
 - no obvious empty spaces
@@ -398,8 +763,6 @@ function selfCheckPrompt(params: {
   return `
 You are a brutally honest senior web design QA reviewer and frontend fixer.
 
-Review the improved website bundle and repair any remaining weak points.
-
 Return ONLY a valid JSON object:
 {
   "html": "string",
@@ -411,7 +774,6 @@ IMPORTANT:
 - Preserve the intended user change
 - Fix layout weaknesses
 - Fix empty/dead spaces
-- Fix weak hero or section composition
 - Fix incomplete or weak navigation
 - Fix incomplete or weak footer
 - Ensure mobile hamburger menu works
@@ -419,16 +781,6 @@ IMPORTANT:
 - Keep Czech copy
 - Keep semantic sections and metadata
 - Return final repaired bundle only
-
-CHECKLIST:
-- premium header
-- premium footer
-- tablet spacing
-- mobile menu
-- industry-appropriate typography and shape language
-- no repetitive lazy box treatment
-- enough content density and section richness
-- shorter and cleaner hero headline if needed
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -511,7 +863,7 @@ export async function POST(req: Request) {
     const plannerText = cleanJsonOutput(planner.output_text?.trim() ?? "");
     const plan = JSON.parse(extractJson(plannerText)) as ImprovePlan;
 
-    const assets = await resolveImageAssets(plan.imageRefreshPlan || []);
+    const assets = await resolveImageAssets(plan.imageRefreshPlan || [], prompt);
 
     const improvedBundle = await runJsonModel(
       improveRenderPrompt({
