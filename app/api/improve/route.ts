@@ -25,6 +25,12 @@ type WebsiteBundle = {
   js: string;
 };
 
+type SectionBundle = {
+  sectionHtml: string;
+  sectionCss: string;
+  sectionJs: string;
+};
+
 type ResolvedAsset = {
   slot: string;
   url: string;
@@ -122,15 +128,15 @@ const improvePlanSchema = {
   required: ["changeSummary", "preserveRules", "imageRefreshPlan"],
 };
 
-const websiteBundleSchema = {
+const sectionBundleSchema = {
   type: "object",
   additionalProperties: false,
   properties: {
-    html: { type: "string" },
-    css: { type: "string" },
-    js: { type: "string" },
+    sectionHtml: { type: "string" },
+    sectionCss: { type: "string" },
+    sectionJs: { type: "string" },
   },
-  required: ["html", "css", "js"],
+  required: ["sectionHtml", "sectionCss", "sectionJs"],
 };
 
 function cleanCodeBlock(raw: string) {
@@ -156,6 +162,22 @@ function sanitizeBundle(bundle: WebsiteBundle): WebsiteBundle {
     html,
     css,
     js,
+  };
+}
+
+function sanitizeSectionBundle(bundle: SectionBundle): SectionBundle {
+  const sectionHtml = cleanCodeBlock(bundle.sectionHtml || "");
+  const sectionCss = cleanCodeBlock(bundle.sectionCss || "");
+  const sectionJs = cleanCodeBlock(bundle.sectionJs || "");
+
+  if (!sectionHtml) {
+    throw new Error("Výstup neobsahuje sectionHtml.");
+  }
+
+  return {
+    sectionHtml,
+    sectionCss,
+    sectionJs,
   };
 }
 
@@ -191,7 +213,14 @@ function normalizeText(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function getIndustryImageRules(industry: string, prompt: string): IndustryImageRules {
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getIndustryImageRules(
+  industry: string,
+  prompt: string
+): IndustryImageRules {
   const text = normalizeText(`${industry} ${prompt}`);
 
   if (
@@ -703,9 +732,121 @@ function formatChatHistory(history: ChatHistoryItem[]) {
     .join("\n");
 }
 
+function extractSectionById(html: string, sectionId: string) {
+  const escapedId = escapeRegExp(sectionId);
+  const sectionRegex = new RegExp(
+    `<section\\b[^>]*data-section-id=(["'])${escapedId}\\1[^>]*>[\\s\\S]*?<\\/section>`,
+    "i"
+  );
+
+  const match = html.match(sectionRegex);
+  return match?.[0] || null;
+}
+
+function replaceSectionById(params: {
+  html: string;
+  sectionId: string;
+  nextSectionHtml: string;
+}) {
+  const escapedId = escapeRegExp(params.sectionId);
+  const sectionRegex = new RegExp(
+    `<section\\b[^>]*data-section-id=(["'])${escapedId}\\1[^>]*>[\\s\\S]*?<\\/section>`,
+    "i"
+  );
+
+  if (!sectionRegex.test(params.html)) {
+    throw new Error(`Sekce "${params.sectionId}" nebyla v HTML nalezena.`);
+  }
+
+  return params.html.replace(sectionRegex, params.nextSectionHtml.trim());
+}
+
+function ensureSectionScope(sectionHtml: string, selectedSectionId: string) {
+  const normalized = sectionHtml.trim();
+
+  if (!normalized.startsWith("<section")) {
+    throw new Error("sectionHtml musí začínat tagem <section ...>.");
+  }
+
+  const requiredAttr = `data-section-id="${selectedSectionId}"`;
+  const requiredAttrAlt = `data-section-id='${selectedSectionId}'`;
+
+  if (
+    !normalized.includes(requiredAttr) &&
+    !normalized.includes(requiredAttrAlt)
+  ) {
+    throw new Error(
+      `sectionHtml musí obsahovat data-section-id="${selectedSectionId}".`
+    );
+  }
+
+  const allIds = [
+    ...normalized.matchAll(/data-section-id=(["'])(.*?)\1/g),
+  ].map((match) => match[2]);
+
+  const uniqueIds = Array.from(new Set(allIds));
+
+  if (uniqueIds.length > 1) {
+    throw new Error(
+      "AI vrátila více sekcí najednou. Povolená je pouze jedna vybraná sekce."
+    );
+  }
+
+  if (uniqueIds.length === 1 && uniqueIds[0] !== selectedSectionId) {
+    throw new Error(
+      `AI vrátila jinou sekci (${uniqueIds[0]}) místo ${selectedSectionId}.`
+    );
+  }
+}
+
+function stripManagedBlock(
+  content: string,
+  type: "css" | "js",
+  sectionId: string
+) {
+  const label = type === "css" ? "AI_SECTION_CSS" : "AI_SECTION_JS";
+  const escapedId = escapeRegExp(sectionId);
+  const blockRegex = new RegExp(
+    `\\n?/\\* ${label}:${escapedId}:start \\*/[\\s\\S]*?/\\* ${label}:${escapedId}:end \\*/\\n?`,
+    "g"
+  );
+
+  return content.replace(blockRegex, "\n").trim();
+}
+
+function upsertManagedBlock(params: {
+  content: string;
+  type: "css" | "js";
+  sectionId: string;
+  patch: string;
+}) {
+  const label = params.type === "css" ? "AI_SECTION_CSS" : "AI_SECTION_JS";
+  const cleanedBase = stripManagedBlock(
+    params.content || "",
+    params.type,
+    params.sectionId
+  ).trim();
+
+  const cleanedPatch = cleanCodeBlock(params.patch || "").trim();
+
+  if (!cleanedPatch) {
+    return cleanedBase;
+  }
+
+  const wrappedBlock = [
+    `/* ${label}:${params.sectionId}:start */`,
+    cleanedPatch,
+    `/* ${label}:${params.sectionId}:end */`,
+  ].join("\n");
+
+  return [cleanedBase, wrappedBlock].filter(Boolean).join("\n\n").trim();
+}
+
 function improvePlannerPrompt(params: {
   prompt: string;
   instruction: string;
+  selectedSectionId: string;
+  selectedSectionHtml: string;
   chatHistory?: ChatHistoryItem[];
   html: string;
   css: string;
@@ -714,21 +855,21 @@ function improvePlannerPrompt(params: {
   return `
 Jsi senior AI design editor a web creative director.
 
-Tvým úkolem je pochopit změnu, kterou uživatel chce provést nad již existujícím webem.
+Tvým úkolem je pochopit změnu, kterou uživatel chce provést nad JEDNOU konkrétní sekcí již existujícího webu.
 
 Vrať přesně strukturovaný JSON podle schématu.
 
-Pravidla:
-- preserveRules musí popsat, co se má zachovat
-- imageRefreshPlan vyplň jen pokud změna vyžaduje nové nebo lepší fotky
+DŮLEŽITÉ:
+- Upravuje se pouze sekce "${params.selectedSectionId}"
+- Nesmíš navrhovat změny, které vyžadují přegenerování celého webu
+- preserveRules musí výslovně připomínat, že vše mimo vybranou sekci se zachovává beze změny
+- imageRefreshPlan vyplň jen pokud změna vyžaduje nové nebo lepší fotky uvnitř této sekce
 - query piš anglicky
 - pokud nejsou nové fotky potřeba, vrať prázdné pole
-- pokud web obsahuje prázdná místa, nevyvážené bloky nebo slabé menu, zahrň to do changeSummary
-- pokud chybí kvalitní mobilní menu, ber to jako chybu k opravě
-- pokud footer působí slabě, zahrň to do changeSummary
-- pokud tablet spacing nebo menu zalamování působí špatně, zahrň to do changeSummary
-- pokud obrázky významově nesedí, navrhni konkrétnější image queries
-- pokud je hlavní hero headline zbytečně dlouhý, zahrň jeho zkrácení do changeSummary
+- pokud je instrukce čistě textová, nesnaž se předělávat layout mimo sekci
+- pokud jde o navigation sekci, řeš jen navigation
+- pokud jde o about sekci, řeš jen about
+- pokud jde o header/hero, řeš jen tuto konkrétní sekci
 
 PŮVODNÍ PROMPT:
 ${params.prompt}
@@ -736,10 +877,16 @@ ${params.prompt}
 INSTRUKCE UŽIVATELE:
 ${params.instruction}
 
+VYBRANÁ SEKCE:
+${params.selectedSectionId}
+
+HTML VYBRANÉ SEKCE:
+${params.selectedSectionHtml}
+
 HISTORIE CHATU:
 ${formatChatHistory(params.chatHistory || [])}
 
-AKTUÁLNÍ HTML:
+CELKOVÉ HTML WEBU (jen pro kontext, ne pro kompletní přepis):
 ${params.html}
 
 AKTUÁLNÍ CSS:
@@ -753,6 +900,8 @@ ${params.js}
 function improveRenderPrompt(params: {
   prompt: string;
   instruction: string;
+  selectedSectionId: string;
+  selectedSectionHtml: string;
   html: string;
   css: string;
   js: string;
@@ -775,26 +924,34 @@ You are an elite web designer and frontend engineer.
 
 Return ONLY a structured JSON object matching the schema.
 
-TASK:
-You are improving an existing website bundle, not blindly recreating a new one from zero.
+YOU ARE EDITING ONLY ONE SECTION OF AN EXISTING WEBSITE.
 
-CRITICAL OUTPUT RULES:
-- html must contain ONLY the body markup content
-- do not return <!DOCTYPE html>
-- do not return <html>, <head> or <body>
-- css must contain ALL styling needed for the website
-- js must contain vanilla JavaScript only
-- keep semantic sections with data-section-id and data-section-type
-- maintain responsive layout
-- keep a complete polished navigation with CTA
-- keep or improve a working mobile hamburger menu
-- keep or improve a premium footer
+CRITICAL RULES:
+- return ONLY sectionHtml, sectionCss and sectionJs
+- do NOT rewrite the whole page
+- do NOT output other sections
+- sectionHtml must contain exactly one root <section>
+- sectionHtml must keep data-section-id="${params.selectedSectionId}"
+- all changes must be limited to the selected section
+- everything outside the selected section will stay untouched
+- if you add CSS, scope it to [data-section-id="${params.selectedSectionId}"]
+- if you add JS, scope it to the selected section only
+- sectionCss and sectionJs may be empty strings if not needed
+- use Czech copy
+- preserve semantic structure
+- keep result production-safe
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
 
 CURRENT USER INSTRUCTION:
 ${params.instruction}
+
+SELECTED SECTION ID:
+${params.selectedSectionId}
+
+SELECTED SECTION HTML:
+${params.selectedSectionHtml}
 
 CHAT HISTORY:
 ${formatChatHistory(params.chatHistory || [])}
@@ -808,41 +965,33 @@ ${params.plan.preserveRules.join("\n")}
 NEW IMAGE ASSETS:
 ${assetsText}
 
-CURRENT HTML:
+FULL HTML FOR CONTEXT ONLY:
 ${params.html}
 
-CURRENT CSS:
+FULL CSS FOR CONTEXT ONLY:
 ${params.css}
 
-CURRENT JS:
+FULL JS FOR CONTEXT ONLY:
 ${params.js}
 
-IMPROVEMENT RULES:
-- preserve the good parts of the design
-- improve visual quality where needed
-- if new images are provided and relevant, use them meaningfully
-- use Czech copy
-- shorten an overly long hero headline when needed
-
 FINAL QA BEFORE OUTPUT:
-- no obvious empty spaces
-- complete navigation with CTA
-- complete footer
-- working mobile menu
-- polished tablet spacing
-- balanced hero and section compositions
-- coherent imagery
-- polished responsive result
-- short and strong hero headline
+- only the selected section is changed
+- sectionHtml contains exactly one section
+- data-section-id="${params.selectedSectionId}" remains present
+- no accidental edits to other sections
+- scoped CSS only
+- scoped JS only
 `;
 }
 
 function selfCheckPrompt(params: {
   prompt: string;
   instruction: string;
-  html: string;
-  css: string;
-  js: string;
+  selectedSectionId: string;
+  selectedSectionHtml: string;
+  sectionHtml: string;
+  sectionCss: string;
+  sectionJs: string;
 }) {
   return `
 You are a brutally honest senior web design QA reviewer and frontend fixer.
@@ -851,14 +1000,13 @@ Return ONLY a structured JSON object matching the schema.
 
 IMPORTANT:
 - Preserve the intended user change
-- Fix layout weaknesses
-- Fix empty/dead spaces
-- Fix incomplete or weak navigation
-- Fix incomplete or weak footer
-- Ensure mobile hamburger menu works
-- Ensure tablet spacing is polished
+- Keep edits limited ONLY to data-section-id="${params.selectedSectionId}"
+- sectionHtml must contain exactly one root section
+- sectionHtml must preserve data-section-id="${params.selectedSectionId}"
+- sectionCss must stay scoped to [data-section-id="${params.selectedSectionId}"]
+- sectionJs must only target the selected section
 - Keep Czech copy
-- Keep semantic sections and metadata
+- Do not touch any other page section
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -866,14 +1014,20 @@ ${params.prompt}
 USER INSTRUCTION:
 ${params.instruction}
 
-CURRENT HTML:
-${params.html}
+SELECTED SECTION ID:
+${params.selectedSectionId}
 
-CURRENT CSS:
-${params.css}
+ORIGINAL SELECTED SECTION HTML:
+${params.selectedSectionHtml}
 
-CURRENT JS:
-${params.js}
+CURRENT GENERATED sectionHtml:
+${params.sectionHtml}
+
+CURRENT GENERATED sectionCss:
+${params.sectionCss}
+
+CURRENT GENERATED sectionJs:
+${params.sectionJs}
 `;
 }
 
@@ -886,6 +1040,8 @@ export async function POST(req: Request) {
     const html = typeof body?.html === "string" ? body.html : "";
     const css = typeof body?.css === "string" ? body.css : "";
     const js = typeof body?.js === "string" ? body.js : "";
+    const selectedSectionId =
+      typeof body?.selectedSectionId === "string" ? body.selectedSectionId : "";
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
@@ -905,11 +1061,31 @@ export async function POST(req: Request) {
       return Response.json({ error: "Není co upravovat." }, { status: 400 });
     }
 
+    if (!selectedSectionId.trim()) {
+      return Response.json(
+        { error: "Chybí selectedSectionId. AI musí upravovat jen vybranou sekci." },
+        { status: 400 }
+      );
+    }
+
+    const selectedSectionHtml = extractSectionById(html, selectedSectionId);
+
+    if (!selectedSectionHtml) {
+      return Response.json(
+        {
+          error: `Vybraná sekce "${selectedSectionId}" nebyla v HTML nalezena.`,
+        },
+        { status: 400 }
+      );
+    }
+
     const plan = await createStructuredObject<ImprovePlan>({
       system: "You are a precise AI design editor. Return only valid JSON.",
       user: improvePlannerPrompt({
         prompt,
         instruction,
+        selectedSectionId,
+        selectedSectionHtml,
         chatHistory,
         html,
         css,
@@ -921,12 +1097,14 @@ export async function POST(req: Request) {
 
     const assets = await resolveImageAssets(plan.imageRefreshPlan || [], prompt);
 
-    const improvedBundle = await createStructuredObject<WebsiteBundle>({
+    const improvedSection = await createStructuredObject<SectionBundle>({
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
       user: improveRenderPrompt({
         prompt,
         instruction,
+        selectedSectionId,
+        selectedSectionHtml,
         html,
         css,
         js,
@@ -934,40 +1112,72 @@ export async function POST(req: Request) {
         plan,
         assets,
       }),
-      schemaName: "improve_bundle",
-      schema: websiteBundleSchema,
+      schemaName: "improve_section_bundle",
+      schema: sectionBundleSchema,
     });
 
-    const safeImproved = sanitizeBundle(improvedBundle);
+    const safeImprovedSection = sanitizeSectionBundle(improvedSection);
+    ensureSectionScope(safeImprovedSection.sectionHtml, selectedSectionId);
 
-    let safeFinal = safeImproved;
+    let safeFinalSection = safeImprovedSection;
 
     try {
-      const checkedBundle = await createStructuredObject<WebsiteBundle>({
+      const checkedSection = await createStructuredObject<SectionBundle>({
         system:
           "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON.",
         user: selfCheckPrompt({
           prompt,
           instruction,
-          html: safeImproved.html,
-          css: safeImproved.css,
-          js: safeImproved.js,
+          selectedSectionId,
+          selectedSectionHtml,
+          sectionHtml: safeImprovedSection.sectionHtml,
+          sectionCss: safeImprovedSection.sectionCss,
+          sectionJs: safeImprovedSection.sectionJs,
         }),
-        schemaName: "improve_bundle_checked",
-        schema: websiteBundleSchema,
+        schemaName: "improve_section_bundle_checked",
+        schema: sectionBundleSchema,
       });
 
-      safeFinal = sanitizeBundle(checkedBundle);
+      safeFinalSection = sanitizeSectionBundle(checkedSection);
+      ensureSectionScope(safeFinalSection.sectionHtml, selectedSectionId);
     } catch (selfCheckError) {
       console.error("Self-check pass failed in /api/improve:", selfCheckError);
-      safeFinal = safeImproved;
+      safeFinalSection = safeImprovedSection;
     }
 
+    const mergedHtml = replaceSectionById({
+      html,
+      sectionId: selectedSectionId,
+      nextSectionHtml: safeFinalSection.sectionHtml,
+    });
+
+    const mergedCss = upsertManagedBlock({
+      content: css,
+      type: "css",
+      sectionId: selectedSectionId,
+      patch: safeFinalSection.sectionCss,
+    });
+
+    const mergedJs = upsertManagedBlock({
+      content: js,
+      type: "js",
+      sectionId: selectedSectionId,
+      patch: safeFinalSection.sectionJs,
+    });
+
+    const safeFinalBundle = sanitizeBundle({
+      html: mergedHtml,
+      css: mergedCss || css,
+      js: mergedJs,
+    });
+
     return Response.json({
-      html: safeFinal.html,
-      css: safeFinal.css,
-      js: safeFinal.js,
+      html: safeFinalBundle.html,
+      css: safeFinalBundle.css,
+      js: safeFinalBundle.js,
       assets,
+      selectedSectionId,
+      changedOnlySelectedSection: true,
     });
   } catch (e: any) {
     console.error("/api/improve fatal error:", e);

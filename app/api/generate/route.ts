@@ -854,8 +854,14 @@ CRITICAL OUTPUT RULES:
 - do not use external libraries
 - do not use Tailwind CDN
 - do not rely on remote CSS
-- wrap major sections using semantic <section> tags
-- add data-section-id and data-section-type to major sections
+- every major page block must use a semantic <section> tag
+- every major section must have data-section-id and data-section-type
+- data-section-id values must be stable, unique and human-readable
+- do not create duplicate data-section-id values
+- do not nest one editable section inside another editable section
+- preferred ids are: navigation, hero, about, services, properties, references, process, contact, footer
+- navigation must be its own section with data-section-id="navigation"
+- footer must be its own section with data-section-id="footer"
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
 - navigation must be complete and visually polished
@@ -939,6 +945,8 @@ IMPORTANT:
 - Improve section balance if needed
 - Keep Czech copy
 - Keep semantic sections and data-section-id/data-section-type
+- Ensure data-section-id values remain unique and stable
+- Do not create nested editable sections with duplicate ids
 - Do not explain changes
 
 ORIGINAL PROJECT PROMPT:

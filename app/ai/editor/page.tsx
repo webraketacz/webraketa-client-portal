@@ -35,6 +35,7 @@ type EditableTextSelection = {
   id: string;
   text: string;
   tagName: string;
+  sectionId: string;
 };
 
 const GENERATE_LOADING_MESSAGES = [
@@ -157,11 +158,7 @@ function injectEditableTextAttributes(html: string) {
   }
 }
 
-function buildPreviewDocument(
-  html: string,
-  css: string,
-  js: string
-) {
+function buildPreviewDocument(html: string, css: string, js: string) {
   const htmlWithEditableMarkers = injectEditableTextAttributes(html);
 
   return `<!DOCTYPE html>
@@ -345,12 +342,17 @@ ${js}
       event.preventDefault();
       event.stopPropagation();
 
+      const parentSection = editable.closest("[data-section-id]");
+
       window.parent.postMessage(
         {
           type: "zyvia-text-select",
           textId: editable.getAttribute("data-zyvia-text-id") || "",
           textValue: editable.textContent || "",
           tagName: editable.tagName || "",
+          sectionId: parentSection
+            ? parentSection.getAttribute("data-section-id") || ""
+            : "",
         },
         "*"
       );
@@ -392,13 +394,30 @@ ${js}
 </html>`;
 }
 
-function updateTextInHtml(html: string, textId: string, newText: string) {
-  if (!html || !textId) return html;
+function updateTextInHtml(
+  html: string,
+  sectionId: string,
+  textId: string,
+  newText: string
+) {
+  if (!html || !textId || !sectionId) return html;
 
   try {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(`<body>${injectEditableTextAttributes(html)}</body>`, "text/html");
-    const target = doc.body.querySelector(`[data-zyvia-text-id="${textId}"]`);
+    const doc = parser.parseFromString(
+      `<body>${injectEditableTextAttributes(html)}</body>`,
+      "text/html"
+    );
+
+    const section = doc.body.querySelector(
+      `[data-section-id="${sectionId}"]`
+    ) as HTMLElement | null;
+
+    if (!section) return html;
+
+    const target = section.querySelector(
+      `[data-zyvia-text-id="${textId}"]`
+    ) as HTMLElement | null;
 
     if (!target) return html;
 
@@ -692,10 +711,12 @@ export default function AiEditorPage() {
           id: data.textId || "",
           text: data.textValue || "",
           tagName: data.tagName || "",
+          sectionId: data.sectionId || "",
         };
 
-        if (!selection.id) return;
+        if (!selection.id || !selection.sectionId) return;
 
+        setSelectedSectionId(selection.sectionId);
         setSelectedText(selection);
         setEditedTextValue(selection.text);
         setTextModalOpen(true);
@@ -840,6 +861,11 @@ export default function AiEditorPage() {
     const instruction = (instructionOverride ?? chatInput).trim();
     if (instruction.length < 3) return;
 
+    if (!selectedSectionId) {
+      setError("Nejdřív vyber konkrétní sekci, kterou chceš upravit.");
+      return;
+    }
+
     setImproving(true);
     setError(null);
     setPublishError(null);
@@ -870,11 +896,16 @@ export default function AiEditorPage() {
           html,
           css,
           js,
+          selectedSectionId,
           chatHistory: getChatHistoryPayload(),
         }),
       });
 
-      const data: GeneratorResponse & { error?: string } = await res.json();
+      const data: GeneratorResponse & {
+        error?: string;
+        selectedSectionId?: string;
+        changedOnlySelectedSection?: boolean;
+      } = await res.json();
 
       if (!res.ok) {
         throw new Error(data?.error ?? "Úprava designu selhala");
@@ -892,7 +923,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-improve-${Date.now()}`,
           role: "assistant",
-          text: "Úprava byla aplikována do návrhu.",
+          text: `Úprava byla aplikována pouze do sekce ${selectedSectionMeta?.label || selectedSectionId}.`,
         },
       ]);
     } catch (e: any) {
@@ -983,14 +1014,21 @@ export default function AiEditorPage() {
     const trimmed = editedTextValue.trim();
     if (!trimmed) return;
 
-    setHtml((prev) => updateTextInHtml(prev, selectedText.id, trimmed));
+    setHtml((prev) =>
+      updateTextInHtml(prev, selectedText.sectionId, selectedText.id, trimmed)
+    );
+
+    setSelectedSectionId(selectedText.sectionId);
 
     setMessages((prev) => [
       ...prev,
       {
         id: `inline-text-${Date.now()}`,
         role: "assistant",
-        text: "Text byl upraven přímo v náhledu.",
+        text: `Text byl upraven pouze v sekci ${prettifySectionLabel(
+          selectedText.sectionId,
+          ""
+        )}.`,
       },
     ]);
 
@@ -1300,7 +1338,7 @@ export default function AiEditorPage() {
                       placeholder={
                         selectedSectionMeta
                           ? `Napiš úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
-                          : "Napiš úpravu návrhu… například: Uprav hero, přidej více prostoru, vylepši CTA."
+                          : "Nejdřív klikni v náhledu na konkrétní sekci, kterou chceš upravit."
                       }
                       className="h-16 w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
                     />
@@ -1469,7 +1507,7 @@ export default function AiEditorPage() {
 
       {textModalOpen && selectedText && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-xl rounded-[1.75rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
+          <div className="relative w-full max-w-xl rounded-[1.75rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-white">Upravit text</div>
@@ -1480,14 +1518,15 @@ export default function AiEditorPage() {
 
               <button
                 type="button"
+                aria-label="Zavřít"
                 onClick={() => {
                   setTextModalOpen(false);
                   setSelectedText(null);
                   setEditedTextValue("");
                 }}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
               >
-                <Icon icon="solar:close-line-duotone" width={18} />
+                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
               </button>
             </div>
 
