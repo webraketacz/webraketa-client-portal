@@ -110,6 +110,11 @@ type AssetResolveResponse = {
   error?: string;
 };
 
+type AssetSearchResponse = {
+  images: ResolvedAsset[];
+  error?: string;
+};
+
 type PublishResponse = {
   url?: string;
   error?: string;
@@ -138,6 +143,15 @@ type EditableTextSelection = {
   href?: string;
 };
 
+type EditableImageSelection = {
+  slot: string;
+  tagName: string;
+  sectionId: string;
+  currentUrl?: string;
+  alt: string;
+  orientation: "landscape" | "portrait" | "square";
+};
+
 type IndustryKind =
   | "fintech"
   | "saas"
@@ -163,17 +177,6 @@ type Otazka = {
   text: string;
   placeholder: string;
 };
-
-const CONTACT_ITEM_OPTIONS = [
-  "telefon",
-  "email",
-  "adresa kanceláře",
-  "otevírací doba",
-  "mapa",
-  "kontaktní formulář",
-  "sociální sítě",
-  "IČ / firemní údaje",
-];
 
 const GENERATE_LOADING_MESSAGES = [
   "Rozumím zadání…",
@@ -240,13 +243,8 @@ function inferIndustryKind(prompt: string): IndustryKind {
     return "restaurant";
   }
 
-  if (text.includes("catering")) {
-    return "catering";
-  }
-
-  if (text.includes("barber") || text.includes("barbershop")) {
-    return "barber";
-  }
+  if (text.includes("catering")) return "catering";
+  if (text.includes("barber") || text.includes("barbershop")) return "barber";
 
   if (
     text.includes("kadernice") ||
@@ -511,7 +509,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Rezervační CTA, mapa, galerie jídel, otevírací doba…",
         },
       ];
-
     case "catering":
       return [
         ...common,
@@ -528,7 +525,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Poptávkový formulář, fotky realizací, balíčky služeb…",
         },
       ];
-
     case "barber":
     case "hair-salon":
       return [
@@ -546,7 +542,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Online rezervace, fotky proměn, ceník, představení týmu…",
         },
       ];
-
     case "autoservis":
       return [
         ...common,
@@ -563,7 +558,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Objednávkový formulář, ceník, otevírací doba, reference…",
         },
       ];
-
     case "car-dealer":
       return [
         ...common,
@@ -580,7 +574,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Nabídka vozů, filtrování, financování, reference klientů…",
         },
       ];
-
     case "zednik":
       return [
         ...common,
@@ -597,7 +590,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Fotky realizací, reference, postup spolupráce, rychlá poptávka…",
         },
       ];
-
     case "fintech":
     case "saas":
       return [
@@ -615,7 +607,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. Integrace, bezpečnost, reference, pricing, dashboard preview…",
         },
       ];
-
     case "food-product":
     case "ecommerce-product":
       return [
@@ -633,7 +624,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. FAQ, recepty, druhy balení, výhody produktu, objednávka…",
         },
       ];
-
     default:
       return [
         ...common,
@@ -674,22 +664,11 @@ function extractSectionsFromHtml(html: string): SectionMeta[] {
         const type = node.getAttribute("data-section-type") || "";
         if (!id) return null;
 
-        return {
-          id,
-          type,
-          label: prettifySectionLabel(id, type),
-        };
+        return { id, type, label: prettifySectionLabel(id, type) };
       })
       .filter(Boolean) as SectionMeta[];
 
-    const unique = new Map<string, SectionMeta>();
-    for (const section of sections) {
-      if (!unique.has(section.id)) {
-        unique.set(section.id, section);
-      }
-    }
-
-    return Array.from(unique.values());
+    return Array.from(new Map(sections.map((s) => [s.id, s])).values());
   } catch {
     return [];
   }
@@ -701,7 +680,6 @@ function injectEditableTextAttributes(html: string) {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
-
     const selectors = [
       "h1",
       "h2",
@@ -721,20 +699,15 @@ function injectEditableTextAttributes(html: string) {
       "blockquote",
     ].join(",");
 
-    const nodes = Array.from(doc.body.querySelectorAll(selectors));
-
     let index = 1;
 
-    nodes.forEach((node) => {
+    Array.from(doc.body.querySelectorAll(selectors)).forEach((node) => {
       const el = node as HTMLElement;
-
       if (el.closest("[data-no-inline-edit='true']")) return;
       if (el.querySelector(selectors)) return;
 
       const text = (el.textContent || "").replace(/\s+/g, " ").trim();
-
-      if (!text) return;
-      if (text.length < 2) return;
+      if (!text || text.length < 2) return;
 
       if (!el.getAttribute("data-zyvia-text-id")) {
         el.setAttribute("data-zyvia-text-id", `txt-${index}`);
@@ -752,9 +725,7 @@ async function parseApiResponse<T>(res: Response): Promise<T> {
   const raw = await res.text();
   const contentType = res.headers.get("content-type") || "";
 
-  if (!raw) {
-    throw new Error("Server vrátil prázdnou odpověď.");
-  }
+  if (!raw) throw new Error("Server vrátil prázdnou odpověď.");
 
   if (contentType.includes("application/json")) {
     try {
@@ -814,283 +785,6 @@ function replaceImageAssetsInHtml(html: string, assets: ResolvedAsset[]) {
   }
 }
 
-function buildPreviewDocument(html: string, css: string, js: string) {
-  const htmlWithEditableMarkers = injectEditableTextAttributes(html);
-
-  return `<!DOCTYPE html>
-<html lang="cs">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Zyvia Preview</title>
-  <style>
-${css}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  position: relative;
-}
-
-[data-section-id] {
-  transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease;
-}
-
-[data-section-id].zyvia-section-hover {
-  outline: 2px solid rgba(90, 209, 255, 0.45);
-  outline-offset: 4px;
-  box-shadow: 0 0 0 4px rgba(90, 209, 255, 0.08);
-  cursor: pointer !important;
-}
-
-[data-section-id].zyvia-section-selected {
-  outline: 2px solid rgba(124, 92, 255, 0.75);
-  outline-offset: 4px;
-  box-shadow:
-    0 0 0 4px rgba(124, 92, 255, 0.14),
-    0 10px 30px rgba(124, 92, 255, 0.16);
-}
-
-[data-zyvia-text-id].zyvia-text-hover {
-  outline: 2px dashed rgba(255,255,255,0.35);
-  outline-offset: 3px;
-  cursor: text !important;
-}
-
-.zyvia-section-badge {
-  position: absolute;
-  z-index: 999999;
-  pointer-events: none;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(9, 10, 15, 0.92);
-  color: #fff;
-  font: 12px/1.2 Inter, system-ui, sans-serif;
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.20);
-  transform: translateY(-10px);
-  white-space: nowrap;
-}
-  </style>
-</head>
-<body>
-${htmlWithEditableMarkers}
-<script>
-${js}
-</script>
-
-<script>
-(function () {
-  let selectedSectionId = null;
-  let badgeEl = null;
-
-  function ensureBadge() {
-    if (badgeEl) return badgeEl;
-    badgeEl = document.createElement("div");
-    badgeEl.className = "zyvia-section-badge";
-    badgeEl.style.display = "none";
-    document.body.appendChild(badgeEl);
-    return badgeEl;
-  }
-
-  function getSectionFromEventTarget(target) {
-    if (!target || !(target instanceof Element)) return null;
-    return target.closest("[data-section-id]");
-  }
-
-  function getEditableTextFromEventTarget(target) {
-    if (!target || !(target instanceof Element)) return null;
-    const el = target.closest("[data-zyvia-text-id]");
-    if (!el) return null;
-    if (el.closest("[data-no-inline-edit='true']")) return null;
-    return el;
-  }
-
-  function clearHoverStates() {
-    document.querySelectorAll("[data-section-id].zyvia-section-hover").forEach((node) => {
-      node.classList.remove("zyvia-section-hover");
-    });
-
-    document.querySelectorAll("[data-zyvia-text-id].zyvia-text-hover").forEach((node) => {
-      node.classList.remove("zyvia-text-hover");
-    });
-  }
-
-  function applySelectedState() {
-    document.querySelectorAll("[data-section-id]").forEach((node) => {
-      const id = node.getAttribute("data-section-id");
-      node.classList.toggle("zyvia-section-selected", id === selectedSectionId);
-    });
-  }
-
-  function moveBadgeForSection(section) {
-    const badge = ensureBadge();
-    const rect = section.getBoundingClientRect();
-
-    badge.textContent =
-      section.getAttribute("data-section-type") ||
-      section.getAttribute("data-section-id") ||
-      "Sekce";
-
-    badge.style.display = "block";
-    badge.style.left = window.scrollX + rect.left + 8 + "px";
-    badge.style.top = window.scrollY + rect.top + 8 + "px";
-  }
-
-  function hideBadge() {
-    if (!badgeEl) return;
-    badgeEl.style.display = "none";
-  }
-
-  function shouldAllowNativeInteraction(target) {
-    if (!(target instanceof Element)) return false;
-
-    const clickable = target.closest("button, a, [role='button']");
-    if (!clickable) return false;
-
-    const text = (
-      clickable.textContent ||
-      clickable.getAttribute("aria-label") ||
-      ""
-    ).toLowerCase();
-
-    const classText = (clickable.getAttribute("class") || "").toLowerCase();
-    const idText = (clickable.getAttribute("id") || "").toLowerCase();
-    const dataText = [
-      clickable.getAttribute("data-menu-toggle"),
-      clickable.getAttribute("data-nav-toggle"),
-      clickable.getAttribute("data-mobile-menu-toggle"),
-      clickable.getAttribute("data-hamburger"),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    const haystack = [text, classText, idText, dataText].join(" ");
-
-    return /menu|hamburger|burger|nav-toggle|mobile-menu|open menu|otevrit menu|otevřít menu/.test(
-      haystack
-    );
-  }
-
-  function preventNavigation(event) {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-
-    if (shouldAllowNativeInteraction(target)) {
-      return;
-    }
-
-    const clickable = target.closest("a, button");
-    const section = getSectionFromEventTarget(target);
-
-    if (clickable && section) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-
-  document.addEventListener("mouseover", function (event) {
-    clearHoverStates();
-
-    const editable = getEditableTextFromEventTarget(event.target);
-    if (editable) {
-      editable.classList.add("zyvia-text-hover");
-      hideBadge();
-      return;
-    }
-
-    const section = getSectionFromEventTarget(event.target);
-    if (section) {
-      section.classList.add("zyvia-section-hover");
-      moveBadgeForSection(section);
-    } else {
-      hideBadge();
-    }
-  });
-
-  document.addEventListener("mouseout", function (event) {
-    const related = event.relatedTarget;
-    if (related instanceof Element) {
-      if (
-        related.closest("[data-section-id]") ||
-        related.closest("[data-zyvia-text-id]")
-      ) {
-        return;
-      }
-    }
-
-    clearHoverStates();
-    hideBadge();
-  });
-
-  document.addEventListener("click", function (event) {
-    if (shouldAllowNativeInteraction(event.target)) {
-      return;
-    }
-
-    const editable = getEditableTextFromEventTarget(event.target);
-
-    if (editable) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const parentSection = editable.closest("[data-section-id]");
-      const linkEl = editable.closest("a");
-
-      window.parent.postMessage(
-        {
-          type: "zyvia-text-select",
-          textId: editable.getAttribute("data-zyvia-text-id") || "",
-          textValue: editable.textContent || "",
-          tagName: editable.tagName || "",
-          sectionId: parentSection
-            ? parentSection.getAttribute("data-section-id") || ""
-            : "",
-          href: linkEl ? linkEl.getAttribute("href") || "" : "",
-        },
-        "*"
-      );
-      return;
-    }
-
-    const section = getSectionFromEventTarget(event.target);
-    preventNavigation(event);
-
-    if (!section) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    window.parent.postMessage(
-      {
-        type: "zyvia-section-select",
-        sectionId: section.getAttribute("data-section-id") || "",
-        sectionType: section.getAttribute("data-section-type") || "",
-      },
-      "*"
-    );
-  }, true);
-
-  window.addEventListener("message", function (event) {
-    const data = event.data;
-    if (!data || typeof data !== "object") return;
-
-    if (data.type === "zyvia-set-selected-section") {
-      selectedSectionId = data.sectionId || null;
-      applySelectedState();
-    }
-  });
-
-  applySelectedState();
-})();
-</script>
-</body>
-</html>`;
-}
-
 function updateTextInHtml(
   html: string,
   sectionId: string,
@@ -1110,22 +804,18 @@ function updateTextInHtml(
     const section = doc.body.querySelector(
       `[data-section-id="${sectionId}"]`
     ) as HTMLElement | null;
-
     if (!section) return html;
 
     const target = section.querySelector(
       `[data-zyvia-text-id="${textId}"]`
     ) as HTMLElement | null;
-
     if (!target) return html;
 
     target.textContent = newText;
 
     if (typeof href === "string") {
       const anchor = target.closest("a");
-      if (anchor) {
-        anchor.setAttribute("href", href.trim() || "#");
-      }
+      if (anchor) anchor.setAttribute("href", href.trim() || "#");
     }
 
     return doc.body.innerHTML;
@@ -1134,10 +824,319 @@ function updateTextInHtml(
   }
 }
 
+function buildPreviewDocument(html: string, css: string, js: string) {
+  const htmlWithEditableMarkers = injectEditableTextAttributes(html);
+
+  return `<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zyvia Preview</title>
+  <style>
+${css}
+
+html { scroll-behavior: smooth; }
+body { position: relative; }
+[data-section-id] { transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+[data-section-id].zyvia-section-hover {
+  outline: 2px solid rgba(90,209,255,.45);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px rgba(90,209,255,.08);
+  cursor: pointer !important;
+}
+[data-section-id].zyvia-section-selected {
+  outline: 2px solid rgba(124,92,255,.75);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px rgba(124,92,255,.14), 0 10px 30px rgba(124,92,255,.16);
+}
+[data-zyvia-text-id].zyvia-text-hover {
+  outline: 2px dashed rgba(255,255,255,.35);
+  outline-offset: 3px;
+  cursor: text !important;
+}
+[data-image-slot] { transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+[data-image-slot].zyvia-image-hover {
+  outline: 2px dashed rgba(255,194,61,.78);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px rgba(255,194,61,.12);
+  cursor: pointer !important;
+}
+[data-image-slot].zyvia-image-selected {
+  outline: 2px solid rgba(255,194,61,.95);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px rgba(255,194,61,.16), 0 14px 36px rgba(255,194,61,.14);
+}
+.zyvia-section-badge {
+  position: absolute;
+  z-index: 999999;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(9,10,15,.92);
+  color: #fff;
+  font: 12px/1.2 Inter,system-ui,sans-serif;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 8px 22px rgba(0,0,0,.20);
+  transform: translateY(-10px);
+  white-space: nowrap;
+}
+  </style>
+</head>
+<body>
+${htmlWithEditableMarkers}
+<script>
+${js}
+</script>
+<script>
+(function () {
+  let selectedSectionId = null;
+  let selectedImageSlot = null;
+  let badgeEl = null;
+
+  function ensureBadge() {
+    if (badgeEl) return badgeEl;
+    badgeEl = document.createElement("div");
+    badgeEl.className = "zyvia-section-badge";
+    badgeEl.style.display = "none";
+    document.body.appendChild(badgeEl);
+    return badgeEl;
+  }
+
+  function getSectionFromEventTarget(target) {
+    if (!target || !(target instanceof Element)) return null;
+    return target.closest("[data-section-id]");
+  }
+
+  function getEditableTextFromEventTarget(target) {
+    if (!target || !(target instanceof Element)) return null;
+    const el = target.closest("[data-zyvia-text-id]");
+    if (!el || el.closest("[data-no-inline-edit='true']")) return null;
+    return el;
+  }
+
+  function getEditableImageFromEventTarget(target) {
+    if (!target || !(target instanceof Element)) return null;
+    const el = target.closest("[data-image-slot]");
+    if (!el || el.closest("[data-no-inline-edit='true']")) return null;
+    return el;
+  }
+
+  function clearHoverStates() {
+    document.querySelectorAll("[data-section-id].zyvia-section-hover").forEach((n) => n.classList.remove("zyvia-section-hover"));
+    document.querySelectorAll("[data-zyvia-text-id].zyvia-text-hover").forEach((n) => n.classList.remove("zyvia-text-hover"));
+    document.querySelectorAll("[data-image-slot].zyvia-image-hover").forEach((n) => n.classList.remove("zyvia-image-hover"));
+  }
+
+  function applySelectedState() {
+    document.querySelectorAll("[data-section-id]").forEach((node) => {
+      const id = node.getAttribute("data-section-id");
+      node.classList.toggle("zyvia-section-selected", id === selectedSectionId);
+    });
+
+    document.querySelectorAll("[data-image-slot]").forEach((node) => {
+      const slot = node.getAttribute("data-image-slot");
+      node.classList.toggle("zyvia-image-selected", slot === selectedImageSlot);
+    });
+  }
+
+  function moveBadgeForElement(element, label) {
+    const badge = ensureBadge();
+    const rect = element.getBoundingClientRect();
+    badge.textContent = label;
+    badge.style.display = "block";
+    badge.style.left = window.scrollX + rect.left + 8 + "px";
+    badge.style.top = window.scrollY + rect.top + 8 + "px";
+  }
+
+  function hideBadge() {
+    if (!badgeEl) return;
+    badgeEl.style.display = "none";
+  }
+
+  function shouldAllowNativeInteraction(target) {
+    if (!(target instanceof Element)) return false;
+    const clickable = target.closest("button, a, [role='button']");
+    if (!clickable) return false;
+
+    const haystack = [
+      clickable.textContent || clickable.getAttribute("aria-label") || "",
+      clickable.getAttribute("class") || "",
+      clickable.getAttribute("id") || "",
+      clickable.getAttribute("data-menu-toggle") || "",
+      clickable.getAttribute("data-nav-toggle") || "",
+      clickable.getAttribute("data-mobile-menu-toggle") || "",
+      clickable.getAttribute("data-hamburger") || "",
+    ].join(" ").toLowerCase();
+
+    return /menu|hamburger|burger|nav-toggle|mobile-menu|open menu|otevrit menu|otevřít menu/.test(haystack);
+  }
+
+  function inferOrientation(el) {
+    const rect = el.getBoundingClientRect();
+    if (!rect.width || !rect.height) return "landscape";
+    const ratio = rect.width / rect.height;
+    if (ratio > 1.12) return "landscape";
+    if (ratio < 0.88) return "portrait";
+    return "square";
+  }
+
+  function extractBackgroundImageUrl(el) {
+    const backgroundImage = window.getComputedStyle(el).backgroundImage || "";
+    const match = backgroundImage.match(/url\\((["']?)(.*?)\\1\\)/i);
+    return match ? match[2] : "";
+  }
+
+  document.addEventListener("mouseover", function (event) {
+    clearHoverStates();
+
+    const editableText = getEditableTextFromEventTarget(event.target);
+    if (editableText) {
+      editableText.classList.add("zyvia-text-hover");
+      hideBadge();
+      return;
+    }
+
+    const editableImage = getEditableImageFromEventTarget(event.target);
+    if (editableImage) {
+      editableImage.classList.add("zyvia-image-hover");
+      moveBadgeForElement(
+        editableImage,
+        editableImage.getAttribute("aria-label") ||
+          editableImage.getAttribute("alt") ||
+          editableImage.getAttribute("data-image-slot") ||
+          "Obrázek"
+      );
+      return;
+    }
+
+    const section = getSectionFromEventTarget(event.target);
+    if (section) {
+      section.classList.add("zyvia-section-hover");
+      moveBadgeForElement(
+        section,
+        section.getAttribute("data-section-type") ||
+          section.getAttribute("data-section-id") ||
+          "Sekce"
+      );
+    } else {
+      hideBadge();
+    }
+  });
+
+  document.addEventListener("mouseout", function (event) {
+    const related = event.relatedTarget;
+    if (related instanceof Element) {
+      if (
+        related.closest("[data-section-id]") ||
+        related.closest("[data-zyvia-text-id]") ||
+        related.closest("[data-image-slot]")
+      ) {
+        return;
+      }
+    }
+
+    clearHoverStates();
+    hideBadge();
+  });
+
+  document.addEventListener("click", function (event) {
+    if (shouldAllowNativeInteraction(event.target)) return;
+
+    const editableImage = getEditableImageFromEventTarget(event.target);
+    if (editableImage) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const parentSection = editableImage.closest("[data-section-id]");
+      const tagName = editableImage.tagName || "";
+      const slot = editableImage.getAttribute("data-image-slot") || "";
+      const alt = editableImage.getAttribute("alt") || editableImage.getAttribute("aria-label") || "";
+
+      let currentUrl = "";
+      if (tagName.toLowerCase() === "img") {
+        currentUrl = editableImage.currentSrc || editableImage.getAttribute("src") || "";
+      } else {
+        currentUrl = extractBackgroundImageUrl(editableImage);
+      }
+
+      window.parent.postMessage({
+        type: "zyvia-image-select",
+        slot,
+        tagName,
+        sectionId: parentSection ? parentSection.getAttribute("data-section-id") || "" : "",
+        currentUrl,
+        alt,
+        orientation: inferOrientation(editableImage),
+      }, "*");
+      return;
+    }
+
+    const editable = getEditableTextFromEventTarget(event.target);
+    if (editable) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const parentSection = editable.closest("[data-section-id]");
+      const linkEl = editable.closest("a");
+
+      window.parent.postMessage({
+        type: "zyvia-text-select",
+        textId: editable.getAttribute("data-zyvia-text-id") || "",
+        textValue: editable.textContent || "",
+        tagName: editable.tagName || "",
+        sectionId: parentSection ? parentSection.getAttribute("data-section-id") || "" : "",
+        href: linkEl ? linkEl.getAttribute("href") || "" : "",
+      }, "*");
+      return;
+    }
+
+    const section = getSectionFromEventTarget(event.target);
+    const clickable = event.target instanceof Element ? event.target.closest("a, button") : null;
+    if (clickable && section) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (!section) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    window.parent.postMessage({
+      type: "zyvia-section-select",
+      sectionId: section.getAttribute("data-section-id") || "",
+      sectionType: section.getAttribute("data-section-type") || "",
+    }, "*");
+  }, true);
+
+  window.addEventListener("message", function (event) {
+    const data = event.data;
+    if (!data || typeof data !== "object") return;
+
+    if (data.type === "zyvia-set-selected-section") {
+      selectedSectionId = data.sectionId || null;
+      applySelectedState();
+    }
+
+    if (data.type === "zyvia-set-selected-image") {
+      selectedImageSlot = data.slot || null;
+      applySelectedState();
+    }
+  });
+
+  applySelectedState();
+})();
+</script>
+</body>
+</html>`;
+}
+
 async function downloadZipSite(html: string, css: string, js: string) {
   const zip = new JSZip();
-
-  const indexHtml = `<!DOCTYPE html>
+  zip.file(
+    "index.html",
+    `<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
@@ -1149,22 +1148,19 @@ async function downloadZipSite(html: string, css: string, js: string) {
 ${html}
 <script src="./script.js"></script>
 </body>
-</html>`;
-
-  zip.file("index.html", indexHtml);
+</html>`
+  );
   zip.file("styles.css", css);
   zip.file("script.js", js);
 
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "zyvia-export.zip";
   document.body.appendChild(a);
   a.click();
   a.remove();
-
   URL.revokeObjectURL(url);
 }
 
@@ -1270,12 +1266,8 @@ export default function AiEditorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    null
-  );
-  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(
-    null
-  );
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -1288,11 +1280,17 @@ export default function AiEditorPage() {
   const [chatInput, setChatInput] = useState("");
 
   const [textModalOpen, setTextModalOpen] = useState(false);
-  const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(
-    null
-  );
+  const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
   const [editedTextValue, setEditedTextValue] = useState("");
   const [editedHrefValue, setEditedHrefValue] = useState("");
+
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<EditableImageSelection | null>(null);
+  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">("search");
+  const [imageSearchQuery, setImageSearchQuery] = useState("");
+  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>([]);
+  const [imageSearchLoading, setImageSearchLoading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   const [generationPreferences, setGenerationPreferences] =
     useState<GenerationPreferences>(createDefaultPreferences(""));
@@ -1308,11 +1306,7 @@ export default function AiEditorPage() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
-  const iframeKey = useMemo(
-    () => `${html.length}-${css.length}-${js.length}`,
-    [html, css, js]
-  );
-
+  const iframeKey = useMemo(() => `${html.length}-${css.length}-${js.length}`, [html, css, js]);
   const availableSections = useMemo(() => extractSectionsFromHtml(html), [html]);
 
   const selectedSectionMeta = useMemo(() => {
@@ -1333,6 +1327,13 @@ export default function AiEditorPage() {
 
   const aktualniOtazka = otazky[aktivniOtazkaIndex] || null;
 
+  const previewWidthClass =
+    viewMode === "desktop"
+      ? "w-full"
+      : viewMode === "tablet"
+      ? "mx-auto w-[920px] max-w-full"
+      : "mx-auto w-[430px] max-w-full";
+
   function getChatHistoryPayload() {
     return messages.slice(-12).map((message) => ({
       role: message.role,
@@ -1341,8 +1342,7 @@ export default function AiEditorPage() {
   }
 
   function scrollChatToBottom(smooth = true) {
-    if (!chatBottomRef.current) return;
-    chatBottomRef.current.scrollIntoView({
+    chatBottomRef.current?.scrollIntoView({
       behavior: smooth ? "smooth" : "auto",
       block: "end",
     });
@@ -1411,22 +1411,16 @@ export default function AiEditorPage() {
       });
 
       const data = await parseApiResponse<AssetResolveResponse>(res);
-
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Dohledání obrázků selhalo");
-      }
+      if (!res.ok) throw new Error(data?.error ?? "Dohledání obrázků selhalo");
 
       if (data.assets?.length) {
         setHtml((prev) => replaceImageAssetsInHtml(prev, data.assets));
-
         setMessages((prev) => [
           ...prev,
           {
             id: `assets-resolved-${Date.now()}`,
             role: "system",
-            text: `Obrázky byly doplněny (${data.assets
-              .map((a) => a.source)
-              .join(", ")}).`,
+            text: `Obrázky byly doplněny (${data.assets.map((a) => a.source).join(", ")}). Kliknutím na obrázek ho můžete změnit.`,
           },
         ]);
       }
@@ -1444,6 +1438,106 @@ export default function AiEditorPage() {
     }
   }
 
+  async function searchEditorImages(
+    queryOverride?: string,
+    orientationOverride?: "landscape" | "portrait" | "square"
+  ) {
+    const finalQuery = (queryOverride ?? imageSearchQuery).trim();
+    const finalOrientation = orientationOverride ?? selectedImage?.orientation ?? "landscape";
+
+    if (finalQuery.length < 2) {
+      setImageSearchResults([]);
+      return;
+    }
+
+    setImageSearchLoading(true);
+    setImageUploadError(null);
+
+    try {
+      const res = await fetch("/api/resolve-assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          searchQuery: finalQuery,
+          orientation: finalOrientation,
+          maxResults: 8,
+        }),
+      });
+
+      const data = await parseApiResponse<AssetSearchResponse>(res);
+      if (!res.ok) throw new Error(data?.error ?? "Vyhledání obrázků selhalo");
+      setImageSearchResults(Array.isArray(data.images) ? data.images : []);
+    } catch (e: any) {
+      setImageUploadError(e?.message ?? "Vyhledání obrázků selhalo");
+      setImageSearchResults([]);
+    } finally {
+      setImageSearchLoading(false);
+    }
+  }
+
+  function applyImageChange(asset: ResolvedAsset) {
+    if (!selectedImage) return;
+
+    setHtml((prev) =>
+      replaceImageAssetsInHtml(prev, [{ ...asset, slot: selectedImage.slot }])
+    );
+    setSelectedSectionId(selectedImage.sectionId);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `image-updated-${Date.now()}`,
+        role: "assistant",
+        text: `Obrázek ve vybrané sekci ${prettifySectionLabel(selectedImage.sectionId, "")} byl změněn.`,
+      },
+    ]);
+
+    closeImageModal();
+  }
+
+  async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !selectedImage) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageUploadError("Vybraný soubor není obrázek.");
+      event.target.value = "";
+      return;
+    }
+
+    setImageUploadError(null);
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        setImageUploadError("Soubor se nepodařilo načíst.");
+        return;
+      }
+
+      applyImageChange({
+        slot: selectedImage.slot,
+        url: result,
+        alt: selectedImage.alt || file.name.replace(/\.[^.]+$/, ""),
+        source: "fallback",
+      });
+    };
+
+    reader.onerror = () => setImageUploadError("Nahrání obrázku selhalo.");
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function closeImageModal() {
+    setImageModalOpen(false);
+    setSelectedImage(null);
+    setImageSearchResults([]);
+    setImageSearchQuery("");
+    setImageUploadError(null);
+    setImagePickerTab("search");
+  }
+
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
@@ -1452,21 +1546,14 @@ export default function AiEditorPage() {
       setPrompt(initialPrompt);
       setMessages((prev) => [
         ...prev,
-        {
-          id: `user-initial-${Date.now()}`,
-          role: "user",
-          text: initialPrompt,
-        },
+        { id: `user-initial-${Date.now()}`, role: "user", text: initialPrompt },
       ]);
     }
 
     if (autostart && initialPrompt && !autostartRef.current) {
       autostartRef.current = true;
       sessionStorage.removeItem("ai_webgen_autostart");
-
-      setTimeout(() => {
-        startQuestionFlow(initialPrompt);
-      }, 250);
+      setTimeout(() => startQuestionFlow(initialPrompt), 250);
     }
   }, []);
 
@@ -1481,7 +1568,7 @@ export default function AiEditorPage() {
       }
 
       if (data.type === "zyvia-text-select") {
-        const selection = {
+        const selection: EditableTextSelection = {
           id: data.textId || "",
           text: data.textValue || "",
           tagName: data.tagName || "",
@@ -1492,10 +1579,43 @@ export default function AiEditorPage() {
         if (!selection.id || !selection.sectionId) return;
 
         setSelectedSectionId(selection.sectionId);
+        setSelectedImage(null);
         setSelectedText(selection);
         setEditedTextValue(selection.text);
         setEditedHrefValue(selection.href || "");
         setTextModalOpen(true);
+      }
+
+      if (data.type === "zyvia-image-select") {
+        const selection: EditableImageSelection = {
+          slot: data.slot || "",
+          tagName: data.tagName || "",
+          sectionId: data.sectionId || "",
+          currentUrl: typeof data.currentUrl === "string" ? data.currentUrl : "",
+          alt: typeof data.alt === "string" ? data.alt : "",
+          orientation:
+            data.orientation === "portrait" ||
+            data.orientation === "square" ||
+            data.orientation === "landscape"
+              ? data.orientation
+              : "landscape",
+        };
+
+        if (!selection.slot || !selection.sectionId) return;
+
+        setSelectedSectionId(selection.sectionId);
+        setSelectedText(null);
+        setTextModalOpen(false);
+        setSelectedImage(selection);
+        setImageSearchQuery(
+          selection.alt?.trim() ||
+            selection.slot.replace(/[-_]/g, " ").trim() ||
+            "premium business photo"
+        );
+        setImageSearchResults([]);
+        setImageUploadError(null);
+        setImagePickerTab("search");
+        setImageModalOpen(true);
       }
     }
 
@@ -1505,9 +1625,7 @@ export default function AiEditorPage() {
 
   useEffect(() => {
     return () => {
-      if (progressRef.current) {
-        window.clearInterval(progressRef.current);
-      }
+      if (progressRef.current) window.clearInterval(progressRef.current);
     };
   }, []);
 
@@ -1516,22 +1634,30 @@ export default function AiEditorPage() {
   }, [messages.length]);
 
   useEffect(() => {
-    if (loading || improving || resolvingAssets) {
-      scrollChatToBottom(true);
-    }
+    if (loading || improving || resolvingAssets) scrollChatToBottom(true);
   }, [loading, improving, resolvingAssets, progress, status]);
 
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
 
     iframeRef.current.contentWindow.postMessage(
-      {
-        type: "zyvia-set-selected-section",
-        sectionId: selectedSectionId,
-      },
+      { type: "zyvia-set-selected-section", sectionId: selectedSectionId },
       "*"
     );
-  }, [selectedSectionId, previewDocument]);
+    iframeRef.current.contentWindow.postMessage(
+      { type: "zyvia-set-selected-image", slot: selectedImage?.slot || null },
+      "*"
+    );
+  }, [selectedSectionId, selectedImage?.slot, previewDocument]);
+
+  useEffect(() => {
+    if (!imageModalOpen || !selectedImage) return;
+    const initialQuery =
+      selectedImage.alt?.trim() || selectedImage.slot.replace(/[-_]/g, " ").trim();
+    if (initialQuery.length >= 2) {
+      void searchEditorImages(initialQuery, selectedImage.orientation);
+    }
+  }, [imageModalOpen, selectedImage?.slot]);
 
   function startSmoothProgress(mode: "generate" | "improve") {
     if (progressRef.current) window.clearInterval(progressRef.current);
@@ -1594,6 +1720,7 @@ export default function AiEditorPage() {
     setJs("");
     setSelectedSectionId(null);
     setSelectedSectionType(null);
+    setSelectedImage(null);
     setProgress(0);
     setActiveTab("preview");
 
@@ -1611,11 +1738,7 @@ export default function AiEditorPage() {
       });
 
       const data = await parseApiResponse<GeneratorResponse>(res);
-
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Generování selhalo");
-      }
-
+      if (!res.ok) throw new Error(data?.error ?? "Generování selhalo");
       if (!data?.html || !data?.css) {
         throw new Error("API /api/generate nevrátilo validní HTML/CSS.");
       }
@@ -1630,7 +1753,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Klikněte na sekci nebo přímo na text v náhledu a pokračujte v úpravách.",
+          text: "Návrh je připraven. Klikněte na sekci, text nebo obrázek v náhledu a pokračujte v úpravách.",
         },
       ]);
 
@@ -1661,11 +1784,7 @@ export default function AiEditorPage() {
 
     setMessages((prev) => [
       ...prev,
-      {
-        id: `user-improve-${Date.now()}`,
-        role: "user",
-        text: instruction,
-      },
+      { id: `user-improve-${Date.now()}`, role: "user", text: instruction },
     ]);
 
     startSmoothProgress("improve");
@@ -1686,11 +1805,7 @@ export default function AiEditorPage() {
       });
 
       const data = await parseApiResponse<GeneratorResponse>(res);
-
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Úprava designu selhala");
-      }
-
+      if (!res.ok) throw new Error(data?.error ?? "Úprava designu selhala");
       if (!data?.html || !data?.css) {
         throw new Error("API /api/improve nevrátilo validní HTML/CSS.");
       }
@@ -1736,7 +1851,6 @@ export default function AiEditorPage() {
       });
 
       const data = await parseApiResponse<PublishResponse>(res);
-
       if (!res.ok || !data.url) {
         throw new Error(data?.error ?? "Publikace selhala");
       }
@@ -1821,14 +1935,8 @@ export default function AiEditorPage() {
         role: "assistant",
         text:
           selectedText.href !== undefined
-            ? `Text a odkaz byly upraveny pouze v sekci ${prettifySectionLabel(
-                selectedText.sectionId,
-                ""
-              )}.`
-            : `Text byl upraven pouze v sekci ${prettifySectionLabel(
-                selectedText.sectionId,
-                ""
-              )}.`,
+            ? `Text a odkaz byly upraveny pouze v sekci ${prettifySectionLabel(selectedText.sectionId, "")}.`
+            : `Text byl upraven pouze v sekci ${prettifySectionLabel(selectedText.sectionId, "")}.`,
       },
     ]);
 
@@ -1842,7 +1950,6 @@ export default function AiEditorPage() {
     if (!aktualniOtazka) return;
 
     const trimmed = odpovedInput.trim();
-
     const nextPreferences = {
       ...generationPreferences,
       clientAnswers: {
@@ -1852,14 +1959,9 @@ export default function AiEditorPage() {
     };
 
     setGenerationPreferences(nextPreferences);
-
     setMessages((prev) => [
       ...prev,
-      {
-        id: `question-answer-${Date.now()}`,
-        role: "user",
-        text: trimmed || "Bez odpovědi.",
-      },
+      { id: `question-answer-${Date.now()}`, role: "user", text: trimmed || "Bez odpovědi." },
     ]);
 
     const nextIndex = aktivniOtazkaIndex + 1;
@@ -1869,17 +1971,12 @@ export default function AiEditorPage() {
       setAktivniOtazkaIndex(nextIndex);
       setMessages((prev) => [
         ...prev,
-        {
-          id: `question-next-${Date.now() + 1}`,
-          role: "assistant",
-          text: otazky[nextIndex].text,
-        },
+        { id: `question-next-${Date.now() + 1}`, role: "assistant", text: otazky[nextIndex].text },
       ]);
       return;
     }
 
     setOtazkyDokonceny(true);
-
     setMessages((prev) => [
       ...prev,
       {
@@ -1905,44 +2002,20 @@ export default function AiEditorPage() {
     void handleGenerate(prompt, generationPreferences);
   }
 
-  const previewWidthClass =
-    viewMode === "desktop"
-      ? "w-full"
-      : viewMode === "tablet"
-      ? "mx-auto w-[920px] max-w-full"
-      : "mx-auto w-[430px] max-w-full";
-
   return (
     <div className="relative h-dvh overflow-hidden bg-[#050507] text-zinc-100">
       <style jsx global>{`
         @keyframes zyviaEditorFloatA {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          100% {
-            transform: translate3d(28px, -18px, 0) scale(1.04);
-          }
+          0% { transform: translate3d(0, 0, 0) scale(1); }
+          100% { transform: translate3d(28px, -18px, 0) scale(1.04); }
         }
-
         @keyframes zyviaEditorFloatB {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          100% {
-            transform: translate3d(-26px, 18px, 0) scale(1.05);
-          }
+          0% { transform: translate3d(0, 0, 0) scale(1); }
+          100% { transform: translate3d(-26px, 18px, 0) scale(1.05); }
         }
-
         @keyframes zyviaPulse {
-          0%,
-          100% {
-            opacity: 0.72;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.01);
-          }
+          0%, 100% { opacity: 0.72; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.01); }
         }
       `}</style>
 
@@ -1965,56 +2038,54 @@ export default function AiEditorPage() {
       />
 
       <div className="relative z-10 flex h-full flex-col">
-        <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <img
-              src="/zyvia-logo.svg"
-              alt="Zyvia"
-              className="h-[1.65rem] w-auto opacity-95"
-            />
+        {!isFullscreen && (
+          <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <img src="/zyvia-logo.svg" alt="Zyvia" className="h-[1.65rem] w-auto opacity-95" />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => startQuestionFlow(prompt)}
-                className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-sm text-violet-200 transition hover:bg-violet-500/15"
-              >
-                <Icon icon="solar:settings-linear" width={16} />
-                Upřesnit web
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => startQuestionFlow(prompt)}
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-sm text-violet-200 transition hover:bg-violet-500/15"
+                >
+                  <Icon icon="solar:settings-linear" width={16} />
+                  Upřesnit web
+                </button>
 
-              <button
-                type="button"
-                onClick={focusEditInput}
-                disabled={!html}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-              >
-                <Icon icon="solar:pen-2-linear" width={16} />
-                Upravit
-              </button>
+                <button
+                  type="button"
+                  onClick={focusEditInput}
+                  disabled={!html}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                >
+                  <Icon icon="solar:pen-2-linear" width={16} />
+                  Upravit
+                </button>
 
-              <button
-                type="button"
-                onClick={() => downloadZipSite(html, css, js)}
-                disabled={!html}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-              >
-                <Icon icon="solar:download-linear" width={16} />
-                Export
-              </button>
+                <button
+                  type="button"
+                  onClick={() => downloadZipSite(html, css, js)}
+                  disabled={!html}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                >
+                  <Icon icon="solar:download-linear" width={16} />
+                  Export
+                </button>
 
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={!html || publishing}
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
-              >
-                <Icon icon="solar:upload-linear" width={16} />
-                {publishing ? "Publikuji…" : "Publikovat"}
-              </button>
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={!html || publishing}
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
+                >
+                  <Icon icon="solar:upload-linear" width={16} />
+                  {publishing ? "Publikuji…" : "Publikovat"}
+                </button>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         <div
           className={`min-h-0 flex-1 ${
@@ -2031,11 +2102,7 @@ export default function AiEditorPage() {
                     <div className="text-sm font-medium text-white">Editor</div>
                     {(loading || improving || resolvingAssets) && (
                       <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
-                        {loading
-                          ? "Generuji"
-                          : improving
-                          ? "Upravuji"
-                          : "Doplňuji obrázky"}
+                        {loading ? "Generuji" : improving ? "Upravuji" : "Doplňuji obrázky"}
                       </div>
                     )}
                   </div>
@@ -2049,12 +2116,7 @@ export default function AiEditorPage() {
                       }
                       scrollChatToBottom(true);
                     }}
-                    disabled={
-                      loading ||
-                      improving ||
-                      resolvingAssets ||
-                      prompt.trim().length < 12
-                    }
+                    disabled={loading || improving || resolvingAssets || prompt.trim().length < 12}
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{
                       background:
@@ -2121,7 +2183,7 @@ export default function AiEditorPage() {
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
-                          ? "Kliknutím v náhledu vybíráte konkrétní sekce nebo texty pro úpravy."
+                          ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
                           : "Nejdřív odpovězte na pár stručných otázek v chatu, pak se web vygeneruje přesněji."}
                       </div>
                     </div>
@@ -2131,9 +2193,7 @@ export default function AiEditorPage() {
                         <div className="mb-2 text-sm font-medium text-white">
                           Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
                         </div>
-                        <div className="mb-3 text-sm text-zinc-200">
-                          {aktualniOtazka.text}
-                        </div>
+                        <div className="mb-3 text-sm text-zinc-200">{aktualniOtazka.text}</div>
 
                         <textarea
                           value={odpovedInput}
@@ -2164,9 +2224,7 @@ export default function AiEditorPage() {
 
                     {availableSections.length > 0 && (
                       <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Co chcete upravit?
-                        </div>
+                        <div className="mb-2 text-sm font-medium text-white">Co chcete upravit?</div>
                         <div className="mb-3 text-xs text-zinc-500">
                           Vyberte sekci přímo zde, nebo klikněte do náhledu.
                         </div>
@@ -2273,20 +2331,12 @@ export default function AiEditorPage() {
                     />
 
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <div className="text-xs text-zinc-500">
-                        Enter odešle úpravu
-                      </div>
+                      <div className="text-xs text-zinc-500">Enter odešle úpravu</div>
 
                       <button
                         type="button"
                         onClick={() => handleImprove()}
-                        disabled={
-                          !html ||
-                          loading ||
-                          improving ||
-                          resolvingAssets ||
-                          chatInput.trim().length < 3
-                        }
+                        disabled={!html || loading || improving || resolvingAssets || chatInput.trim().length < 3}
                         className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:pen-2-linear" width={16} />
@@ -2299,53 +2349,20 @@ export default function AiEditorPage() {
             </aside>
           )}
 
-          <main className="min-h-0 bg-[#050507]">
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
-                <div className="flex items-center gap-2">
+          <main className="relative min-h-0 bg-[#050507]">
+            {isFullscreen && activeTab === "preview" && (
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center p-4">
+                <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-[#08080c]/88 px-3 py-2 shadow-2xl backdrop-blur-2xl">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("preview")}
-                    className={`rounded-full px-4 py-2 text-sm transition ${
-                      activeTab === "preview"
-                        ? "bg-white/[0.10] text-white"
-                        : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                    }`}
+                    onClick={() => setIsFullscreen(false)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"
                   >
-                    Náhled
+                    <Icon icon="solar:arrow-left-linear" width={16} />
+                    Zpět do editoru
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("code")}
-                    className={`rounded-full px-4 py-2 text-sm transition ${
-                      activeTab === "code"
-                        ? "bg-white/[0.10] text-white"
-                        : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    Kód
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreen((prev) => !prev)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <Icon
-                      icon={
-                        isFullscreen
-                          ? "solar:minimize-square-3-linear"
-                          : "solar:maximize-square-3-linear"
-                      }
-                      width={16}
-                    />
-                    {isFullscreen
-                      ? "Ukončit celou obrazovku"
-                      : "Celá obrazovka"}
-                  </button>
+                  <div className="mx-1 h-6 w-px bg-white/10" />
 
                   <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
                     <button
@@ -2360,7 +2377,6 @@ export default function AiEditorPage() {
                     >
                       <Icon icon="solar:monitor-linear" width={18} />
                     </button>
-
                     <button
                       type="button"
                       onClick={() => setViewMode("tablet")}
@@ -2373,7 +2389,6 @@ export default function AiEditorPage() {
                     >
                       <Icon icon="solar:tablet-linear" width={18} />
                     </button>
-
                     <button
                       type="button"
                       onClick={() => setViewMode("mobile")}
@@ -2389,6 +2404,97 @@ export default function AiEditorPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            <div className="flex h-full min-h-0 flex-col">
+              {!isFullscreen && (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("preview")}
+                      className={`rounded-full px-4 py-2 text-sm transition ${
+                        activeTab === "preview"
+                          ? "bg-white/[0.10] text-white"
+                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      Náhled
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("code")}
+                      className={`rounded-full px-4 py-2 text-sm transition ${
+                        activeTab === "code"
+                          ? "bg-white/[0.10] text-white"
+                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      Kód
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isFullscreen) setActiveTab("preview");
+                        setIsFullscreen((prev) => !prev);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                    >
+                      <Icon
+                        icon={
+                          isFullscreen
+                            ? "solar:minimize-square-3-linear"
+                            : "solar:maximize-square-3-linear"
+                        }
+                        width={16}
+                      />
+                      {isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"}
+                    </button>
+
+                    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("desktop")}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                          viewMode === "desktop"
+                            ? "bg-white/[0.10] text-white"
+                            : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                        }`}
+                        title="Desktop"
+                      >
+                        <Icon icon="solar:monitor-linear" width={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("tablet")}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                          viewMode === "tablet"
+                            ? "bg-white/[0.10] text-white"
+                            : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                        }`}
+                        title="Tablet"
+                      >
+                        <Icon icon="solar:tablet-linear" width={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("mobile")}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                          viewMode === "mobile"
+                            ? "bg-white/[0.10] text-white"
+                            : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                        }`}
+                        title="Mobil"
+                      >
+                        <Icon icon="solar:smartphone-linear" width={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="min-h-0 flex-1">
                 {activeTab === "preview" ? (
@@ -2398,7 +2504,11 @@ export default function AiEditorPage() {
                     }`}
                   >
                     {previewDocument ? (
-                      <div className={`${previewWidthClass} h-full`}>
+                      <div
+                        className={`${previewWidthClass} ${
+                          isFullscreen ? "h-full min-h-full pt-20" : "h-full"
+                        }`}
+                      >
                         <iframe
                           ref={iframeRef}
                           key={iframeKey}
@@ -2448,9 +2558,7 @@ export default function AiEditorPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-white">Upravit text</div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Tag: {selectedText.tagName.toLowerCase()}
-                </div>
+                <div className="mt-1 text-xs text-zinc-500">Tag: {selectedText.tagName.toLowerCase()}</div>
               </div>
 
               <button
@@ -2464,9 +2572,7 @@ export default function AiEditorPage() {
                 }}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
               >
-                <span className="block -translate-y-[1px] text-[24px] leading-none">
-                  ×
-                </span>
+                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
               </button>
             </div>
 
@@ -2513,6 +2619,183 @@ export default function AiEditorPage() {
                 Uložit text
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {imageModalOpen && selectedImage && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4">
+          <div className="relative w-full max-w-5xl rounded-[1.75rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium text-white">Upravit obrázek</div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Slot: {selectedImage.slot} • Sekce {prettifySectionLabel(selectedImage.sectionId, "")}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Zavřít"
+                onClick={closeImageModal}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
+              >
+                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+              <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">Aktuální obrázek</div>
+
+                <div className="overflow-hidden rounded-2xl border border-white/8 bg-black/30">
+                  {selectedImage.currentUrl ? (
+                    <img
+                      src={selectedImage.currentUrl}
+                      alt={selectedImage.alt || selectedImage.slot}
+                      className="h-64 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-64 items-center justify-center text-sm text-zinc-500">
+                      Náhled není dostupný
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-1">
+                  <button
+                    type="button"
+                    onClick={() => setImagePickerTab("search")}
+                    className={`flex-1 rounded-full px-4 py-2 text-sm transition ${
+                      imagePickerTab === "search"
+                        ? "bg-white/[0.10] text-white"
+                        : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                  >
+                    Hledat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImagePickerTab("upload")}
+                    className={`flex-1 rounded-full px-4 py-2 text-sm transition ${
+                      imagePickerTab === "upload"
+                        ? "bg-white/[0.10] text-white"
+                        : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                  >
+                    Nahrát
+                  </button>
+                </div>
+
+                {imagePickerTab === "upload" && (
+                  <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4">
+                    <div className="mb-2 text-sm font-medium text-white">Nahrát vlastní obrázek</div>
+                    <div className="mb-3 text-sm text-zinc-500">
+                      Vyberte obrázek z počítače a hned se vloží do náhledu.
+                    </div>
+
+                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-8 text-center transition hover:bg-white/[0.06]">
+                      <Icon icon="solar:upload-linear" width={24} />
+                      <span className="mt-3 text-sm text-white">Klikněte pro nahrání obrázku</span>
+                      <span className="mt-1 text-xs text-zinc-500">PNG, JPG, WEBP, SVG</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0 rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+                {imagePickerTab === "search" ? (
+                  <>
+                    <div className="mb-3 text-sm font-medium text-white">Hledat nový obrázek</div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <input
+                        value={imageSearchQuery}
+                        onChange={(e) => setImageSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            void searchEditorImages();
+                          }
+                        }}
+                        className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
+                        placeholder="Např. luxury resort pool, barber portrait, modern office…"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => void searchEditorImages()}
+                        disabled={imageSearchLoading || imageSearchQuery.trim().length < 2}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
+                      >
+                        <Icon icon="solar:magnifer-linear" width={16} />
+                        {imageSearchLoading ? "Hledám…" : "Hledat"}
+                      </button>
+                    </div>
+
+                    <div className="mt-3 text-xs text-zinc-500">
+                      Hledání používá zdroje jako Unsplash a Pexels podle typu obrázku.
+                    </div>
+
+                    <div className="mt-4 max-h-[30rem] overflow-y-auto pr-1">
+                      {imageSearchLoading ? (
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
+                              <div className="h-40 animate-pulse bg-white/[0.06]" />
+                              <div className="space-y-2 p-3">
+                                <div className="h-3 w-3/4 rounded-full bg-white/[0.08]" />
+                                <div className="h-3 w-1/2 rounded-full bg-white/[0.06]" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : imageSearchResults.length > 0 ? (
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {imageSearchResults.map((image, index) => (
+                            <div key={`${image.url}-${index}`} className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
+                              <img src={image.url} alt={image.alt} className="h-40 w-full object-cover" />
+                              <div className="space-y-3 p-3">
+                                <div>
+                                  <div className="line-clamp-2 text-sm text-white">{image.alt}</div>
+                                  <div className="mt-1 text-xs text-zinc-500">
+                                    {image.source}
+                                    {image.photographer ? ` • ${image.photographer}` : ""}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => applyImageChange(image)}
+                                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"
+                                >
+                                  <Icon icon="solar:gallery-add-linear" width={16} />
+                                  Použít obrázek
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex min-h-[16rem] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
+                          Zatím nejsou žádné výsledky.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-full min-h-[18rem] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
+                    Vlevo nahrajte vlastní obrázek.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {imageUploadError && (
+              <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                {imageUploadError}
+              </div>
+            )}
           </div>
         </div>
       )}
