@@ -7,7 +7,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-4.1";
+const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
 
 type ChatHistoryItem = {
   role: "system" | "user" | "assistant";
@@ -446,6 +446,7 @@ export async function POST(req: Request) {
       selectedSectionId,
       changedOnlySelectedSection: true,
       twoStepMode: true,
+      modelUsed: WEB_MODEL,
     });
   } catch (e: any) {
     console.error("/api/improve fatal error:", e);
