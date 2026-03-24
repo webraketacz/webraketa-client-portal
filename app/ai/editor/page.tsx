@@ -14,6 +14,14 @@ type GeneratorResponse = {
     style?: string;
     layoutTone?: string;
   };
+  error?: string;
+  selectedSectionId?: string;
+  changedOnlySelectedSection?: boolean;
+};
+
+type PublishResponse = {
+  url?: string;
+  error?: string;
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
@@ -155,6 +163,37 @@ function injectEditableTextAttributes(html: string) {
     return doc.body.innerHTML;
   } catch {
     return html;
+  }
+}
+
+async function parseApiResponse<T>(res: Response): Promise<T> {
+  const raw = await res.text();
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!raw) {
+    throw new Error("Server vrátil prázdnou odpověď.");
+  }
+
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      throw new Error(`Server vrátil neplatný JSON: ${raw.slice(0, 220)}`);
+    }
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    const cleaned = raw
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 220);
+
+    throw new Error(
+      cleaned || "Server nevrátil JSON. Pravděpodobně došlo k chybě na backendu."
+    );
   }
 }
 
@@ -605,7 +644,6 @@ export default function AiEditorPage() {
   const autostartRef = useRef(false);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   const iframeKey = useMemo(
@@ -828,16 +866,20 @@ export default function AiEditorPage() {
         }),
       });
 
-      const data: GeneratorResponse & { error?: string } = await res.json();
+      const data = await parseApiResponse<GeneratorResponse>(res);
 
       if (!res.ok) {
         throw new Error(data?.error ?? "Generování selhalo");
       }
 
+      if (!data?.html || !data?.css) {
+        throw new Error("API /api/generate nevrátilo validní HTML/CSS.");
+      }
+
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
       setHtml(data.html);
       setCss(data.css);
-      setJs(data.js);
+      setJs(data.js || "");
 
       setMessages((prev) => [
         ...prev,
@@ -901,20 +943,20 @@ export default function AiEditorPage() {
         }),
       });
 
-      const data: GeneratorResponse & {
-        error?: string;
-        selectedSectionId?: string;
-        changedOnlySelectedSection?: boolean;
-      } = await res.json();
+      const data = await parseApiResponse<GeneratorResponse>(res);
 
       if (!res.ok) {
         throw new Error(data?.error ?? "Úprava designu selhala");
       }
 
+      if (!data?.html || !data?.css) {
+        throw new Error("API /api/improve nevrátilo validní HTML/CSS.");
+      }
+
       stopSmoothProgress(true, "Úpravy byly úspěšně aplikovány");
       setHtml(data.html);
       setCss(data.css);
-      setJs(data.js);
+      setJs(data.js || "");
       setChatInput("");
       setActiveTab("preview");
 
@@ -947,7 +989,7 @@ export default function AiEditorPage() {
         body: JSON.stringify({ prompt, html, css, js }),
       });
 
-      const data: { url?: string; error?: string } = await res.json();
+      const data = await parseApiResponse<PublishResponse>(res);
 
       if (!res.ok || !data.url) {
         throw new Error(data?.error ?? "Publikace selhala");
@@ -1241,10 +1283,7 @@ export default function AiEditorPage() {
                   </button>
                 </div>
 
-                <div
-                  ref={chatScrollRef}
-                  className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
-                >
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                   <div className="space-y-3">
                     {messages.map((message) => {
                       const isUser = message.role === "user";
