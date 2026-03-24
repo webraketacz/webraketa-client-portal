@@ -226,6 +226,45 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
   }
 
   if (
+    text.includes("beauty") ||
+    text.includes("esthetic") ||
+    text.includes("estet") ||
+    text.includes("skin") ||
+    text.includes("kosmet") ||
+    text.includes("derma")
+  ) {
+    return {
+      preferred: [
+        "beauty clinic",
+        "skin care",
+        "facial treatment",
+        "beauty consultation",
+        "esthetic doctor",
+        "clinic interior",
+        "skincare",
+        "woman",
+        "professional",
+      ],
+      banned: [
+        "mountain",
+        "forest",
+        "beach",
+        "landscape",
+        "travel",
+        "animal",
+        "dog",
+        "cat",
+      ],
+      fallbackQueries: [
+        "beauty clinic consultation",
+        "modern beauty clinic interior",
+        "skincare treatment woman",
+        "esthetic doctor consultation",
+      ],
+    };
+  }
+
+  if (
     text.includes("saas") ||
     text.includes("startup") ||
     text.includes("software") ||
@@ -779,7 +818,7 @@ ${assetsText}
 
 STRICT DESIGN RULES:
 - use the provided images where appropriate
-- if an image is provided for legal, healthcare, saas or similar industries, use it semantically and not decoratively
+- if an image is provided for legal, healthcare, saas, beauty or similar industries, use it semantically and not decoratively
 - use Czech copy, not lorem ipsum
 - ensure responsive design across desktop, tablet and mobile
 - avoid giant empty blank blocks
@@ -856,21 +895,37 @@ ${params.js}
 `;
 }
 
-async function runJsonModel(input: string, instructions: string) {
+async function createResponseText(input: string, instructions: string) {
   const result = await client.responses.create({
     model: "gpt-5.4",
     instructions,
     input,
   });
 
-  const rawText = result.output_text?.trim() ?? "";
+  return result.output_text?.trim() ?? "";
+}
+
+function parsePlannerJson<T>(rawText: string, label: string): T {
+  const cleaned = cleanJsonOutput(rawText);
+
+  try {
+    return JSON.parse(extractJson(cleaned)) as T;
+  } catch {
+    throw new Error(
+      `${label} nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
+    );
+  }
+}
+
+async function runJsonModel(input: string, instructions: string) {
+  const rawText = await createResponseText(input, instructions);
   const cleaned = cleanJsonOutput(rawText);
 
   try {
     return JSON.parse(extractJson(cleaned)) as WebsiteBundle;
   } catch {
     throw new Error(
-      `Model nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
+      `Generate renderer nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
     );
   }
 }
@@ -890,20 +945,17 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing or invalid prompt" }, { status: 400 });
     }
 
-    const planner = await client.responses.create({
-      model: "gpt-5.4",
-      instructions:
-        "You are a precise design strategist. Return only valid JSON. No markdown.",
-      input: plannerPrompt({
+    const plannerRaw = await createResponseText(
+      plannerPrompt({
         prompt,
         buildType,
         model,
         chatHistory,
       }),
-    });
+      "You are a precise design strategist. Return only valid JSON. No markdown."
+    );
 
-    const plannerText = cleanJsonOutput(planner.output_text?.trim() ?? "");
-    const brief = JSON.parse(extractJson(plannerText)) as DesignBrief;
+    const brief = parsePlannerJson<DesignBrief>(plannerRaw, "Generate planner");
 
     const assets = await resolveImageAssets(
       brief.imagePlan || [],
@@ -957,8 +1009,12 @@ export async function POST(req: Request) {
       assets,
     });
   } catch (e: any) {
+    console.error("/api/generate fatal error:", e);
+
     return Response.json(
-      { error: e?.message ?? "Server error" },
+      {
+        error: e?.message ?? "Server error",
+      },
       { status: 500 }
     );
   }
