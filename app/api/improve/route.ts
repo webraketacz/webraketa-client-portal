@@ -8,6 +8,7 @@ const client = new OpenAI({
 });
 
 const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
+const OPENAI_REQUEST_TIMEOUT_MS = 45000;
 
 type ChatHistoryItem = {
   role: "system" | "user" | "assistant";
@@ -35,34 +36,62 @@ type WebsiteBundle = {
   js: string;
 };
 
+function nowMs() {
+  return Date.now();
+}
+
+function logStep(requestId: string, step: string, startedAt: number, extra?: Record<string, unknown>) {
+  const duration = Date.now() - startedAt;
+  console.log(
+    JSON.stringify({
+      scope: "api-improve",
+      requestId,
+      step,
+      durationMs: duration,
+      ...(extra || {}),
+    })
+  );
+}
+
 async function createStructuredObject<T>({
   model,
   system,
   user,
   schemaName,
   schema,
+  requestId,
 }: {
   model: string;
   system: string;
   user: string;
   schemaName: string;
   schema: Record<string, unknown>;
+  requestId: string;
 }): Promise<T> {
-  const completion = await client.chat.completions.create({
-    model,
-    messages: [
-      { role: "developer", content: system },
-      { role: "user", content: user },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: schemaName,
-        schema,
-        strict: true,
+  const startedAt = nowMs();
+
+  const completion = await client.chat.completions.create(
+    {
+      model,
+      messages: [
+        { role: "developer", content: system },
+        { role: "user", content: user },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: schemaName,
+          schema,
+          strict: true,
+        },
       },
     },
-  });
+    {
+      timeout: OPENAI_REQUEST_TIMEOUT_MS,
+    }
+  );
+
+  logStep(requestId, `openai:${schemaName}`, startedAt, { model });
 
   const content = completion.choices?.[0]?.message?.content;
 
@@ -122,6 +151,25 @@ function cleanCodeBlock(raw: string) {
     .trim();
 }
 
+function sanitizeAssetPlan(assetPlan: unknown): AssetPlanItem[] {
+  if (!Array.isArray(assetPlan)) return [];
+
+  return assetPlan
+    .slice(0, 2)
+    .filter((item): item is AssetPlanItem => {
+      if (!item || typeof item !== "object") return false;
+      const candidate = item as AssetPlanItem;
+
+      return Boolean(
+        candidate.slot &&
+          candidate.query &&
+          candidate.placement &&
+          candidate.mood &&
+          ["landscape", "portrait", "square"].includes(candidate.orientation)
+      );
+    });
+}
+
 function sanitizeBundle(bundle: WebsiteBundle): WebsiteBundle {
   const html = cleanCodeBlock(bundle.html || "");
   const css = cleanCodeBlock(bundle.css || "");
@@ -151,7 +199,7 @@ function sanitizeSectionBundle(bundle: SectionBundle): SectionBundle {
     sectionHtml,
     sectionCss,
     sectionJs,
-    assetPlan: Array.isArray(bundle.assetPlan) ? bundle.assetPlan.slice(0, 2) : [],
+    assetPlan: sanitizeAssetPlan(bundle.assetPlan),
   };
 }
 
@@ -159,7 +207,7 @@ function formatChatHistory(history: ChatHistoryItem[]) {
   if (!history?.length) return "Žádná historie chatu.";
 
   return history
-    .slice(-10)
+    .slice(-8)
     .map((item, index) => `${index + 1}. [${item.role}] ${item.text}`)
     .join("\n");
 }
@@ -177,6 +225,14 @@ function extractSectionById(html: string, sectionId: string) {
 
   const match = html.match(sectionRegex);
   return match?.[0] || null;
+}
+
+function extractSectionIds(html: string) {
+  const matches = [...html.matchAll(/data-section-id=(["'])(.*?)\1/g)].map(
+    (match) => match[2]
+  );
+
+  return Array.from(new Set(matches)).slice(0, 20);
 }
 
 function replaceSectionById(params: {
@@ -283,13 +339,11 @@ function improveRenderPrompt(params: {
   instruction: string;
   selectedSectionId: string;
   selectedSectionHtml: string;
-  html: string;
-  css: string;
-  js: string;
+  sectionIds: string[];
   chatHistory?: ChatHistoryItem[];
 }) {
   return `
-You are an elite web designer and frontend engineer.
+You are a world-class commercial web designer and senior frontend engineer.
 
 Return ONLY a structured JSON object matching the schema.
 
@@ -310,10 +364,20 @@ CRITICAL RULES:
 - preserve semantic structure
 - keep result lightweight and production-safe
 
+DESIGN QUALITY RULES:
+- improve this section so it feels designed by a strong human designer
+- avoid generic template look
+- use stronger hierarchy, spacing, alignment and composition
+- keep the section consistent with the probable industry and visual tone
+- do not overcomplicate markup
+- if the instruction is mainly text-related, change mostly the copy
+- if the instruction is mainly visual, improve composition without breaking structure
+
 IMAGE RULES:
 - if you use a new image in this section, add data-image-slot="<slot>" to the image element
 - assetPlan may contain up to 2 items
 - assetPlan.slot values must match the slot values used in sectionHtml
+- use concrete English queries
 - if no new image is needed, return an empty assetPlan array
 
 ORIGINAL PROJECT PROMPT:
@@ -325,26 +389,25 @@ ${params.instruction}
 SELECTED SECTION ID:
 ${params.selectedSectionId}
 
+AVAILABLE SECTION IDS ON PAGE:
+${params.sectionIds.join(", ") || "unknown"}
+
 SELECTED SECTION HTML:
 ${params.selectedSectionHtml}
 
 CHAT HISTORY:
 ${formatChatHistory(params.chatHistory || [])}
-
-FULL HTML FOR CONTEXT ONLY:
-${params.html}
-
-FULL CSS FOR CONTEXT ONLY:
-${params.css}
-
-FULL JS FOR CONTEXT ONLY:
-${params.js}
 `;
 }
 
 export async function POST(req: Request) {
+  const requestId = crypto.randomUUID();
+  const routeStartedAt = nowMs();
+
   try {
+    const bodyStartedAt = nowMs();
     const body = await req.json();
+    logStep(requestId, "parse-body", bodyStartedAt);
 
     const prompt = typeof body?.prompt === "string" ? body.prompt : "";
     const instruction = typeof body?.instruction === "string" ? body.instruction : "";
@@ -356,6 +419,21 @@ export async function POST(req: Request) {
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
+
+    console.log(
+      JSON.stringify({
+        scope: "api-improve",
+        requestId,
+        step: "start",
+        model: WEB_MODEL,
+        promptLength: prompt.length,
+        instructionLength: instruction.length,
+        htmlLength: html.length,
+        cssLength: css.length,
+        jsLength: js.length,
+        selectedSectionId,
+      })
+    );
 
     if (!prompt.trim()) {
       return Response.json({ error: "Chybí původní prompt." }, { status: 400 });
@@ -379,7 +457,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const sectionExtractionStartedAt = nowMs();
     const selectedSectionHtml = extractSectionById(html, selectedSectionId);
+    const sectionIds = extractSectionIds(html);
+    logStep(requestId, "extract-section", sectionExtractionStartedAt, {
+      selectedSectionId,
+      sectionIdsCount: sectionIds.length,
+      selectedSectionLength: selectedSectionHtml?.length || 0,
+    });
 
     if (!selectedSectionHtml) {
       return Response.json(
@@ -390,6 +475,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const improveStartedAt = nowMs();
+
     const improvedSection = await createStructuredObject<SectionBundle>({
       model: WEB_MODEL,
       system:
@@ -399,18 +486,29 @@ export async function POST(req: Request) {
         instruction,
         selectedSectionId,
         selectedSectionHtml,
-        html,
-        css,
-        js,
+        sectionIds,
         chatHistory,
       }),
       schemaName: "improve_section_bundle_two_step",
       schema: sectionBundleSchema,
+      requestId,
     });
 
+    logStep(requestId, "improve-finished", improveStartedAt, {
+      sectionHtmlLength: improvedSection?.sectionHtml?.length || 0,
+      sectionCssLength: improvedSection?.sectionCss?.length || 0,
+      sectionJsLength: improvedSection?.sectionJs?.length || 0,
+      assetPlanCount: improvedSection?.assetPlan?.length || 0,
+    });
+
+    const sanitizeStartedAt = nowMs();
     const safeImprovedSection = sanitizeSectionBundle(improvedSection);
     ensureSectionScope(safeImprovedSection.sectionHtml, selectedSectionId);
+    logStep(requestId, "sanitize-section", sanitizeStartedAt, {
+      assetPlanCount: safeImprovedSection.assetPlan.length,
+    });
 
+    const mergeStartedAt = nowMs();
     const mergedHtml = replaceSectionById({
       html,
       sectionId: selectedSectionId,
@@ -437,6 +535,18 @@ export async function POST(req: Request) {
       js: mergedJs,
     });
 
+    logStep(requestId, "merge-bundle", mergeStartedAt, {
+      mergedHtmlLength: safeFinalBundle.html.length,
+      mergedCssLength: safeFinalBundle.css.length,
+      mergedJsLength: safeFinalBundle.js.length,
+    });
+
+    logStep(requestId, "done", routeStartedAt, {
+      totalMs: Date.now() - routeStartedAt,
+      model: WEB_MODEL,
+      selectedSectionId,
+    });
+
     return Response.json({
       html: safeFinalBundle.html,
       css: safeFinalBundle.css,
@@ -447,13 +557,24 @@ export async function POST(req: Request) {
       changedOnlySelectedSection: true,
       twoStepMode: true,
       modelUsed: WEB_MODEL,
+      requestId,
     });
   } catch (e: any) {
-    console.error("/api/improve fatal error:", e);
+    console.error(
+      JSON.stringify({
+        scope: "api-improve",
+        requestId,
+        step: "fatal-error",
+        totalMs: Date.now() - routeStartedAt,
+        error: e?.message ?? "Unknown error",
+        stack: e?.stack || null,
+      })
+    );
 
     return Response.json(
       {
         error: e?.message ?? "Improve route failed",
+        requestId,
       },
       { status: 500 }
     );

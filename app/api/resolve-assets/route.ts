@@ -26,6 +26,23 @@ type IndustryImageRules = {
 
 const IMAGE_FETCH_TIMEOUT_MS = 3500;
 
+function nowMs() {
+  return Date.now();
+}
+
+function logStep(requestId: string, step: string, startedAt: number, extra?: Record<string, unknown>) {
+  const duration = Date.now() - startedAt;
+  console.log(
+    JSON.stringify({
+      scope: "api-resolve-assets",
+      requestId,
+      step,
+      durationMs: duration,
+      ...(extra || {}),
+    })
+  );
+}
+
 async function withTimeout<T>(
   promiseFactory: (signal: AbortSignal) => Promise<T>,
   timeoutMs: number
@@ -184,6 +201,30 @@ function getIndustryImageRules(prompt: string): IndustryImageRules {
     };
   }
 
+  if (
+    text.includes("beauty") ||
+    text.includes("esthetic") ||
+    text.includes("kosmet") ||
+    text.includes("derma")
+  ) {
+    return {
+      preferred: [
+        "beauty clinic",
+        "skin care",
+        "facial treatment",
+        "beauty consultation",
+        "clinic interior",
+        "professional",
+      ],
+      banned: ["mountain", "forest", "beach", "travel", "dog", "cat"],
+      fallbackQueries: [
+        "beauty clinic consultation",
+        "modern beauty clinic interior",
+        "skincare treatment woman",
+      ],
+    };
+  }
+
   return {
     preferred: [
       "business",
@@ -231,14 +272,17 @@ function isImageRelevantForIndustry(
 }
 
 async function searchPexelsCandidates(
+  requestId: string,
   query: string,
   orientation: "landscape" | "portrait" | "square"
 ) {
   const apiKey = process.env.PEXELS_API_KEY;
   if (!apiKey) return [];
 
+  const startedAt = nowMs();
+
   try {
-    return await withTimeout(async (signal) => {
+    const result = await withTimeout(async (signal) => {
       const url = new URL("https://api.pexels.com/v1/search");
       url.searchParams.set("query", query);
       url.searchParams.set("per_page", "4");
@@ -283,20 +327,36 @@ async function searchPexelsCandidates(
         })
         .filter(Boolean) as ResolvedAsset[];
     }, IMAGE_FETCH_TIMEOUT_MS);
-  } catch {
+
+    logStep(requestId, "pexels", startedAt, {
+      query,
+      orientation,
+      count: result.length,
+    });
+
+    return result;
+  } catch (error: any) {
+    logStep(requestId, "pexels-failed", startedAt, {
+      query,
+      orientation,
+      error: error?.message ?? "unknown",
+    });
     return [];
   }
 }
 
 async function searchUnsplashCandidates(
+  requestId: string,
   query: string,
   orientation: "landscape" | "portrait" | "square"
 ) {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) return [];
 
+  const startedAt = nowMs();
+
   try {
-    return await withTimeout(async (signal) => {
+    const result = await withTimeout(async (signal) => {
       const orientationMap =
         orientation === "portrait"
           ? "portrait"
@@ -350,19 +410,33 @@ async function searchUnsplashCandidates(
         })
         .filter(Boolean) as ResolvedAsset[];
     }, IMAGE_FETCH_TIMEOUT_MS);
-  } catch {
+
+    logStep(requestId, "unsplash", startedAt, {
+      query,
+      orientation,
+      count: result.length,
+    });
+
+    return result;
+  } catch (error: any) {
+    logStep(requestId, "unsplash-failed", startedAt, {
+      query,
+      orientation,
+      error: error?.message ?? "unknown",
+    });
     return [];
   }
 }
 
 async function findRelevantImage(params: {
+  requestId: string;
   query: string;
   orientation: "landscape" | "portrait" | "square";
   rules: IndustryImageRules;
 }) {
   const [pexelsCandidates, unsplashCandidates] = await Promise.all([
-    searchPexelsCandidates(params.query, params.orientation),
-    searchUnsplashCandidates(params.query, params.orientation),
+    searchPexelsCandidates(params.requestId, params.query, params.orientation),
+    searchUnsplashCandidates(params.requestId, params.query, params.orientation),
   ]);
 
   const candidates = [...pexelsCandidates, ...unsplashCandidates];
@@ -381,6 +455,7 @@ async function findRelevantImage(params: {
 }
 
 async function resolveImageAssets(
+  requestId: string,
   assetPlan: AssetPlanItem[],
   prompt: string
 ): Promise<ResolvedAsset[]> {
@@ -389,14 +464,23 @@ async function resolveImageAssets(
 
   return Promise.all(
     limitedPlan.map(async (item, index) => {
+      const startedAt = nowMs();
+
       try {
         const match = await findRelevantImage({
+          requestId,
           query: item.query,
           orientation: item.orientation,
           rules,
         });
 
         if (match) {
+          logStep(requestId, "asset-resolved", startedAt, {
+            slot: item.slot,
+            source: match.source,
+            query: item.query,
+          });
+
           return {
             ...match,
             slot: item.slot,
@@ -406,15 +490,26 @@ async function resolveImageAssets(
         const fallbackQuery =
           rules.fallbackQueries[index % rules.fallbackQueries.length];
 
+        logStep(requestId, "asset-fallback", startedAt, {
+          slot: item.slot,
+          query: fallbackQuery,
+        });
+
         return {
           slot: item.slot,
           url: fallbackImageUrl(fallbackQuery, item.orientation),
           alt: fallbackQuery,
           source: "fallback" as const,
         };
-      } catch {
+      } catch (error: any) {
         const fallbackQuery =
           rules.fallbackQueries[index % rules.fallbackQueries.length];
+
+        logStep(requestId, "asset-fallback-error", startedAt, {
+          slot: item.slot,
+          query: fallbackQuery,
+          error: error?.message ?? "unknown",
+        });
 
         return {
           slot: item.slot,
@@ -428,31 +523,64 @@ async function resolveImageAssets(
 }
 
 export async function POST(req: Request) {
+  const requestId = crypto.randomUUID();
+  const routeStartedAt = nowMs();
+
   try {
+    const bodyStartedAt = nowMs();
     const body = await req.json();
+    logStep(requestId, "parse-body", bodyStartedAt);
 
     const prompt = typeof body?.prompt === "string" ? body.prompt : "";
     const assetPlan = Array.isArray(body?.assetPlan)
       ? (body.assetPlan as AssetPlanItem[])
       : [];
 
+    console.log(
+      JSON.stringify({
+        scope: "api-resolve-assets",
+        requestId,
+        step: "start",
+        promptLength: prompt.length,
+        assetPlanCount: assetPlan.length,
+      })
+    );
+
     if (!prompt.trim()) {
       return Response.json({ error: "Chybí prompt." }, { status: 400 });
     }
 
     if (!assetPlan.length) {
-      return Response.json({ assets: [] });
+      return Response.json({ assets: [], requestId });
     }
 
-    const assets = await resolveImageAssets(assetPlan, prompt);
+    const resolveStartedAt = nowMs();
+    const assets = await resolveImageAssets(requestId, assetPlan, prompt);
+    logStep(requestId, "resolve-all-assets", resolveStartedAt, {
+      resolvedCount: assets.length,
+    });
 
-    return Response.json({ assets });
+    logStep(requestId, "done", routeStartedAt, {
+      totalMs: Date.now() - routeStartedAt,
+    });
+
+    return Response.json({ assets, requestId });
   } catch (e: any) {
-    console.error("/api/resolve-assets fatal error:", e);
+    console.error(
+      JSON.stringify({
+        scope: "api-resolve-assets",
+        requestId,
+        step: "fatal-error",
+        totalMs: Date.now() - routeStartedAt,
+        error: e?.message ?? "Unknown error",
+        stack: e?.stack || null,
+      })
+    );
 
     return Response.json(
       {
         error: e?.message ?? "Resolve assets failed",
+        requestId,
       },
       { status: 500 }
     );
