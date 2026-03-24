@@ -6,7 +6,7 @@ export const maxDuration = 300;
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   maxRetries: 0,
-  timeout: 45000,
+  timeout: 200000,
 });
 
 const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
