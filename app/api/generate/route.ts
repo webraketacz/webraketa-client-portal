@@ -540,7 +540,9 @@ function resolveCreativeDirection(
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
       ? "rich"
-      : industry === "resort" || industry === "beauty" || industry === "restaurant"
+      : industry === "resort" ||
+        industry === "beauty" ||
+        industry === "restaurant"
       ? "subtle"
       : "subtle";
 
@@ -549,41 +551,49 @@ function resolveCreativeDirection(
       "hero-left-ui-right",
       "hero-center-dashboard-below",
       "layered-analytics-panels",
+      "glassy-signal-columns",
     ],
     saas: [
       "hero-center-dashboard-below",
       "stacked-storyflow",
       "grid-led-platform-layout",
+      "observability-hub-layout",
     ],
     resort: [
       "full-bleed-photo-editorial",
       "stacked-storyflow",
       "immersive-cinematic-hero",
+      "story-led-split-panels",
     ],
     restaurant: [
       "full-bleed-photo-editorial",
       "immersive-cinematic-hero",
       "editorial-story-menu-flow",
+      "floating-reservation-panel",
     ],
     product: [
       "product-hero-with-packshot",
       "benefit-led-commerce-layout",
       "clean-product-split",
+      "bento-product-panels",
     ],
     automotive: [
       "clean-automotive-hero",
       "trust-led-service-grid",
       "split-vehicle-showcase",
+      "service-dashboard-clean",
     ],
     trades: [
       "trust-led-service-grid",
       "clean-process-layout",
       "split-service-hero",
+      "practical-bento-layout",
     ],
     generic: [
       "hero-left-ui-right",
       "stacked-storyflow",
       "asymmetric-panel-composition",
+      "disciplined-bento-layout",
     ],
   };
 
@@ -728,7 +738,7 @@ REFERENCE FAMILY: CLEAN AUTOMOTIVE
 REFERENCE FAMILY: SERVICE TRADES
 - clean commercial local service website
 - practical trust-first structure
-- clear services, realizations, process, references, contact
+- clear services, realizace, process, references, contact
 `;
 
     case "clean-business":
@@ -1088,6 +1098,57 @@ ${getIndustrySpecificRules(
   params.preferences.imageMode
 )}
 
+SPACING AND COMPOSITION RULES:
+- spacing must feel deliberate and premium, not compressed
+- section top/bottom spacing on desktop should usually land between 88px and 144px depending on density
+- tablet spacing should stay generous, not collapse too hard
+- mobile spacing must still breathe
+- keep consistent inner card padding inside similar components
+- if you use a grid or bento layout, make it disciplined and visually aligned
+- do not let one card have 18px padding and another similar card 44px unless clearly intentional
+- use a visible spacing rhythm and repeat it consistently
+
+TYPOGRAPHY HIERARCHY RULES:
+- enforce a clear H1 / H2 / H3 / H4 hierarchy
+- H1 must be visually dominant and distinct from H2
+- section labels / eyebrow text should be much smaller than section titles
+- heading-top margins and bottom margins must be consistent
+- avoid oversized headings inside secondary sections
+- subheadings should support, not compete with the hero
+- paragraphs must have readable line-height and sufficient distance from titles
+
+RADIUS SYSTEM RULES:
+- do NOT use the same radius everywhere by default
+- establish a radius system per design family:
+  - large hero panels / feature wrappers may use larger radius
+  - cards use medium radius
+  - pills / chips use full or small rounded radius
+  - tables and menus can use smaller cleaner radius where appropriate
+- keep the radius system coherent and repeated intentionally
+
+BUTTON AND CONTRAST RULES:
+- primary CTA must be highly visible against its background
+- navigation links and CTA button must not visually merge into the same weight or same contrast level
+- if the menu text is light and subtle, the CTA must have stronger fill / outline / contrast
+- secondary buttons must still be readable
+- never create low-contrast CTA text against similarly colored fills
+
+MENU VARIATION RULES:
+- do not always use the same menu pattern
+- choose a menu style that fits the design family, for example:
+  - central floating navigation bar with rounded shell
+  - split navigation with logo left, menu centered, CTA right
+  - glass pill navigation over hero
+  - clean enterprise top bar with CTA anchored right
+  - editorial top navigation with lighter structure
+- menu must have balanced internal padding and a deliberate silhouette
+- hamburger must be visually clear and functional on mobile
+
+BENTO / CARD SYSTEM RULES:
+- if using bento or feature cards, cards should look intentionally designed as one family
+- match border color, padding logic, heading scale, icon size and internal spacing
+- avoid one visually weak card next to one very dense card unless it is part of the intended layout rhythm
+
 LAYOUT SYSTEM RULES:
 - use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
 - examples of acceptable layout systems:
@@ -1180,6 +1241,11 @@ FINAL QA:
 - strong compositional identity
 - custom-feeling icons
 - richer motion and detail
+- disciplined spacing
+- coherent radius system
+- strong heading hierarchy
+- strong CTA contrast
+- polished bento and cards
 - short strong hero headline
 `;
 }
@@ -1242,7 +1308,7 @@ export async function POST(req: Request) {
         chatHistory,
         preferences: resolvedPreferences,
       }),
-      schemaName: "website_bundle_industry_chat_v5",
+      schemaName: "website_bundle_spacing_typography_v6",
       schema: generatedWebsiteSchema,
       requestId,
     });
