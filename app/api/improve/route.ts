@@ -46,20 +46,92 @@ type IndustryImageRules = {
   fallbackQueries: string[];
 };
 
-function extractJson(raw: string) {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
+async function createStructuredObject<T>({
+  system,
+  user,
+  schemaName,
+  schema,
+}: {
+  system: string;
+  user: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+}): Promise<T> {
+  const completion = await client.chat.completions.create({
+    model: "gpt-4.1",
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: schemaName,
+        schema,
+        strict: true,
+      },
+    },
+  });
 
-  if (start === -1 || end === -1) {
-    throw new Error("Model nevrátil validní JSON.");
+  const content = completion.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(`Model nevrátil obsah pro schema ${schemaName}.`);
   }
 
-  return raw.slice(start, end + 1);
+  try {
+    return JSON.parse(content) as T;
+  } catch {
+    throw new Error(
+      `Structured output pro ${schemaName} není validní JSON. Začátek odpovědi: ${content.slice(
+        0,
+        180
+      )}`
+    );
+  }
 }
 
-function cleanJsonOutput(raw: string) {
-  return raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-}
+const improvePlanSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    changeSummary: { type: "string" },
+    preserveRules: {
+      type: "array",
+      items: { type: "string" },
+    },
+    imageRefreshPlan: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          slot: { type: "string" },
+          query: { type: "string" },
+          placement: { type: "string" },
+          mood: { type: "string" },
+          orientation: {
+            type: "string",
+            enum: ["landscape", "portrait", "square"],
+          },
+        },
+        required: ["slot", "query", "placement", "mood", "orientation"],
+      },
+    },
+  },
+  required: ["changeSummary", "preserveRules", "imageRefreshPlan"],
+};
+
+const websiteBundleSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    html: { type: "string" },
+    css: { type: "string" },
+    js: { type: "string" },
+  },
+  required: ["html", "css", "js"],
+};
 
 function cleanCodeBlock(raw: string) {
   return raw
@@ -212,6 +284,45 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "modern clinic interior",
         "healthcare professional portrait",
         "medical team clean environment",
+      ],
+    };
+  }
+
+  if (
+    text.includes("beauty") ||
+    text.includes("esthetic") ||
+    text.includes("estet") ||
+    text.includes("skin") ||
+    text.includes("kosmet") ||
+    text.includes("derma")
+  ) {
+    return {
+      preferred: [
+        "beauty clinic",
+        "skin care",
+        "facial treatment",
+        "beauty consultation",
+        "esthetic doctor",
+        "clinic interior",
+        "skincare",
+        "woman",
+        "professional",
+      ],
+      banned: [
+        "mountain",
+        "forest",
+        "beach",
+        "landscape",
+        "travel",
+        "animal",
+        "dog",
+        "cat",
+      ],
+      fallbackQueries: [
+        "beauty clinic consultation",
+        "modern beauty clinic interior",
+        "skincare treatment woman",
+        "esthetic doctor consultation",
       ],
     };
   }
@@ -605,22 +716,7 @@ Jsi senior AI design editor a web creative director.
 
 Tvým úkolem je pochopit změnu, kterou uživatel chce provést nad již existujícím webem.
 
-Nesmíš vrátit markdown. Nesmíš vrátit nic kromě JSON objektu.
-
-Vrať PŘESNĚ tento JSON:
-{
-  "changeSummary": "string",
-  "preserveRules": ["string", "string", "string"],
-  "imageRefreshPlan": [
-    {
-      "slot": "hero",
-      "query": "string",
-      "placement": "string",
-      "mood": "string",
-      "orientation": "landscape"
-    }
-  ]
-}
+Vrať přesně strukturovaný JSON podle schématu.
 
 Pravidla:
 - preserveRules musí popsat, co se má zachovat
@@ -677,17 +773,7 @@ function improveRenderPrompt(params: {
   return `
 You are an elite web designer and frontend engineer.
 
-Return ONLY a valid JSON object.
-No markdown.
-No code fences.
-No explanation.
-
-Return this exact JSON shape:
-{
-  "html": "string",
-  "css": "string",
-  "js": "string"
-}
+Return ONLY a structured JSON object matching the schema.
 
 TASK:
 You are improving an existing website bundle, not blindly recreating a new one from zero.
@@ -748,8 +834,6 @@ FINAL QA BEFORE OUTPUT:
 - coherent imagery
 - polished responsive result
 - short and strong hero headline
-
-Return only final JSON object.
 `;
 }
 
@@ -763,12 +847,7 @@ function selfCheckPrompt(params: {
   return `
 You are a brutally honest senior web design QA reviewer and frontend fixer.
 
-Return ONLY a valid JSON object:
-{
-  "html": "string",
-  "css": "string",
-  "js": "string"
-}
+Return ONLY a structured JSON object matching the schema.
 
 IMPORTANT:
 - Preserve the intended user change
@@ -780,7 +859,6 @@ IMPORTANT:
 - Ensure tablet spacing is polished
 - Keep Czech copy
 - Keep semantic sections and metadata
-- Return final repaired bundle only
 
 ORIGINAL PROJECT PROMPT:
 ${params.prompt}
@@ -797,41 +875,6 @@ ${params.css}
 CURRENT JS:
 ${params.js}
 `;
-}
-
-async function createResponseText(input: string, instructions: string) {
-  const result = await client.responses.create({
-    model: "gpt-5.4",
-    instructions,
-    input,
-  });
-
-  return result.output_text?.trim() ?? "";
-}
-
-function parsePlannerJson<T>(rawText: string, label: string): T {
-  const cleaned = cleanJsonOutput(rawText);
-
-  try {
-    return JSON.parse(extractJson(cleaned)) as T;
-  } catch {
-    throw new Error(
-      `${label} nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
-    );
-  }
-}
-
-async function runJsonModel(input: string, instructions: string) {
-  const rawText = await createResponseText(input, instructions);
-  const cleaned = cleanJsonOutput(rawText);
-
-  try {
-    return JSON.parse(extractJson(cleaned)) as WebsiteBundle;
-  } catch {
-    throw new Error(
-      `Improve renderer nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
-    );
-  }
 }
 
 export async function POST(req: Request) {
@@ -862,8 +905,9 @@ export async function POST(req: Request) {
       return Response.json({ error: "Není co upravovat." }, { status: 400 });
     }
 
-    const plannerRaw = await createResponseText(
-      improvePlannerPrompt({
+    const plan = await createStructuredObject<ImprovePlan>({
+      system: "You are a precise AI design editor. Return only valid JSON.",
+      user: improvePlannerPrompt({
         prompt,
         instruction,
         chatHistory,
@@ -871,18 +915,16 @@ export async function POST(req: Request) {
         css,
         js,
       }),
-      "You are a precise AI design editor. Return only valid JSON. No markdown."
-    );
-
-    const plan = parsePlannerJson<ImprovePlan>(
-      plannerRaw,
-      "Improve planner"
-    );
+      schemaName: "improve_plan",
+      schema: improvePlanSchema,
+    });
 
     const assets = await resolveImageAssets(plan.imageRefreshPlan || [], prompt);
 
-    const improvedBundle = await runJsonModel(
-      improveRenderPrompt({
+    const improvedBundle = await createStructuredObject<WebsiteBundle>({
+      system:
+        "You are an elite web designer and frontend engineer. Return only valid JSON.",
+      user: improveRenderPrompt({
         prompt,
         instruction,
         html,
@@ -892,24 +934,28 @@ export async function POST(req: Request) {
         plan,
         assets,
       }),
-      "You are an elite web designer and frontend engineer. Return only valid JSON."
-    );
+      schemaName: "improve_bundle",
+      schema: websiteBundleSchema,
+    });
 
     const safeImproved = sanitizeBundle(improvedBundle);
 
     let safeFinal = safeImproved;
 
     try {
-      const checkedBundle = await runJsonModel(
-        selfCheckPrompt({
+      const checkedBundle = await createStructuredObject<WebsiteBundle>({
+        system:
+          "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON.",
+        user: selfCheckPrompt({
           prompt,
           instruction,
           html: safeImproved.html,
           css: safeImproved.css,
           js: safeImproved.js,
         }),
-        "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON."
-      );
+        schemaName: "improve_bundle_checked",
+        schema: websiteBundleSchema,
+      });
 
       safeFinal = sanitizeBundle(checkedBundle);
     } catch (selfCheckError) {
