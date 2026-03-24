@@ -5,10 +5,11 @@ export const maxDuration = 300;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 0,
+  timeout: 45000,
 });
 
 const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
-const OPENAI_REQUEST_TIMEOUT_MS = 45000;
 
 type ChatHistoryItem = {
   role: "system" | "user" | "assistant";
@@ -40,7 +41,12 @@ function nowMs() {
   return Date.now();
 }
 
-function logStep(requestId: string, step: string, startedAt: number, extra?: Record<string, unknown>) {
+function logStep(
+  requestId: string,
+  step: string,
+  startedAt: number,
+  extra?: Record<string, unknown>
+) {
   const duration = Date.now() - startedAt;
   console.log(
     JSON.stringify({
@@ -70,28 +76,33 @@ async function createStructuredObject<T>({
 }): Promise<T> {
   const startedAt = nowMs();
 
-  const completion = await client.chat.completions.create(
-    {
-      model,
-      messages: [
-        { role: "developer", content: system },
-        { role: "user", content: user },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: schemaName,
-          schema,
-          strict: true,
-        },
+  const completion = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: "developer", content: system },
+      { role: "user", content: user },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: schemaName,
+        schema,
+        strict: true,
       },
     },
-    {
-      timeout: OPENAI_REQUEST_TIMEOUT_MS,
-    }
-  );
+  });
 
   logStep(requestId, `openai:${schemaName}`, startedAt, { model });
+
+  console.log(
+    JSON.stringify({
+      scope: "openai",
+      requestId,
+      schemaName,
+      model,
+      openaiRequestId: completion._request_id ?? null,
+    })
+  );
 
   const content = completion.choices?.[0]?.message?.content;
 
