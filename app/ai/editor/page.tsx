@@ -31,6 +31,12 @@ type SectionMeta = {
   label: string;
 };
 
+type EditableTextSelection = {
+  id: string;
+  text: string;
+  tagName: string;
+};
+
 const GENERATE_LOADING_MESSAGES = [
   "Rozumím zadání…",
   "Analyzuji obor a cílový dojem…",
@@ -40,6 +46,7 @@ const GENERATE_LOADING_MESSAGES = [
   "Tvořím HTML, CSS a interakce…",
   "Ladím responzivitu…",
   "Dolaďuji CTA a detaily…",
+  "Kontroluji typografii a hierarchy…",
   "Finalizuji výstup…",
 ];
 
@@ -51,6 +58,7 @@ const IMPROVE_LOADING_MESSAGES = [
   "Aplikuji změny do HTML a CSS…",
   "Kontroluji konzistenci návrhu…",
   "Ladím výsledný vzhled…",
+  "Aktualizuji sekce a CTA…",
   "Finalizuji upravený výstup…",
 ];
 
@@ -96,13 +104,65 @@ function extractSectionsFromHtml(html: string): SectionMeta[] {
   }
 }
 
+function injectEditableTextAttributes(html: string) {
+  if (!html) return html;
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
+
+    const selectors = [
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "p",
+      "span",
+      "li",
+      "a",
+      "button",
+      "label",
+      "small",
+      "strong",
+      "em",
+      "blockquote",
+    ].join(",");
+
+    const nodes = Array.from(doc.body.querySelectorAll(selectors));
+
+    let index = 1;
+
+    nodes.forEach((node) => {
+      const el = node as HTMLElement;
+
+      if (el.closest("[data-no-inline-edit='true']")) return;
+      if (el.querySelector(selectors)) return;
+
+      const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+
+      if (!text) return;
+      if (text.length < 2) return;
+
+      if (!el.getAttribute("data-zyvia-text-id")) {
+        el.setAttribute("data-zyvia-text-id", `txt-${index}`);
+        index += 1;
+      }
+    });
+
+    return doc.body.innerHTML;
+  } catch {
+    return html;
+  }
+}
+
 function buildPreviewDocument(
   html: string,
   css: string,
-  js: string,
-  selectedSectionId: string | null
+  js: string
 ) {
-  const safeSelected = selectedSectionId ? JSON.stringify(selectedSectionId) : "null";
+  const htmlWithEditableMarkers = injectEditableTextAttributes(html);
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -140,6 +200,12 @@ body {
     0 10px 30px rgba(124, 92, 255, 0.16);
 }
 
+[data-zyvia-text-id].zyvia-text-hover {
+  outline: 2px dashed rgba(255,255,255,0.35);
+  outline-offset: 3px;
+  cursor: text !important;
+}
+
 .zyvia-section-badge {
   position: absolute;
   z-index: 999999;
@@ -157,14 +223,14 @@ body {
   </style>
 </head>
 <body>
-${html}
+${htmlWithEditableMarkers}
 <script>
 ${js}
 </script>
 
 <script>
 (function () {
-  const SELECTED_SECTION_ID = ${safeSelected};
+  let selectedSectionId = null;
   let badgeEl = null;
 
   function ensureBadge() {
@@ -181,16 +247,28 @@ ${js}
     return target.closest("[data-section-id]");
   }
 
+  function getEditableTextFromEventTarget(target) {
+    if (!target || !(target instanceof Element)) return null;
+    const el = target.closest("[data-zyvia-text-id]");
+    if (!el) return null;
+    if (el.closest("[data-no-inline-edit='true']")) return null;
+    return el;
+  }
+
   function clearHoverStates() {
     document.querySelectorAll("[data-section-id].zyvia-section-hover").forEach((node) => {
       node.classList.remove("zyvia-section-hover");
+    });
+
+    document.querySelectorAll("[data-zyvia-text-id].zyvia-text-hover").forEach((node) => {
+      node.classList.remove("zyvia-text-hover");
     });
   }
 
   function applySelectedState() {
     document.querySelectorAll("[data-section-id]").forEach((node) => {
       const id = node.getAttribute("data-section-id");
-      node.classList.toggle("zyvia-section-selected", id === SELECTED_SECTION_ID);
+      node.classList.toggle("zyvia-section-selected", id === selectedSectionId);
     });
   }
 
@@ -227,9 +305,16 @@ ${js}
   }
 
   document.addEventListener("mouseover", function (event) {
-    const section = getSectionFromEventTarget(event.target);
     clearHoverStates();
 
+    const editable = getEditableTextFromEventTarget(event.target);
+    if (editable) {
+      editable.classList.add("zyvia-text-hover");
+      hideBadge();
+      return;
+    }
+
+    const section = getSectionFromEventTarget(event.target);
     if (section) {
       section.classList.add("zyvia-section-hover");
       moveBadgeForSection(section);
@@ -240,12 +325,38 @@ ${js}
 
   document.addEventListener("mouseout", function (event) {
     const related = event.relatedTarget;
-    if (related instanceof Element && related.closest("[data-section-id]")) return;
+    if (related instanceof Element) {
+      if (
+        related.closest("[data-section-id]") ||
+        related.closest("[data-zyvia-text-id]")
+      ) {
+        return;
+      }
+    }
+
     clearHoverStates();
     hideBadge();
   });
 
   document.addEventListener("click", function (event) {
+    const editable = getEditableTextFromEventTarget(event.target);
+
+    if (editable) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      window.parent.postMessage(
+        {
+          type: "zyvia-text-select",
+          textId: editable.getAttribute("data-zyvia-text-id") || "",
+          textValue: editable.textContent || "",
+          tagName: editable.tagName || "",
+        },
+        "*"
+      );
+      return;
+    }
+
     const section = getSectionFromEventTarget(event.target);
     preventNavigation(event);
 
@@ -254,22 +365,49 @@ ${js}
     event.preventDefault();
     event.stopPropagation();
 
-    const payload = {
-      type: "zyvia-section-select",
-      sectionId: section.getAttribute("data-section-id") || "",
-      sectionType: section.getAttribute("data-section-type") || "",
-    };
-
-    window.parent.postMessage(payload, "*");
+    window.parent.postMessage(
+      {
+        type: "zyvia-section-select",
+        sectionId: section.getAttribute("data-section-id") || "",
+        sectionType: section.getAttribute("data-section-type") || "",
+      },
+      "*"
+    );
   }, true);
 
-  applySelectedState();
+  window.addEventListener("message", function (event) {
+    const data = event.data;
+    if (!data || typeof data !== "object") return;
 
-  window.addEventListener("load", applySelectedState);
+    if (data.type === "zyvia-set-selected-section") {
+      selectedSectionId = data.sectionId || null;
+      applySelectedState();
+    }
+  });
+
+  applySelectedState();
 })();
 </script>
 </body>
 </html>`;
+}
+
+function updateTextInHtml(html: string, textId: string, newText: string) {
+  if (!html || !textId) return html;
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${injectEditableTextAttributes(html)}</body>`, "text/html");
+    const target = doc.body.querySelector(`[data-zyvia-text-id="${textId}"]`);
+
+    if (!target) return html;
+
+    target.textContent = newText;
+
+    return doc.body.innerHTML;
+  } catch {
+    return html;
+  }
 }
 
 async function downloadZipSite(html: string, css: string, js: string) {
@@ -439,14 +577,21 @@ export default function AiEditorPage() {
 
   const [chatInput, setChatInput] = useState("");
 
+  const [textModalOpen, setTextModalOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
+  const [editedTextValue, setEditedTextValue] = useState("");
+
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
   const autostartRef = useRef(false);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   const iframeKey = useMemo(
-    () => `${html.length}-${css.length}-${js.length}-${selectedSectionId ?? "none"}`,
-    [html, css, js, selectedSectionId]
+    () => `${html.length}-${css.length}-${js.length}`,
+    [html, css, js]
   );
 
   const availableSections = useMemo(() => extractSectionsFromHtml(html), [html]);
@@ -464,14 +609,22 @@ export default function AiEditorPage() {
 
   const previewDocument = useMemo(() => {
     if (!html) return "";
-    return buildPreviewDocument(html, css, js, selectedSectionId);
-  }, [html, css, js, selectedSectionId]);
+    return buildPreviewDocument(html, css, js);
+  }, [html, css, js]);
 
   function getChatHistoryPayload() {
     return messages.slice(-12).map((message) => ({
       role: message.role,
       text: message.text,
     }));
+  }
+
+  function scrollChatToBottom(smooth = true) {
+    if (!chatBottomRef.current) return;
+    chatBottomRef.current.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+      block: "end",
+    });
   }
 
   useEffect(() => {
@@ -504,33 +657,48 @@ export default function AiEditorPage() {
     function onMessage(event: MessageEvent) {
       const data = event.data;
       if (!data || typeof data !== "object") return;
-      if (data.type !== "zyvia-section-select") return;
 
-      setSelectedSectionId(data.sectionId || null);
-      setSelectedSectionType(data.sectionType || null);
+      if (data.type === "zyvia-section-select") {
+        setSelectedSectionId(data.sectionId || null);
+        setSelectedSectionType(data.sectionType || null);
 
-      if (data.sectionId) {
-        setMessages((prev) => {
-          const text = `Vybraná sekce: ${prettifySectionLabel(
-            data.sectionId,
-            data.sectionType || ""
-          )}`;
+        if (data.sectionId) {
+          setMessages((prev) => {
+            const text = `Vybraná sekce: ${prettifySectionLabel(
+              data.sectionId,
+              data.sectionType || ""
+            )}`;
 
-          const alreadyExists = prev.some(
-            (message) => message.role === "system" && message.text === text
-          );
+            const alreadyExists = prev.some(
+              (message) => message.role === "system" && message.text === text
+            );
 
-          if (alreadyExists) return prev;
+            if (alreadyExists) return prev;
 
-          return [
-            ...prev,
-            {
-              id: `section-select-${Date.now()}`,
-              role: "system",
-              text,
-            },
-          ];
-        });
+            return [
+              ...prev,
+              {
+                id: `section-select-${Date.now()}`,
+                role: "system",
+                text,
+              },
+            ];
+          });
+        }
+      }
+
+      if (data.type === "zyvia-text-select") {
+        const selection = {
+          id: data.textId || "",
+          text: data.textValue || "",
+          tagName: data.tagName || "",
+        };
+
+        if (!selection.id) return;
+
+        setSelectedText(selection);
+        setEditedTextValue(selection.text);
+        setTextModalOpen(true);
       }
     }
 
@@ -546,6 +714,28 @@ export default function AiEditorPage() {
     };
   }, []);
 
+  useEffect(() => {
+    scrollChatToBottom(false);
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (loading || improving) {
+      scrollChatToBottom(true);
+    }
+  }, [loading, improving, progress, status]);
+
+  useEffect(() => {
+    if (!iframeRef.current?.contentWindow) return;
+
+    iframeRef.current.contentWindow.postMessage(
+      {
+        type: "zyvia-set-selected-section",
+        sectionId: selectedSectionId,
+      },
+      "*"
+    );
+  }, [selectedSectionId, previewDocument]);
+
   function startSmoothProgress(mode: "generate" | "improve") {
     if (progressRef.current) window.clearInterval(progressRef.current);
 
@@ -553,7 +743,7 @@ export default function AiEditorPage() {
       mode === "generate" ? GENERATE_LOADING_MESSAGES : IMPROVE_LOADING_MESSAGES;
 
     loadingMessageRef.current = 0;
-    setProgress(2);
+    setProgress(1);
     setStatus(source[0]);
 
     progressRef.current = window.setInterval(() => {
@@ -561,10 +751,16 @@ export default function AiEditorPage() {
       setStatus(source[loadingMessageRef.current]);
 
       setProgress((prev) => {
-        const speed =
-          mode === "generate" ? Math.random() * 2.8 + 0.8 : Math.random() * 3.2 + 1.0;
-        const next = prev + speed;
-        return next >= 98 ? 98 : next;
+        if (prev < 18) return prev + 1.2;
+        if (prev < 34) return prev + 0.95;
+        if (prev < 50) return prev + 0.72;
+        if (prev < 66) return prev + 0.52;
+        if (prev < 79) return prev + 0.34;
+        if (prev < 89) return prev + 0.2;
+        if (prev < 95) return prev + 0.12;
+        if (prev < 98.8) return prev + 0.045;
+        if (prev < 99.4) return prev + 0.015;
+        return 99.4;
       });
     }, 900);
   }
@@ -627,7 +823,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Klikni na sekci v náhledu nebo mi napiš změnu.",
+          text: "Návrh je připraven. Klikni na sekci nebo přímo na text v náhledu a proveď úpravu.",
         },
       ]);
     } catch (e: any) {
@@ -659,6 +855,10 @@ export default function AiEditorPage() {
     ]);
 
     startSmoothProgress("improve");
+
+    setTimeout(() => {
+      scrollChatToBottom(true);
+    }, 50);
 
     try {
       const res = await fetch("/api/improve", {
@@ -736,7 +936,11 @@ export default function AiEditorPage() {
       setTimeout(() => chatInputRef.current?.focus(), 200);
       return;
     }
-    chatInputRef.current?.focus();
+
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+      scrollChatToBottom(true);
+    }, 50);
   }
 
   function onChatKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -757,12 +961,42 @@ export default function AiEditorPage() {
     };
 
     setChatInput(prompts[type]);
+
     if (isFullscreen) {
       setIsFullscreen(false);
-      setTimeout(() => chatInputRef.current?.focus(), 200);
+      setTimeout(() => {
+        chatInputRef.current?.focus();
+        scrollChatToBottom(true);
+      }, 200);
       return;
     }
-    chatInputRef.current?.focus();
+
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+      scrollChatToBottom(true);
+    }, 50);
+  }
+
+  function handleSaveInlineText() {
+    if (!selectedText) return;
+
+    const trimmed = editedTextValue.trim();
+    if (!trimmed) return;
+
+    setHtml((prev) => updateTextInHtml(prev, selectedText.id, trimmed));
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `inline-text-${Date.now()}`,
+        role: "assistant",
+        text: "Text byl upraven přímo v náhledu.",
+      },
+    ]);
+
+    setTextModalOpen(false);
+    setSelectedText(null);
+    setEditedTextValue("");
   }
 
   const previewWidthClass =
@@ -830,67 +1064,10 @@ export default function AiEditorPage() {
             <img
               src="/zyvia-logo.svg"
               alt="Zyvia"
-              className="h-[1.35rem] w-auto opacity-95"
+              className="h-[1.65rem] w-auto opacity-95"
             />
 
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsFullscreen((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-              >
-                <Icon
-                  icon={
-                    isFullscreen
-                      ? "solar:minimize-square-3-linear"
-                      : "solar:maximize-square-3-linear"
-                  }
-                  width={16}
-                />
-                {isFullscreen ? "Ukončit full screen" : "Full screen"}
-              </button>
-
-              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("desktop")}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                    viewMode === "desktop"
-                      ? "bg-white/[0.10] text-white"
-                      : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                  }`}
-                  title="Desktop"
-                >
-                  <Icon icon="solar:monitor-linear" width={18} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setViewMode("tablet")}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                    viewMode === "tablet"
-                      ? "bg-white/[0.10] text-white"
-                      : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                  }`}
-                  title="Tablet"
-                >
-                  <Icon icon="solar:tablet-linear" width={18} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setViewMode("mobile")}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                    viewMode === "mobile"
-                      ? "bg-white/[0.10] text-white"
-                      : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                  }`}
-                  title="Mobil"
-                >
-                  <Icon icon="solar:smartphone-linear" width={18} />
-                </button>
-              </div>
-
               <button
                 type="button"
                 onClick={focusEditInput}
@@ -1026,7 +1203,10 @@ export default function AiEditorPage() {
                   </button>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                <div
+                  ref={chatScrollRef}
+                  className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
+                >
                   <div className="space-y-3">
                     {messages.map((message) => {
                       const isUser = message.role === "user";
@@ -1071,8 +1251,8 @@ export default function AiEditorPage() {
                           : improving
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
                           : selectedSectionMeta
-                          ? "Kliknutím v náhledu vybíráš konkrétní sekce pro úpravy."
-                          : "Klikni do náhledu na konkrétní sekci, kterou chceš upravit."}
+                          ? "Kliknutím v náhledu vybíráš konkrétní sekce nebo texty pro úpravy."
+                          : "Klikni do náhledu na konkrétní sekci nebo text, který chceš upravit."}
                       </div>
                     </div>
 
@@ -1101,6 +1281,8 @@ export default function AiEditorPage() {
                         {error}
                       </div>
                     )}
+
+                    <div ref={chatBottomRef} />
                   </div>
                 </div>
 
@@ -1146,7 +1328,7 @@ export default function AiEditorPage() {
 
           <main className="min-h-0 bg-[#050507]">
             <div className="flex h-full min-h-0 flex-col">
-              <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1172,6 +1354,65 @@ export default function AiEditorPage() {
                     Kód
                   </button>
                 </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsFullscreen((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                  >
+                    <Icon
+                      icon={
+                        isFullscreen
+                          ? "solar:minimize-square-3-linear"
+                          : "solar:maximize-square-3-linear"
+                      }
+                      width={16}
+                    />
+                    {isFullscreen ? "Ukončit full screen" : "Full screen"}
+                  </button>
+
+                  <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("desktop")}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                        viewMode === "desktop"
+                          ? "bg-white/[0.10] text-white"
+                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      title="Desktop"
+                    >
+                      <Icon icon="solar:monitor-linear" width={18} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("tablet")}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                        viewMode === "tablet"
+                          ? "bg-white/[0.10] text-white"
+                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      title="Tablet"
+                    >
+                      <Icon icon="solar:tablet-linear" width={18} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("mobile")}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                        viewMode === "mobile"
+                          ? "bg-white/[0.10] text-white"
+                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      title="Mobil"
+                    >
+                      <Icon icon="solar:smartphone-linear" width={18} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="min-h-0 flex-1">
@@ -1184,6 +1425,7 @@ export default function AiEditorPage() {
                     {previewDocument ? (
                       <div className={`${previewWidthClass} h-full`}>
                         <iframe
+                          ref={iframeRef}
                           key={iframeKey}
                           title="Zyvia preview"
                           className="h-full min-h-[720px] w-full bg-white"
@@ -1224,6 +1466,62 @@ export default function AiEditorPage() {
           </main>
         </div>
       </div>
+
+      {textModalOpen && selectedText && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-xl rounded-[1.75rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-white">Upravit text</div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Tag: {selectedText.tagName.toLowerCase()}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTextModalOpen(false);
+                  setSelectedText(null);
+                  setEditedTextValue("");
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+              >
+                <Icon icon="solar:close-line-duotone" width={18} />
+              </button>
+            </div>
+
+            <textarea
+              value={editedTextValue}
+              onChange={(e) => setEditedTextValue(e.target.value)}
+              className="h-40 w-full resize-none rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
+              placeholder="Uprav text…"
+            />
+
+            <div className="mt-4 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setTextModalOpen(false);
+                  setSelectedText(null);
+                  setEditedTextValue("");
+                }}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+              >
+                Zrušit
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveInlineText}
+                className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+              >
+                Uložit text
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
