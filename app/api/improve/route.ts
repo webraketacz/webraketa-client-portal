@@ -799,21 +799,37 @@ ${params.js}
 `;
 }
 
-async function runJsonModel(input: string, instructions: string) {
+async function createResponseText(input: string, instructions: string) {
   const result = await client.responses.create({
     model: "gpt-5.4",
     instructions,
     input,
   });
 
-  const rawText = result.output_text?.trim() ?? "";
+  return result.output_text?.trim() ?? "";
+}
+
+function parsePlannerJson<T>(rawText: string, label: string): T {
+  const cleaned = cleanJsonOutput(rawText);
+
+  try {
+    return JSON.parse(extractJson(cleaned)) as T;
+  } catch {
+    throw new Error(
+      `${label} nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
+    );
+  }
+}
+
+async function runJsonModel(input: string, instructions: string) {
+  const rawText = await createResponseText(input, instructions);
   const cleaned = cleanJsonOutput(rawText);
 
   try {
     return JSON.parse(extractJson(cleaned)) as WebsiteBundle;
   } catch {
     throw new Error(
-      `Model nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
+      `Improve renderer nevrátil validní JSON. Začátek odpovědi: ${rawText.slice(0, 180)}`
     );
   }
 }
@@ -846,11 +862,8 @@ export async function POST(req: Request) {
       return Response.json({ error: "Není co upravovat." }, { status: 400 });
     }
 
-    const planner = await client.responses.create({
-      model: "gpt-5.4",
-      instructions:
-        "You are a precise AI design editor. Return only valid JSON. No markdown.",
-      input: improvePlannerPrompt({
+    const plannerRaw = await createResponseText(
+      improvePlannerPrompt({
         prompt,
         instruction,
         chatHistory,
@@ -858,10 +871,13 @@ export async function POST(req: Request) {
         css,
         js,
       }),
-    });
+      "You are a precise AI design editor. Return only valid JSON. No markdown."
+    );
 
-    const plannerText = cleanJsonOutput(planner.output_text?.trim() ?? "");
-    const plan = JSON.parse(extractJson(plannerText)) as ImprovePlan;
+    const plan = parsePlannerJson<ImprovePlan>(
+      plannerRaw,
+      "Improve planner"
+    );
 
     const assets = await resolveImageAssets(plan.imageRefreshPlan || [], prompt);
 
@@ -908,8 +924,12 @@ export async function POST(req: Request) {
       assets,
     });
   } catch (e: any) {
+    console.error("/api/improve fatal error:", e);
+
     return Response.json(
-      { error: e?.message ?? "Improve route failed" },
+      {
+        error: e?.message ?? "Improve route failed",
+      },
       { status: 500 }
     );
   }
