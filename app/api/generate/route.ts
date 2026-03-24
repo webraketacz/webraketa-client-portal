@@ -67,7 +67,40 @@ type DesignReference =
   | "signal-orchestration"
   | "angled-enterprise"
   | "cinematic-resort"
-  | "luxury-editorial";
+  | "luxury-editorial"
+  | "product-commerce"
+  | "clean-business"
+  | "restaurant-editorial"
+  | "barber-premium"
+  | "clean-automotive"
+  | "service-trades";
+
+type IndustryKind =
+  | "fintech"
+  | "saas"
+  | "real-estate"
+  | "resort"
+  | "luxury-service"
+  | "food-product"
+  | "ecommerce-product"
+  | "healthcare"
+  | "legal"
+  | "beauty"
+  | "restaurant"
+  | "catering"
+  | "barber"
+  | "hair-salon"
+  | "autoservis"
+  | "car-dealer"
+  | "zednik"
+  | "generic-business";
+
+type ClientAnswers = {
+  contactDetails?: string;
+  styleNotes?: string;
+  offerNotes?: string;
+  extras?: string;
+};
 
 type GenerationPreferences = {
   speedMode?: SpeedMode;
@@ -78,6 +111,7 @@ type GenerationPreferences = {
   iconStyle?: IconStyle;
   designReference?: DesignReference;
   contactItems?: string[];
+  clientAnswers?: ClientAnswers;
 };
 
 type GeneratedWebsiteBundle = {
@@ -109,6 +143,13 @@ function logStep(
   );
 }
 
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function makeDeterministicChoice<T>(input: string, items: T[]): T {
   let hash = 0;
 
@@ -119,90 +160,479 @@ function makeDeterministicChoice<T>(input: string, items: T[]): T {
   return items[hash % items.length];
 }
 
+function inferIndustryKind(prompt: string): IndustryKind {
+  const text = normalizeText(prompt);
+
+  if (
+    text.includes("fintech") ||
+    text.includes("payment") ||
+    text.includes("platby") ||
+    text.includes("bank") ||
+    text.includes("finance") ||
+    text.includes("penez") ||
+    text.includes("money")
+  ) {
+    return "fintech";
+  }
+
+  if (
+    text.includes("saas") ||
+    text.includes("software") ||
+    text.includes("app") ||
+    text.includes("platform") ||
+    text.includes("automatiz") ||
+    text.includes("workflow") ||
+    text.includes("integrac")
+  ) {
+    return "saas";
+  }
+
+  if (
+    text.includes("realit") ||
+    text.includes("makler") ||
+    text.includes("nemovit") ||
+    text.includes("villa") ||
+    text.includes("byt") ||
+    text.includes("property")
+  ) {
+    return "real-estate";
+  }
+
+  if (
+    text.includes("resort") ||
+    text.includes("hotel") ||
+    text.includes("wellness") ||
+    text.includes("retreat") ||
+    text.includes("ubytovani") ||
+    text.includes("forest")
+  ) {
+    return "resort";
+  }
+
+  if (
+    text.includes("advokat") ||
+    text.includes("pravnik") ||
+    text.includes("legal") ||
+    text.includes("law") ||
+    text.includes("notar")
+  ) {
+    return "legal";
+  }
+
+  if (
+    text.includes("clinic") ||
+    text.includes("klinika") ||
+    text.includes("medical") ||
+    text.includes("doctor") ||
+    text.includes("zubar") ||
+    text.includes("ordinace")
+  ) {
+    return "healthcare";
+  }
+
+  if (
+    text.includes("beauty") ||
+    text.includes("kosmet") ||
+    text.includes("salon krasy") ||
+    text.includes("esthetic") ||
+    text.includes("skincare")
+  ) {
+    return "beauty";
+  }
+
+  if (
+    text.includes("barber") ||
+    text.includes("barbershop") ||
+    text.includes("holic") ||
+    text.includes("panske strihani")
+  ) {
+    return "barber";
+  }
+
+  if (
+    text.includes("kadernice") ||
+    text.includes("kadernictvi") ||
+    text.includes("hair salon") ||
+    text.includes("strihani vlasu") ||
+    text.includes("hairstyle")
+  ) {
+    return "hair-salon";
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("restaurace") ||
+    text.includes("bistro") ||
+    text.includes("cafe") ||
+    text.includes("kavarna") ||
+    text.includes("gastro") ||
+    text.includes("osteria")
+  ) {
+    return "restaurant";
+  }
+
+  if (
+    text.includes("catering") ||
+    text.includes("rozvoz cateringu") ||
+    text.includes("firemni catering")
+  ) {
+    return "catering";
+  }
+
+  if (
+    text.includes("autoservis") ||
+    text.includes("servis aut") ||
+    text.includes("oprava aut") ||
+    text.includes("mechanik") ||
+    text.includes("vymena oleje")
+  ) {
+    return "autoservis";
+  }
+
+  if (
+    text.includes("prodej aut") ||
+    text.includes("autobazar") ||
+    text.includes("vozy") ||
+    text.includes("dealer") ||
+    text.includes("cars for sale")
+  ) {
+    return "car-dealer";
+  }
+
+  if (
+    text.includes("zednik") ||
+    text.includes("zednicke prace") ||
+    text.includes("stavba domu") ||
+    text.includes("fasady") ||
+    text.includes("rekonstrukce") ||
+    text.includes("stavebni firma")
+  ) {
+    return "zednik";
+  }
+
+  if (
+    text.includes("cukr") ||
+    text.includes("sugar") ||
+    text.includes("potrav") ||
+    text.includes("food") ||
+    text.includes("produkt") ||
+    text.includes("product") ||
+    text.includes("eshop") ||
+    text.includes("e-shop") ||
+    text.includes("shop") ||
+    text.includes("prodej") ||
+    text.includes("baleni")
+  ) {
+    if (
+      text.includes("cukr") ||
+      text.includes("sugar") ||
+      text.includes("food") ||
+      text.includes("potrav")
+    ) {
+      return "food-product";
+    }
+
+    return "ecommerce-product";
+  }
+
+  if (
+    text.includes("luxury") ||
+    text.includes("premium") ||
+    text.includes("boutique")
+  ) {
+    return "luxury-service";
+  }
+
+  return "generic-business";
+}
+
+function getIndustryDefaults(industry: IndustryKind) {
+  switch (industry) {
+    case "fintech":
+      return {
+        designReference: "fintech-neon" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "tech" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "ui-heavy",
+      };
+
+    case "saas":
+      return {
+        designReference: "signal-orchestration" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "tech" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "ui-heavy",
+      };
+
+    case "real-estate":
+      return {
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "editorial" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "luxury" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "resort":
+      return {
+        designReference: "cinematic-resort" as DesignReference,
+        layoutPreference: "story" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "restaurant":
+      return {
+        designReference: "restaurant-editorial" as DesignReference,
+        layoutPreference: "story" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "catering":
+      return {
+        designReference: "restaurant-editorial" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "friendly" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "barber":
+      return {
+        designReference: "barber-premium" as DesignReference,
+        layoutPreference: "asymmetrical" as LayoutPreference,
+        visualStyle: "bold" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "hair-salon":
+      return {
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "asymmetrical" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "friendly" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "autoservis":
+      return {
+        designReference: "clean-automotive" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "bold" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "mixed",
+      };
+
+    case "car-dealer":
+      return {
+        designReference: "clean-automotive" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "geometric" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "zednik":
+      return {
+        designReference: "service-trades" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "mixed",
+      };
+
+    case "legal":
+      return {
+        designReference: "clean-business" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "mixed",
+      };
+
+    case "healthcare":
+      return {
+        designReference: "clean-business" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "mixed",
+      };
+
+    case "beauty":
+      return {
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "asymmetrical" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "luxury" as FontMood,
+        iconStyle: "custom" as IconStyle,
+        imageMode: "photo-heavy",
+      };
+
+    case "food-product":
+      return {
+        designReference: "product-commerce" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "friendly" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "product-heavy",
+      };
+
+    case "ecommerce-product":
+      return {
+        designReference: "product-commerce" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "bold" as VisualStyle,
+        fontMood: "geometric" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "product-heavy",
+      };
+
+    case "luxury-service":
+      return {
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "editorial" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "mixed",
+      };
+
+    default:
+      return {
+        designReference: "clean-business" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "geometric" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "mixed",
+      };
+  }
+}
+
 function resolveCreativeDirection(
   prompt: string,
   prefs: GenerationPreferences
 ) {
-  const layoutPool: LayoutPreference[] = [
-    "editorial",
-    "split",
-    "asymmetrical",
-    "story",
-    "grid",
-    "luxury",
-  ];
+  const industry = inferIndustryKind(prompt);
+  const industryDefaults = getIndustryDefaults(industry);
 
-  const visualPool: VisualStyle[] = [
-    "clean",
-    "premium",
-    "bold",
-    "editorial",
-    "luxury",
-    "playful",
-  ];
+  const fallbackAnimation =
+    industry === "fintech" || industry === "saas"
+      ? "rich"
+      : industry === "resort" || industry === "beauty" || industry === "restaurant"
+      ? "subtle"
+      : "subtle";
 
-  const fontPool: FontMood[] = [
-    "geometric",
-    "editorial",
-    "luxury",
-    "trustworthy",
-    "tech",
-    "friendly",
-  ];
+  const layoutSeedPool = {
+    fintech: [
+      "hero-left-ui-right",
+      "hero-center-dashboard-below",
+      "layered-analytics-panels",
+    ],
+    saas: [
+      "hero-center-dashboard-below",
+      "stacked-storyflow",
+      "grid-led-platform-layout",
+    ],
+    resort: [
+      "full-bleed-photo-editorial",
+      "stacked-storyflow",
+      "immersive-cinematic-hero",
+    ],
+    restaurant: [
+      "full-bleed-photo-editorial",
+      "immersive-cinematic-hero",
+      "editorial-story-menu-flow",
+    ],
+    product: [
+      "product-hero-with-packshot",
+      "benefit-led-commerce-layout",
+      "clean-product-split",
+    ],
+    automotive: [
+      "clean-automotive-hero",
+      "trust-led-service-grid",
+      "split-vehicle-showcase",
+    ],
+    trades: [
+      "trust-led-service-grid",
+      "clean-process-layout",
+      "split-service-hero",
+    ],
+    generic: [
+      "hero-left-ui-right",
+      "stacked-storyflow",
+      "asymmetric-panel-composition",
+    ],
+  };
 
-  const iconPool: IconStyle[] = ["minimal", "outlined", "solid", "custom"];
+  const seedChoices =
+    industry === "fintech"
+      ? layoutSeedPool.fintech
+      : industry === "saas"
+      ? layoutSeedPool.saas
+      : industry === "resort"
+      ? layoutSeedPool.resort
+      : industry === "restaurant" || industry === "catering"
+      ? layoutSeedPool.restaurant
+      : industry === "food-product" || industry === "ecommerce-product"
+      ? layoutSeedPool.product
+      : industry === "autoservis" || industry === "car-dealer"
+      ? layoutSeedPool.automotive
+      : industry === "zednik"
+      ? layoutSeedPool.trades
+      : layoutSeedPool.generic;
 
-  const designReferencePool: DesignReference[] = [
-    "fintech-neon",
-    "signal-orchestration",
-    "angled-enterprise",
-    "cinematic-resort",
-    "luxury-editorial",
-  ];
-
-  const layoutSeedPool = [
-    "hero-left-ui-right",
-    "hero-center-dashboard-below",
-    "full-bleed-photo-editorial",
-    "angled-band-hero",
-    "stacked-storyflow",
-    "asymmetric-panel-composition",
-  ];
-
-  const fallbackLayout = makeDeterministicChoice(`${prompt}-layout`, layoutPool);
-  const fallbackVisual = makeDeterministicChoice(`${prompt}-visual`, visualPool);
-  const fallbackFont = makeDeterministicChoice(`${prompt}-font`, fontPool);
-  const fallbackIcon = makeDeterministicChoice(`${prompt}-icon`, iconPool);
-  const fallbackReference = makeDeterministicChoice(
-    `${prompt}-reference`,
-    designReferencePool
-  );
-  const layoutSeed = makeDeterministicChoice(`${prompt}-seed`, layoutSeedPool);
+  const layoutSeed = makeDeterministicChoice(`${prompt}-seed`, seedChoices);
 
   return {
+    industry,
+    imageMode: industryDefaults.imageMode,
     speedMode: prefs.speedMode || "balanced",
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
         ? prefs.layoutPreference
-        : fallbackLayout,
+        : industryDefaults.layoutPreference,
     visualStyle:
       prefs.visualStyle && prefs.visualStyle !== "auto"
         ? prefs.visualStyle
-        : fallbackVisual,
-    animationLevel: prefs.animationLevel || "subtle",
+        : industryDefaults.visualStyle,
+    animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
       prefs.fontMood && prefs.fontMood !== "auto"
         ? prefs.fontMood
-        : fallbackFont,
+        : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
-        : fallbackIcon,
+        : industryDefaults.iconStyle,
     designReference:
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
-        : fallbackReference,
+        : industryDefaults.designReference,
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
+    clientAnswers: prefs.clientAnswers || {},
     layoutSeed,
   };
 }
@@ -218,9 +648,8 @@ REFERENCE FAMILY: FINTECH NEON
 - large conversion headline on one side
 - product / analytics / payment mockups on the other side
 - pill navigation, glassy panels, elegant CTA glow
-- tech-enterprise polish, not gamer aesthetic
-- sections can include dashboards, pricing, APIs, trust, platform blocks
 `;
+
     case "signal-orchestration":
       return `
 REFERENCE FAMILY: SIGNAL ORCHESTRATION
@@ -229,30 +658,25 @@ REFERENCE FAMILY: SIGNAL ORCHESTRATION
 - radial arcs, rings, targeting lines, orchestration grid overlays
 - central hero with strong system-message headline
 - large product panel or observability dashboard below hero
-- elegant glowing dividers, segmented panels, data widgets
-- feels like high-end infrastructure / automation / orchestration software
 `;
+
     case "angled-enterprise":
       return `
 REFERENCE FAMILY: ANGLED ENTERPRISE
-- bold enterprise composition with slanted / angled section edges
-- dark premium sections separated by diagonal transitions
-- very strong content bands
-- large statistic rows and trust indicators
-- orbital glow, subtle sci-fi depth, but clean business readability
-- powerful sections for scale, uptime, compliance, platform, integrations
+- bold enterprise composition with angled section transitions
+- dark premium bands with strong statistics and trust sections
+- orbital glow, subtle sci-fi depth, clean readability
 `;
+
     case "cinematic-resort":
       return `
 REFERENCE FAMILY: CINEMATIC RESORT
 - immersive full-screen photography
 - editorial luxury composition
-- oversized condensed or elegant display headline
-- minimal top navigation
-- atmospheric overlays, dark transparent gradients, cinematic mood
-- overlay card modules, floating editorial content blocks
-- sections should feel luxurious, serene, tactile and experiential
+- oversized display headline
+- atmospheric overlays and cinematic mood
 `;
+
     case "luxury-editorial":
       return `
 REFERENCE FAMILY: LUXURY EDITORIAL
@@ -260,14 +684,183 @@ REFERENCE FAMILY: LUXURY EDITORIAL
 - refined serif or contrast typography
 - strong image-led sections
 - asymmetry, generous spacing, layered cards and elegant separators
-- refined call-to-action treatment
-- feels like boutique brand, high-end real estate, luxury services or hospitality
 `;
+
+    case "product-commerce":
+      return `
+REFERENCE FAMILY: PRODUCT COMMERCE
+- clean commercial product presentation
+- bright or softly premium background
+- product packshots, ingredient / benefit visuals, lifestyle photos
+- strong product CTA, variants, trust points, FAQ
+`;
+
+    case "restaurant-editorial":
+      return `
+REFERENCE FAMILY: RESTAURANT EDITORIAL
+- immersive food photography
+- elegant dining mood
+- refined editorial typography
+- reservation CTA, menu highlights, atmosphere and story
+- can include subtle map and visit section
+`;
+
+    case "barber-premium":
+      return `
+REFERENCE FAMILY: BARBER PREMIUM
+- masculine or premium grooming identity
+- stronger contrast, sharp typography, dark or warm palette
+- service cards, craft story, gallery, booking CTA
+`;
+
+    case "clean-automotive":
+      return `
+REFERENCE FAMILY: CLEAN AUTOMOTIVE
+- clean, trustworthy, corporate automotive styling
+- strong service hierarchy
+- no futuristic SaaS UI
+- useful for autoservis and dealers
+- vehicles, services, trust, availability, contact
+`;
+
+    case "service-trades":
+      return `
+REFERENCE FAMILY: SERVICE TRADES
+- clean commercial local service website
+- practical trust-first structure
+- clear services, realizations, process, references, contact
+`;
+
+    case "clean-business":
+      return `
+REFERENCE FAMILY: CLEAN BUSINESS
+- modern commercial website
+- balanced spacing, structured sections, clear conversion hierarchy
+`;
+
     default:
       return `
 REFERENCE FAMILY: AUTO
 - choose the strongest fitting premium commercial family for the business
 - do not fall back to a generic template
+`;
+  }
+}
+
+function getIndustrySpecificRules(industry: IndustryKind, imageMode: string) {
+  switch (industry) {
+    case "food-product":
+      return `
+INDUSTRY RULES: FOOD PRODUCT / SUGAR / PACKAGED GOODS
+- do NOT use fintech / dashboard / orchestration / dark SaaS composition
+- the site must feel like a commercial product website
+- use 2 to 4 meaningful product / ingredient / packaging / lifestyle images
+- product images are REQUIRED
+- preferred sections:
+  - hero with product value
+  - benefits
+  - product variants or packaging
+  - why choose us / ingredients / quality
+  - use cases or recipes
+  - FAQ
+  - contact or order CTA
+`;
+
+    case "restaurant":
+      return `
+INDUSTRY RULES: RESTAURANT
+- food photography is central
+- reservation CTA should be clear
+- menu highlights, atmosphere, story, visit section and map make sense
+- avoid product dashboard style
+`;
+
+    case "catering":
+      return `
+INDUSTRY RULES: CATERING
+- use food and event imagery
+- emphasize nabídka, firemní akce, svatby, rozvoz, kontakt, poptávka
+`;
+
+    case "barber":
+      return `
+INDUSTRY RULES: BARBER
+- use craft / portrait / interior imagery
+- focus on služby, styl, galerie, tým, rezervace
+`;
+
+    case "hair-salon":
+      return `
+INDUSTRY RULES: HAIR SALON
+- use salon / portrait / styling imagery
+- focus on služby, proměny, rezervace, kontakt
+`;
+
+    case "autoservis":
+      return `
+INDUSTRY RULES: AUTOSERVIS
+- clean trustworthy company site
+- use garage, mechanic, service bay or car maintenance imagery
+- focus on služby, ceník, objednání, důvěra, kontakt
+- do not use fintech or futuristic SaaS layout
+`;
+
+    case "car-dealer":
+      return `
+INDUSTRY RULES: CAR DEALER
+- clean corporate vehicle sales site
+- vehicle images are important
+- structure can include nabídka vozů, výhody, financování, reference, kontakt
+- keep it business-clean and not experimental
+`;
+
+    case "zednik":
+      return `
+INDUSTRY RULES: MASONRY / CONSTRUCTION TRADES
+- practical trustworthy local service website
+- use project / facade / construction imagery
+- include služby, realizace, proces, reference, kontakt
+`;
+
+    case "ecommerce-product":
+      return `
+INDUSTRY RULES: E-COMMERCE PRODUCT
+- product or category images are REQUIRED
+- use a conversion-first commerce structure
+`;
+
+    case "resort":
+      return `
+INDUSTRY RULES: RESORT / HOSPITALITY
+- immersive image-led design
+- atmosphere matters more than generic cards
+`;
+
+    case "real-estate":
+      return `
+INDUSTRY RULES: REAL ESTATE
+- use architecture / interior / exterior imagery
+- premium editorial composition
+`;
+
+    case "fintech":
+      return `
+INDUSTRY RULES: FINTECH
+- dark premium product direction is appropriate
+- product mockups, data panels and trust blocks are allowed
+`;
+
+    case "saas":
+      return `
+INDUSTRY RULES: SAAS / SOFTWARE
+- dashboard / orchestration / interface-led design is appropriate
+`;
+
+    default:
+      return `
+INDUSTRY RULES:
+- keep imagery and layout aligned with the business
+- image mode: ${imageMode}
 `;
   }
 }
@@ -436,6 +1029,16 @@ PRIMARY GOAL:
 Create a premium commercial website that feels custom-designed for this exact business.
 It must not feel like a recycled template.
 
+MOST IMPORTANT PRIORITY:
+If the client explicitly described a style, fonts, mood, contact details, content or visual direction,
+those explicit client instructions OVERRIDE automatic defaults.
+
+CLIENT EXPLICIT ANSWERS:
+- Contact details: ${params.preferences.clientAnswers.contactDetails || "neuvedeno"}
+- Style notes: ${params.preferences.clientAnswers.styleNotes || "neuvedeno"}
+- Offer notes: ${params.preferences.clientAnswers.offerNotes || "neuvedeno"}
+- Extra notes: ${params.preferences.clientAnswers.extras || "neuvedeno"}
+
 OUTPUT RULES:
 - html must contain ONLY body markup content
 - do not return <!DOCTYPE html>
@@ -462,6 +1065,8 @@ DO NOT GENERATE THE SAME DEFAULT LAYOUT:
 - make the composition visibly distinct
 
 SELECTED CREATIVE DIRECTION:
+- Detected industry: ${params.preferences.industry}
+- Image mode: ${params.preferences.imageMode}
 - Speed mode: ${params.preferences.speedMode}
 - Layout preference: ${params.preferences.layoutPreference}
 - Visual style: ${params.preferences.visualStyle}
@@ -478,6 +1083,11 @@ SELECTED CREATIVE DIRECTION:
 
 ${getDesignReferenceRecipe(params.preferences.designReference)}
 
+${getIndustrySpecificRules(
+  params.preferences.industry,
+  params.preferences.imageMode
+)}
+
 LAYOUT SYSTEM RULES:
 - use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
 - examples of acceptable layout systems:
@@ -487,6 +1097,8 @@ LAYOUT SYSTEM RULES:
   - dark angled band sections
   - layered narrative flow with alternating section directions
   - asymmetrical luxury panel rhythm
+  - product-led hero with packshot and benefit blocks
+  - clean service hero with trust grid
 - do not flatten everything into the same rectangular rhythm
 
 FONT DIRECTION RULES:
@@ -541,11 +1153,13 @@ IMAGE RULES:
 - slot values in html must exactly match assetPlan.slot values
 - use image slots only where visually meaningful
 - queries must be concrete and in English
-- if no image is needed, return an empty assetPlan array
+- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
+- if no image is needed, return an empty assetPlan array only for interface-led or text-led business types where that truly makes sense
 
 CONTACT RULES:
+- if the client provided direct contact details, use them exactly in contact and footer
 - if contact items were requested, reflect them in the contact section and footer
-- make the contact section more useful than generic placeholders
+- make the contact section useful, not placeholder-like
 
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
@@ -628,7 +1242,7 @@ export async function POST(req: Request) {
         chatHistory,
         preferences: resolvedPreferences,
       }),
-      schemaName: "website_bundle_reference_families_v3",
+      schemaName: "website_bundle_industry_chat_v5",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -657,7 +1271,7 @@ export async function POST(req: Request) {
       js: safeRendered.js,
       assetPlan: safeRendered.assetPlan,
       brief: {
-        industry: "",
+        industry: resolvedPreferences.industry,
         audience: "",
         style: `${resolvedPreferences.visualStyle} • ${resolvedPreferences.fontMood} • ${resolvedPreferences.designReference}`,
         layoutTone: `${resolvedPreferences.layoutPreference} • ${resolvedPreferences.animationLevel} • ${resolvedPreferences.layoutSeed}`,

@@ -59,7 +59,20 @@ type DesignReference =
   | "signal-orchestration"
   | "angled-enterprise"
   | "cinematic-resort"
-  | "luxury-editorial";
+  | "luxury-editorial"
+  | "product-commerce"
+  | "clean-business"
+  | "restaurant-editorial"
+  | "barber-premium"
+  | "clean-automotive"
+  | "service-trades";
+
+type ClientAnswers = {
+  contactDetails?: string;
+  styleNotes?: string;
+  offerNotes?: string;
+  extras?: string;
+};
 
 type GenerationPreferences = {
   speedMode: SpeedMode;
@@ -70,6 +83,7 @@ type GenerationPreferences = {
   iconStyle: IconStyle;
   designReference: DesignReference;
   contactItems: string[];
+  clientAnswers: ClientAnswers;
   sourcePrompt?: string;
 };
 
@@ -123,6 +137,32 @@ type EditableTextSelection = {
   sectionId: string;
 };
 
+type IndustryKind =
+  | "fintech"
+  | "saas"
+  | "real-estate"
+  | "resort"
+  | "luxury-service"
+  | "food-product"
+  | "ecommerce-product"
+  | "healthcare"
+  | "legal"
+  | "beauty"
+  | "restaurant"
+  | "catering"
+  | "barber"
+  | "hair-salon"
+  | "autoservis"
+  | "car-dealer"
+  | "zednik"
+  | "generic-business";
+
+type Otazka = {
+  id: keyof ClientAnswers;
+  text: string;
+  placeholder: string;
+};
+
 const CONTACT_ITEM_OPTIONS = [
   "telefon",
   "email",
@@ -159,18 +199,434 @@ const IMPROVE_LOADING_MESSAGES = [
   "Finalizuji upravený výstup…",
 ];
 
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function inferIndustryKind(prompt: string): IndustryKind {
+  const text = normalizeText(prompt);
+
+  if (
+    text.includes("fintech") ||
+    text.includes("payment") ||
+    text.includes("platby") ||
+    text.includes("bank") ||
+    text.includes("finance")
+  ) {
+    return "fintech";
+  }
+
+  if (
+    text.includes("saas") ||
+    text.includes("software") ||
+    text.includes("app") ||
+    text.includes("platform") ||
+    text.includes("workflow")
+  ) {
+    return "saas";
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("restaurace") ||
+    text.includes("bistro") ||
+    text.includes("osteria") ||
+    text.includes("kavarna")
+  ) {
+    return "restaurant";
+  }
+
+  if (text.includes("catering")) {
+    return "catering";
+  }
+
+  if (text.includes("barber") || text.includes("barbershop")) {
+    return "barber";
+  }
+
+  if (
+    text.includes("kadernice") ||
+    text.includes("kadernictvi") ||
+    text.includes("hair salon")
+  ) {
+    return "hair-salon";
+  }
+
+  if (
+    text.includes("autoservis") ||
+    text.includes("oprava aut") ||
+    text.includes("servis aut")
+  ) {
+    return "autoservis";
+  }
+
+  if (
+    text.includes("autobazar") ||
+    text.includes("prodej aut") ||
+    text.includes("dealer")
+  ) {
+    return "car-dealer";
+  }
+
+  if (
+    text.includes("zednik") ||
+    text.includes("stavebni firma") ||
+    text.includes("rekonstrukce") ||
+    text.includes("fasady")
+  ) {
+    return "zednik";
+  }
+
+  if (
+    text.includes("realit") ||
+    text.includes("makler") ||
+    text.includes("nemovit")
+  ) {
+    return "real-estate";
+  }
+
+  if (
+    text.includes("resort") ||
+    text.includes("hotel") ||
+    text.includes("wellness")
+  ) {
+    return "resort";
+  }
+
+  if (
+    text.includes("cukr") ||
+    text.includes("sugar") ||
+    text.includes("food") ||
+    text.includes("potrav")
+  ) {
+    return "food-product";
+  }
+
+  if (
+    text.includes("shop") ||
+    text.includes("eshop") ||
+    text.includes("e-shop") ||
+    text.includes("produkt")
+  ) {
+    return "ecommerce-product";
+  }
+
+  if (
+    text.includes("advokat") ||
+    text.includes("pravnik") ||
+    text.includes("notar")
+  ) {
+    return "legal";
+  }
+
+  if (
+    text.includes("klinika") ||
+    text.includes("medical") ||
+    text.includes("doctor")
+  ) {
+    return "healthcare";
+  }
+
+  if (
+    text.includes("beauty") ||
+    text.includes("kosmet") ||
+    text.includes("esthetic")
+  ) {
+    return "beauty";
+  }
+
+  return "generic-business";
+}
+
+function getDefaultContactItems(industry: IndustryKind) {
+  switch (industry) {
+    case "restaurant":
+    case "catering":
+      return ["telefon", "email", "adresa kanceláře", "mapa"];
+    case "barber":
+    case "hair-salon":
+      return ["telefon", "email", "adresa kanceláře", "otevírací doba"];
+    case "autoservis":
+    case "car-dealer":
+      return ["telefon", "email", "adresa kanceláře", "otevírací doba"];
+    default:
+      return ["telefon", "email", "kontaktní formulář"];
+  }
+}
+
+function getDefaultDesignReference(industry: IndustryKind): DesignReference {
+  switch (industry) {
+    case "fintech":
+      return "fintech-neon";
+    case "saas":
+      return "signal-orchestration";
+    case "restaurant":
+    case "catering":
+      return "restaurant-editorial";
+    case "barber":
+      return "barber-premium";
+    case "autoservis":
+    case "car-dealer":
+      return "clean-automotive";
+    case "zednik":
+      return "service-trades";
+    case "food-product":
+    case "ecommerce-product":
+      return "product-commerce";
+    case "resort":
+      return "cinematic-resort";
+    case "real-estate":
+    case "beauty":
+    case "luxury-service":
+      return "luxury-editorial";
+    default:
+      return "clean-business";
+  }
+}
+
+function getDefaultFontMood(industry: IndustryKind): FontMood {
+  switch (industry) {
+    case "fintech":
+    case "saas":
+      return "tech";
+    case "restaurant":
+    case "resort":
+    case "real-estate":
+      return "editorial";
+    case "beauty":
+      return "luxury";
+    case "barber":
+    case "autoservis":
+    case "zednik":
+      return "trustworthy";
+    case "food-product":
+    case "catering":
+    case "hair-salon":
+      return "friendly";
+    default:
+      return "geometric";
+  }
+}
+
+function getDefaultVisualStyle(industry: IndustryKind): VisualStyle {
+  switch (industry) {
+    case "fintech":
+    case "saas":
+      return "premium";
+    case "restaurant":
+    case "resort":
+    case "real-estate":
+    case "beauty":
+      return "luxury";
+    case "food-product":
+    case "hair-salon":
+      return "clean";
+    case "barber":
+    case "autoservis":
+      return "bold";
+    default:
+      return "premium";
+  }
+}
+
+function getDefaultLayout(industry: IndustryKind): LayoutPreference {
+  switch (industry) {
+    case "restaurant":
+    case "resort":
+      return "story";
+    case "fintech":
+    case "healthcare":
+    case "car-dealer":
+      return "split";
+    case "barber":
+    case "beauty":
+      return "asymmetrical";
+    case "real-estate":
+      return "editorial";
+    default:
+      return "grid";
+  }
+}
+
 function createDefaultPreferences(prompt = ""): GenerationPreferences {
+  const industry = inferIndustryKind(prompt);
+
   return {
     speedMode: "balanced",
-    layoutPreference: "auto",
-    visualStyle: "auto",
-    animationLevel: "subtle",
-    fontMood: "auto",
-    iconStyle: "auto",
-    designReference: "auto",
-    contactItems: ["telefon", "email", "kontaktní formulář"],
+    layoutPreference: getDefaultLayout(industry),
+    visualStyle: getDefaultVisualStyle(industry),
+    animationLevel: industry === "fintech" || industry === "saas" ? "rich" : "subtle",
+    fontMood: getDefaultFontMood(industry),
+    iconStyle:
+      industry === "barber" || industry === "food-product" ? "solid" : "minimal",
+    designReference: getDefaultDesignReference(industry),
+    contactItems: getDefaultContactItems(industry),
+    clientAnswers: {
+      contactDetails: "",
+      styleNotes: "",
+      offerNotes: "",
+      extras: "",
+    },
     sourcePrompt: prompt,
   };
+}
+
+function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
+  const common: Otazka[] = [
+    {
+      id: "contactDetails",
+      text: "Jaké kontaktní údaje chcete na webu zobrazit? Můžete rovnou napsat telefon, e-mail, adresu nebo cokoliv dalšího.",
+      placeholder: "Např. Telefon 777 888 999, e-mail info@firma.cz, adresa Praha 1…",
+    },
+    {
+      id: "styleNotes",
+      text: "Jak má web působit? Klidně napište barvy, fonty, styl nebo konkrétní inspiraci.",
+      placeholder: "Např. Tmavý elegantní styl, serif nadpisy, jemné animace…",
+    },
+  ];
+
+  switch (industry) {
+    case "restaurant":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Co chcete na webu restaurace nejvíc zdůraznit?",
+          placeholder: "Např. Čerstvé těstoviny, rezervace, degustační menu, rodinná atmosféra…",
+        },
+        {
+          id: "extras",
+          text: "Má tam být něco navíc? Třeba mapa, rezervace, denní menu nebo galerie?",
+          placeholder: "Např. Rezervační CTA, mapa, galerie jídel, otevírací doba…",
+        },
+      ];
+
+    case "catering":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Jaké služby cateringu chcete nejvíc prodat?",
+          placeholder: "Např. Firemní akce, svatby, rozvoz, coffee breaky…",
+        },
+        {
+          id: "extras",
+          text: "Co ještě musí na webu být?",
+          placeholder: "Např. Poptávkový formulář, fotky realizací, balíčky služeb…",
+        },
+      ];
+
+    case "barber":
+    case "hair-salon":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Jaké služby nebo styl salonu chcete vypíchnout?",
+          placeholder: "Např. Pánské střihy, vousy, moderní salon, blond specialistka…",
+        },
+        {
+          id: "extras",
+          text: "Chcete zdůraznit rezervace, tým, ceník nebo galerii?",
+          placeholder: "Např. Online rezervace, fotky proměn, ceník, představení týmu…",
+        },
+      ];
+
+    case "autoservis":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Jaké služby autoservisu jsou nejdůležitější?",
+          placeholder: "Např. Diagnostika, výměna oleje, pneuservis, servis klimatizace…",
+        },
+        {
+          id: "extras",
+          text: "Má tam být ceník, objednání nebo něco dalšího?",
+          placeholder: "Např. Objednávkový formulář, ceník, otevírací doba, reference…",
+        },
+      ];
+
+    case "car-dealer":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Co chcete na prodeji aut zdůraznit?",
+          placeholder: "Např. Prověřené vozy, financování, dovoz, záruka, firemní flotily…",
+        },
+        {
+          id: "extras",
+          text: "Má web obsahovat nabídku vozů, financování nebo reference?",
+          placeholder: "Např. Nabídka vozů, filtrování, financování, reference klientů…",
+        },
+      ];
+
+    case "zednik":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Jaké služby nebo realizace chcete vypíchnout?",
+          placeholder: "Např. Rekonstrukce, fasády, obklady, rodinné domy…",
+        },
+        {
+          id: "extras",
+          text: "Má tam být něco navíc?",
+          placeholder: "Např. Fotky realizací, reference, postup spolupráce, rychlá poptávka…",
+        },
+      ];
+
+    case "fintech":
+    case "saas":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Jaký hlavní produkt nebo výhodu chcete zdůraznit?",
+          placeholder: "Např. Platby, automatizace workflow, API, reporting…",
+        },
+        {
+          id: "extras",
+          text: "Chcete zdůraznit něco konkrétního navíc?",
+          placeholder: "Např. Integrace, bezpečnost, reference, pricing, dashboard preview…",
+        },
+      ];
+
+    case "food-product":
+    case "ecommerce-product":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Jaký produkt nebo hlavní benefit chcete nejvíc prodat?",
+          placeholder: "Např. Třtinový cukr, přírodní sladidla, kvalita surovin, balení…",
+        },
+        {
+          id: "extras",
+          text: "Má tam být FAQ, varianty balení, recepty nebo něco dalšího?",
+          placeholder: "Např. FAQ, recepty, druhy balení, výhody produktu, objednávka…",
+        },
+      ];
+
+    default:
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          text: "Co je hlavní služba nebo nabídka, kterou má web prodávat?",
+          placeholder: "Např. Rekonstrukce, konzultace, prodej produktu, rezervace…",
+        },
+        {
+          id: "extras",
+          text: "Má tam být ještě něco důležitého?",
+          placeholder: "Např. Reference, ceník, mapa, tým, FAQ, galerie…",
+        },
+      ];
+  }
 }
 
 function prettifySectionLabel(id: string, type: string) {
@@ -718,258 +1174,6 @@ function BuilderPlaceholder({ status }: { status: string }) {
   );
 }
 
-function UpresneniWebuModal({
-  open,
-  value,
-  onClose,
-  onChange,
-  onSubmit,
-}: {
-  open: boolean;
-  value: GenerationPreferences;
-  onClose: () => void;
-  onChange: (next: GenerationPreferences) => void;
-  onSubmit: () => void;
-}) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 px-4 py-6">
-      <div className="w-full max-w-4xl rounded-[2rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <div className="text-lg font-semibold text-white">
-              Upřesnit generování webu
-            </div>
-            <div className="mt-1 text-sm text-zinc-400">
-              Tady určíte styl webu, rozvržení, typ písma, animace i obsah
-              kontaktů.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            aria-label="Zavřít"
-            onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
-          >
-            <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
-          </button>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 text-sm font-medium text-white">
-              Chcete rychlý web, nebo pomalejší generování s lepším výsledkem?
-            </div>
-            <select
-              value={value.speedMode}
-              onChange={(e) =>
-                onChange({ ...value, speedMode: e.target.value as SpeedMode })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="fast">Rychlý</option>
-              <option value="balanced">Vyvážený</option>
-              <option value="premium">Pomalejší, ale lepší</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 text-sm font-medium text-white">
-              Jaký typ rozvržení chcete?
-            </div>
-            <select
-              value={value.layoutPreference}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  layoutPreference: e.target.value as LayoutPreference,
-                })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="auto">Auto / překvap mě</option>
-              <option value="editorial">Editorial</option>
-              <option value="split">Rozdělená obrazovka</option>
-              <option value="asymmetrical">Asymetrický</option>
-              <option value="story">Příběhový</option>
-              <option value="grid">Mřížka / byznys</option>
-              <option value="luxury">Luxusní</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 text-sm font-medium text-white">
-              Jaký vizuální styl chcete?
-            </div>
-            <select
-              value={value.visualStyle}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  visualStyle: e.target.value as VisualStyle,
-                })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="auto">Auto</option>
-              <option value="clean">Čistý</option>
-              <option value="premium">Prémiový</option>
-              <option value="bold">Výrazný</option>
-              <option value="editorial">Editorial</option>
-              <option value="luxury">Luxusní</option>
-              <option value="playful">Hravý</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 text-sm font-medium text-white">
-              Kolik animací chcete?
-            </div>
-            <select
-              value={value.animationLevel}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  animationLevel: e.target.value as AnimationLevel,
-                })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="minimal">Minimum</option>
-              <option value="subtle">Jemně</option>
-              <option value="rich">Více animací</option>
-              <option value="expressive">Výrazně</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 text-sm font-medium text-white">
-              Jaký charakter písma chcete?
-            </div>
-            <select
-              value={value.fontMood}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  fontMood: e.target.value as FontMood,
-                })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="auto">Auto</option>
-              <option value="geometric">Geometrický</option>
-              <option value="editorial">Editorial</option>
-              <option value="luxury">Luxusní</option>
-              <option value="trustworthy">Důvěryhodný</option>
-              <option value="tech">Technologický</option>
-              <option value="friendly">Přátelský</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 text-sm font-medium text-white">
-              Jaký styl ikon chcete?
-            </div>
-            <select
-              value={value.iconStyle}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  iconStyle: e.target.value as IconStyle,
-                })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="auto">Auto</option>
-              <option value="minimal">Minimalistické</option>
-              <option value="outlined">Obrysové</option>
-              <option value="solid">Plné</option>
-              <option value="custom">Vlastní / dekorativní</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 md:col-span-2">
-            <div className="mb-2 text-sm font-medium text-white">
-              Jaký referenční styl webu chcete?
-            </div>
-            <select
-              value={value.designReference}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  designReference: e.target.value as DesignReference,
-                })
-              }
-              className="w-full rounded-xl border border-white/10 bg-[#0e1016] px-3 py-2 text-sm text-white outline-none"
-            >
-              <option value="auto">Auto</option>
-              <option value="fintech-neon">Fintech neon</option>
-              <option value="signal-orchestration">Technologická orchestrace</option>
-              <option value="angled-enterprise">Byznys se šikmými přechody</option>
-              <option value="cinematic-resort">Filmový resort</option>
-              <option value="luxury-editorial">Luxusní editorial</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-          <div className="mb-3 text-sm font-medium text-white">
-            Jaké informace chcete zobrazit v kontaktech?
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {CONTACT_ITEM_OPTIONS.map((item) => {
-              const active = value.contactItems.includes(item);
-
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() =>
-                    onChange({
-                      ...value,
-                      contactItems: active
-                        ? value.contactItems.filter((entry) => entry !== item)
-                        : [...value.contactItems, item],
-                    })
-                  }
-                  className={`rounded-full border px-3 py-2 text-xs transition ${
-                    active
-                      ? "border-cyan-400/30 bg-cyan-500/10 text-white"
-                      : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                  }`}
-                >
-                  {item}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-5 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-          >
-            Zavřít
-          </button>
-
-          <button
-            type="button"
-            onClick={onSubmit}
-            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-5 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
-          >
-            Potvrdit a generovat
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AiEditorPage() {
   const [prompt, setPrompt] = useState("");
   const [html, setHtml] = useState("");
@@ -999,7 +1203,7 @@ export default function AiEditorPage() {
     {
       id: "system-initial",
       role: "system",
-      text: "Zyvia je připravena upravit layout, sekce, CTA, spacing i vizuální styl.",
+      text: "Zyvia je připravena tvořit weby podle oboru a vašich odpovědí v chatu.",
     },
   ]);
 
@@ -1009,12 +1213,12 @@ export default function AiEditorPage() {
   const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
   const [editedTextValue, setEditedTextValue] = useState("");
 
-  const [upresneniOpen, setUpresneniOpen] = useState(false);
-  const [draftPreferences, setDraftPreferences] = useState<GenerationPreferences>(
-    createDefaultPreferences("")
-  );
-  const [confirmedPreferences, setConfirmedPreferences] =
-    useState<GenerationPreferences | null>(null);
+  const [generationPreferences, setGenerationPreferences] =
+    useState<GenerationPreferences>(createDefaultPreferences(""));
+  const [otazky, setOtazky] = useState<Otazka[]>([]);
+  const [aktivniOtazkaIndex, setAktivniOtazkaIndex] = useState(0);
+  const [odpovedInput, setOdpovedInput] = useState("");
+  const [otazkyDokonceny, setOtazkyDokonceny] = useState(false);
 
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
@@ -1046,6 +1250,8 @@ export default function AiEditorPage() {
     return buildPreviewDocument(html, css, js);
   }, [html, css, js]);
 
+  const aktualniOtazka = otazky[aktivniOtazkaIndex] || null;
+
   function getChatHistoryPayload() {
     return messages.slice(-12).map((message) => ({
       role: message.role,
@@ -1059,6 +1265,53 @@ export default function AiEditorPage() {
       behavior: smooth ? "smooth" : "auto",
       block: "end",
     });
+  }
+
+  function startQuestionFlow(currentPrompt: string) {
+    const prefs = createDefaultPreferences(currentPrompt);
+    const industry = inferIndustryKind(currentPrompt);
+    const nextOtazky = getQuestionsForIndustry(industry);
+
+    setGenerationPreferences(prefs);
+    setOtazky(nextOtazky);
+    setAktivniOtazkaIndex(0);
+    setOdpovedInput("");
+    setOtazkyDokonceny(false);
+
+    const industryTextMap: Record<IndustryKind, string> = {
+      fintech: "fintech",
+      saas: "SaaS / software",
+      "real-estate": "reality",
+      resort: "resort / hotel",
+      "luxury-service": "prémiová služba",
+      "food-product": "produkt / potravina",
+      "ecommerce-product": "e-shop / produkt",
+      healthcare: "zdravotnictví",
+      legal: "právní služby",
+      beauty: "beauty",
+      restaurant: "restaurace",
+      catering: "catering",
+      barber: "barber",
+      "hair-salon": "kadeřnictví",
+      autoservis: "autoservis",
+      "car-dealer": "prodej aut",
+      zednik: "stavební / zednické práce",
+      "generic-business": "obecná firma",
+    };
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `industry-detected-${Date.now()}`,
+        role: "system",
+        text: `Rozpoznaný obor: ${industryTextMap[industry]}. Před generováním se vás zeptám na pár stručných věcí.`,
+      },
+      {
+        id: `question-start-${Date.now() + 1}`,
+        role: "assistant",
+        text: nextOtazky[0]?.text || "Můžeme generovat.",
+      },
+    ]);
   }
 
   async function resolveAssetsAndPatchHtml(
@@ -1114,7 +1367,6 @@ export default function AiEditorPage() {
 
     if (initialPrompt) {
       setPrompt(initialPrompt);
-      setDraftPreferences(createDefaultPreferences(initialPrompt));
       setMessages((prev) => [
         ...prev,
         {
@@ -1130,8 +1382,8 @@ export default function AiEditorPage() {
       sessionStorage.removeItem("ai_webgen_autostart");
 
       setTimeout(() => {
-        setUpresneniOpen(true);
-      }, 300);
+        startQuestionFlow(initialPrompt);
+      }, 250);
     }
   }, []);
 
@@ -1143,30 +1395,6 @@ export default function AiEditorPage() {
       if (data.type === "zyvia-section-select") {
         setSelectedSectionId(data.sectionId || null);
         setSelectedSectionType(data.sectionType || null);
-
-        if (data.sectionId) {
-          setMessages((prev) => {
-            const text = `Vybraná sekce: ${prettifySectionLabel(
-              data.sectionId,
-              data.sectionType || ""
-            )}`;
-
-            const alreadyExists = prev.some(
-              (message) => message.role === "system" && message.text === text
-            );
-
-            if (alreadyExists) return prev;
-
-            return [
-              ...prev,
-              {
-                id: `section-select-${Date.now()}`,
-                role: "system",
-                text,
-              },
-            ];
-          });
-        }
       }
 
       if (data.type === "zyvia-text-select") {
@@ -1263,35 +1491,14 @@ export default function AiEditorPage() {
     }
   }
 
-  function openUpresneniWebu() {
-    const next = createDefaultPreferences(prompt.trim() || prompt);
-    setDraftPreferences((prev) => ({
-      ...next,
-      ...prev,
-      sourcePrompt: prompt.trim() || prompt,
-    }));
-    setUpresneniOpen(true);
-  }
-
-  async function handleGenerate(customPrompt?: string, forcedPrefs?: GenerationPreferences) {
+  async function handleGenerate(
+    customPrompt?: string,
+    forcedPreferences?: GenerationPreferences
+  ) {
     const finalPrompt = (customPrompt ?? prompt).trim();
     if (finalPrompt.length < 12) return;
 
-    const effectivePrefs =
-      forcedPrefs ||
-      (confirmedPreferences?.sourcePrompt === finalPrompt
-        ? confirmedPreferences
-        : null);
-
-    if (!effectivePrefs) {
-      setDraftPreferences((prev) => ({
-        ...createDefaultPreferences(finalPrompt),
-        ...prev,
-        sourcePrompt: finalPrompt,
-      }));
-      setUpresneniOpen(true);
-      return;
-    }
+    const effectivePreferences = forcedPreferences || generationPreferences;
 
     setLoading(true);
     setError(null);
@@ -1313,7 +1520,7 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: finalPrompt,
-          generationPreferences: effectivePrefs,
+          generationPreferences: effectivePreferences,
           chatHistory: getChatHistoryPayload(),
         }),
       });
@@ -1377,10 +1584,6 @@ export default function AiEditorPage() {
     ]);
 
     startSmoothProgress("improve");
-
-    setTimeout(() => {
-      scrollChatToBottom(true);
-    }, 50);
 
     try {
       const res = await fetch("/api/improve", {
@@ -1535,6 +1738,77 @@ export default function AiEditorPage() {
     setEditedTextValue("");
   }
 
+  function ulozitOdpovedNaOtazku() {
+    if (!aktualniOtazka) return;
+
+    const trimmed = odpovedInput.trim();
+
+    setGenerationPreferences((prev) => ({
+      ...prev,
+      clientAnswers: {
+        ...prev.clientAnswers,
+        [aktualniOtazka.id]: trimmed,
+      },
+    }));
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `question-answer-${Date.now()}`,
+        role: "user",
+        text: trimmed || "Bez odpovědi.",
+      },
+    ]);
+
+    const nextIndex = aktivniOtazkaIndex + 1;
+    setOdpovedInput("");
+
+    if (nextIndex < otazky.length) {
+      setAktivniOtazkaIndex(nextIndex);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `question-next-${Date.now() + 1}`,
+          role: "assistant",
+          text: otazky[nextIndex].text,
+        },
+      ]);
+      return;
+    }
+
+    setOtazkyDokonceny(true);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `question-finished-${Date.now()}`,
+        role: "assistant",
+        text: "Děkuji, mám vše důležité. Teď můžeme web vygenerovat přesněji podle vašich odpovědí.",
+      },
+    ]);
+
+    void handleGenerate(prompt, {
+      ...generationPreferences,
+      clientAnswers: {
+        ...generationPreferences.clientAnswers,
+        [aktualniOtazka.id]: trimmed,
+      },
+    });
+  }
+
+  function preskocitOtazkyAGenerovat() {
+    setOtazkyDokonceny(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `skip-questions-${Date.now()}`,
+        role: "system",
+        text: "Otázky byly přeskočeny. Generuji web podle promptu a automatického rozpoznání oboru.",
+      },
+    ]);
+    void handleGenerate(prompt, generationPreferences);
+  }
+
   const previewWidthClass =
     viewMode === "desktop"
       ? "w-full"
@@ -1606,7 +1880,7 @@ export default function AiEditorPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={openUpresneniWebu}
+                onClick={() => startQuestionFlow(prompt)}
                 className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-sm text-violet-200 transition hover:bg-violet-500/15"
               >
                 <Icon icon="solar:settings-linear" width={16} />
@@ -1670,24 +1944,15 @@ export default function AiEditorPage() {
                     )}
                   </div>
 
-                  {confirmedPreferences && (
-                    <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-3 text-xs text-violet-100">
-                      <div className="mb-1 font-medium text-white">
-                        Aktivní nastavení webu
-                      </div>
-                      <div>
-                        {confirmedPreferences.designReference} •{" "}
-                        {confirmedPreferences.layoutPreference} •{" "}
-                        {confirmedPreferences.visualStyle} •{" "}
-                        {confirmedPreferences.fontMood} •{" "}
-                        {confirmedPreferences.animationLevel}
-                      </div>
-                    </div>
-                  )}
-
                   <button
                     type="button"
-                    onClick={() => handleGenerate()}
+                    onClick={() => {
+                      if (!otazky.length || otazkyDokonceny) {
+                        startQuestionFlow(prompt);
+                        return;
+                      }
+                      scrollChatToBottom(true);
+                    }}
                     disabled={loading || improving || resolvingAssets || prompt.trim().length < 12}
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{
@@ -1703,7 +1968,7 @@ export default function AiEditorPage() {
                       ? "Probíhá úprava…"
                       : resolvingAssets
                       ? "Doplňuji obrázky…"
-                      : "Regenerovat návrh"}
+                      : "Začít generovat"}
                     <Icon icon="solar:arrow-up-linear" width={16} />
                   </button>
                 </div>
@@ -1749,16 +2014,52 @@ export default function AiEditorPage() {
 
                       <div className="mt-3 text-xs leading-6 text-zinc-500">
                         {loading
-                          ? "Probíhá generování layoutu podle upřesněného zadání."
+                          ? "Probíhá generování layoutu podle oboru a vašich odpovědí v chatu."
                           : improving
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráte konkrétní sekce nebo texty pro úpravy."
-                          : "Klikněte do náhledu na sekci nebo text, který chcete upravit."}
+                          : "Nejdřív odpovězte na pár stručných otázek v chatu, pak se web vygeneruje přesněji."}
                       </div>
                     </div>
+
+                    {otazky.length > 0 && !otazkyDokonceny && aktualniOtazka && (
+                      <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-3">
+                        <div className="mb-2 text-sm font-medium text-white">
+                          Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
+                        </div>
+                        <div className="mb-3 text-sm text-zinc-200">
+                          {aktualniOtazka.text}
+                        </div>
+
+                        <textarea
+                          value={odpovedInput}
+                          onChange={(e) => setOdpovedInput(e.target.value)}
+                          placeholder={aktualniOtazka.placeholder}
+                          className="h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        />
+
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={preskocitOtazkyAGenerovat}
+                            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                          >
+                            Přeskočit a generovat
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={ulozitOdpovedNaOtazku}
+                            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                          >
+                            Uložit odpověď
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {availableSections.length > 0 && (
                       <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
@@ -2031,31 +2332,6 @@ export default function AiEditorPage() {
           </main>
         </div>
       </div>
-
-      <UpresneniWebuModal
-        open={upresneniOpen}
-        value={draftPreferences}
-        onClose={() => setUpresneniOpen(false)}
-        onChange={setDraftPreferences}
-        onSubmit={() => {
-          const finalPrefs = {
-            ...draftPreferences,
-            sourcePrompt: prompt.trim() || prompt,
-          };
-
-          setConfirmedPreferences(finalPrefs);
-          setUpresneniOpen(false);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `upresneni-confirmed-${Date.now()}`,
-              role: "system",
-              text: `Nastavení potvrzeno: ${finalPrefs.designReference}, ${finalPrefs.layoutPreference}, ${finalPrefs.visualStyle}, ${finalPrefs.fontMood}, ${finalPrefs.animationLevel}.`,
-            },
-          ]);
-          void handleGenerate(undefined, finalPrefs);
-        }}
-      />
 
       {textModalOpen && selectedText && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
