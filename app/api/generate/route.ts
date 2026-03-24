@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -55,19 +56,45 @@ type IndustryImageRules = {
   fallbackQueries: string[];
 };
 
+const OPENAI_PLANNER_MODEL = "gpt-4.1-mini";
+const OPENAI_RENDER_MODEL = "gpt-4.1";
+const IMAGE_FETCH_TIMEOUT_MS = 3500;
+
+async function withTimeout<T>(
+  promiseFactory: (signal?: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await promiseFactory(controller.signal);
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(errorMessage);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function createStructuredObject<T>({
+  model,
   system,
   user,
   schemaName,
   schema,
 }: {
+  model: string;
   system: string;
   user: string;
   schemaName: string;
   schema: Record<string, unknown>;
 }): Promise<T> {
   const completion = await client.chat.completions.create({
-    model: "gpt-4.1",
+    model,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -280,8 +307,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "lawyer office consultation",
         "attorney meeting client",
         "law firm interior",
-        "legal documents desk",
-        "professional lawyer portrait",
       ],
     };
   }
@@ -323,7 +348,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "doctor consultation clinic",
         "modern clinic interior",
         "healthcare professional portrait",
-        "medical team clean environment",
       ],
     };
   }
@@ -362,7 +386,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "beauty clinic consultation",
         "modern beauty clinic interior",
         "skincare treatment woman",
-        "esthetic doctor consultation",
       ],
     };
   }
@@ -402,7 +425,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "modern saas dashboard",
         "startup team office",
         "technology workspace laptop",
-        "software product interface",
       ],
     };
   }
@@ -430,7 +452,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "luxury apartment interior",
         "modern real estate office",
         "premium property exterior",
-        "architectural building facade",
       ],
     };
   }
@@ -458,7 +479,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
         "restaurant interior premium",
         "chef preparing food",
         "elegant dining table",
-        "cafe interior aesthetic",
       ],
     };
   }
@@ -489,7 +509,6 @@ function getIndustryImageRules(industry: string, prompt: string): IndustryImageR
       "modern business office",
       "professional team meeting",
       "premium office interior",
-      "client consultation office",
     ],
   };
 }
@@ -500,19 +519,14 @@ function scoreImageRelevance(
   rules: IndustryImageRules
 ): number {
   const haystack = normalizeText(`${alt} ${query}`);
-
   let score = 0;
 
   for (const preferred of rules.preferred) {
-    if (haystack.includes(normalizeText(preferred))) {
-      score += 2;
-    }
+    if (haystack.includes(normalizeText(preferred))) score += 2;
   }
 
   for (const banned of rules.banned) {
-    if (haystack.includes(normalizeText(banned))) {
-      score -= 5;
-    }
+    if (haystack.includes(normalizeText(banned))) score -= 5;
   }
 
   return score;
@@ -533,50 +547,64 @@ async function searchPexelsCandidates(
   const apiKey = process.env.PEXELS_API_KEY;
   if (!apiKey) return [];
 
-  const url = new URL("https://api.pexels.com/v1/search");
-  url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "5");
-  url.searchParams.set("orientation", orientation);
+  try {
+    return await withTimeout(
+      async (signal) => {
+        const url = new URL("https://api.pexels.com/v1/search");
+        url.searchParams.set("query", query);
+        url.searchParams.set("per_page", "3");
+        url.searchParams.set("orientation", orientation);
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: apiKey,
-    },
-    cache: "no-store",
-  });
+        const res = await fetch(url.toString(), {
+          headers: {
+            Authorization: apiKey,
+          },
+          cache: "no-store",
+          signal,
+        });
 
-  if (!res.ok) return [];
+        if (!res.ok) return [];
 
-  const data = (await res.json()) as {
-    photos?: Array<{
-      alt?: string;
-      photographer?: string;
-      photographer_url?: string;
-      src?: {
-        large2x?: string;
-        large?: string;
-        original?: string;
-      };
-    }>;
-  };
+        const data = (await res.json()) as {
+          photos?: Array<{
+            alt?: string;
+            photographer?: string;
+            photographer_url?: string;
+            src?: {
+              large2x?: string;
+              large?: string;
+              original?: string;
+            };
+          }>;
+        };
 
-  return (data.photos || [])
-    .map((photo) => {
-      const imageUrl =
-        photo?.src?.large2x || photo?.src?.large || photo?.src?.original || "";
+        return (data.photos || [])
+          .map((photo) => {
+            const imageUrl =
+              photo?.src?.large2x ||
+              photo?.src?.large ||
+              photo?.src?.original ||
+              "";
 
-      if (!imageUrl) return null;
+            if (!imageUrl) return null;
 
-      return {
-        slot: "",
-        url: imageUrl,
-        alt: photo.alt || query,
-        source: "pexels" as const,
-        photographer: photo.photographer,
-        photographerUrl: photo.photographer_url,
-      };
-    })
-    .filter(Boolean) as ResolvedAsset[];
+            return {
+              slot: "",
+              url: imageUrl,
+              alt: photo.alt || query,
+              source: "pexels" as const,
+              photographer: photo.photographer,
+              photographerUrl: photo.photographer_url,
+            };
+          })
+          .filter(Boolean) as ResolvedAsset[];
+      },
+      IMAGE_FETCH_TIMEOUT_MS,
+      "Pexels timeout"
+    );
+  } catch {
+    return [];
+  }
 }
 
 async function searchUnsplashCandidates(
@@ -586,59 +614,70 @@ async function searchUnsplashCandidates(
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) return [];
 
-  const orientationMap =
-    orientation === "portrait"
-      ? "portrait"
-      : orientation === "square"
-      ? "squarish"
-      : "landscape";
+  try {
+    return await withTimeout(
+      async (signal) => {
+        const orientationMap =
+          orientation === "portrait"
+            ? "portrait"
+            : orientation === "square"
+            ? "squarish"
+            : "landscape";
 
-  const url = new URL("https://api.unsplash.com/search/photos");
-  url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "5");
-  url.searchParams.set("orientation", orientationMap);
+        const url = new URL("https://api.unsplash.com/search/photos");
+        url.searchParams.set("query", query);
+        url.searchParams.set("per_page", "3");
+        url.searchParams.set("orientation", orientationMap);
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Client-ID ${accessKey}`,
-    },
-    cache: "no-store",
-  });
+        const res = await fetch(url.toString(), {
+          headers: {
+            Authorization: `Client-ID ${accessKey}`,
+          },
+          cache: "no-store",
+          signal,
+        });
 
-  if (!res.ok) return [];
+        if (!res.ok) return [];
 
-  const data = (await res.json()) as {
-    results?: Array<{
-      alt_description?: string;
-      description?: string;
-      urls?: {
-        regular?: string;
-        full?: string;
-      };
-      user?: {
-        name?: string;
-        links?: {
-          html?: string;
+        const data = (await res.json()) as {
+          results?: Array<{
+            alt_description?: string;
+            description?: string;
+            urls?: {
+              regular?: string;
+              full?: string;
+            };
+            user?: {
+              name?: string;
+              links?: {
+                html?: string;
+              };
+            };
+          }>;
         };
-      };
-    }>;
-  };
 
-  return (data.results || [])
-    .map((photo) => {
-      const imageUrl = photo?.urls?.regular || photo?.urls?.full || "";
-      if (!imageUrl) return null;
+        return (data.results || [])
+          .map((photo) => {
+            const imageUrl = photo?.urls?.regular || photo?.urls?.full || "";
+            if (!imageUrl) return null;
 
-      return {
-        slot: "",
-        url: imageUrl,
-        alt: photo.alt_description || photo.description || query,
-        source: "unsplash" as const,
-        photographer: photo.user?.name,
-        photographerUrl: photo.user?.links?.html,
-      };
-    })
-    .filter(Boolean) as ResolvedAsset[];
+            return {
+              slot: "",
+              url: imageUrl,
+              alt: photo.alt_description || photo.description || query,
+              source: "unsplash" as const,
+              photographer: photo.user?.name,
+              photographerUrl: photo.user?.links?.html,
+            };
+          })
+          .filter(Boolean) as ResolvedAsset[];
+      },
+      IMAGE_FETCH_TIMEOUT_MS,
+      "Unsplash timeout"
+    );
+  } catch {
+    return [];
+  }
 }
 
 async function findRelevantImage(params: {
@@ -646,41 +685,24 @@ async function findRelevantImage(params: {
   orientation: "landscape" | "portrait" | "square";
   rules: IndustryImageRules;
 }) {
-  const pexelsCandidates = await searchPexelsCandidates(
-    params.query,
-    params.orientation
+  const [pexelsCandidates, unsplashCandidates] = await Promise.all([
+    searchPexelsCandidates(params.query, params.orientation),
+    searchUnsplashCandidates(params.query, params.orientation),
+  ]);
+
+  const candidates = [...pexelsCandidates, ...unsplashCandidates];
+
+  return (
+    candidates
+      .sort(
+        (a, b) =>
+          scoreImageRelevance(b.alt, params.query, params.rules) -
+          scoreImageRelevance(a.alt, params.query, params.rules)
+      )
+      .find((candidate) =>
+        isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
+      ) || null
   );
-
-  const bestPexels = pexelsCandidates
-    .sort(
-      (a, b) =>
-        scoreImageRelevance(b.alt, params.query, params.rules) -
-        scoreImageRelevance(a.alt, params.query, params.rules)
-    )
-    .find((candidate) =>
-      isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
-    );
-
-  if (bestPexels) return bestPexels;
-
-  const unsplashCandidates = await searchUnsplashCandidates(
-    params.query,
-    params.orientation
-  );
-
-  const bestUnsplash = unsplashCandidates
-    .sort(
-      (a, b) =>
-        scoreImageRelevance(b.alt, params.query, params.rules) -
-        scoreImageRelevance(a.alt, params.query, params.rules)
-    )
-    .find((candidate) =>
-      isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
-    );
-
-  if (bestUnsplash) return bestUnsplash;
-
-  return null;
 }
 
 async function resolveImageAssets(
@@ -688,47 +710,45 @@ async function resolveImageAssets(
   industry: string,
   prompt: string
 ): Promise<ResolvedAsset[]> {
-  const limitedPlan = imagePlan.slice(0, 6);
+  const limitedPlan = imagePlan.slice(0, 3);
   const rules = getIndustryImageRules(industry, prompt);
 
   const resolved = await Promise.all(
     limitedPlan.map(async (item, index) => {
-      const directMatch = await findRelevantImage({
-        query: item.query,
-        orientation: item.orientation,
-        rules,
-      });
+      try {
+        const directMatch = await findRelevantImage({
+          query: item.query,
+          orientation: item.orientation,
+          rules,
+        });
 
-      if (directMatch) {
+        if (directMatch) {
+          return {
+            ...directMatch,
+            slot: item.slot,
+          };
+        }
+
+        const safeFallbackQuery =
+          rules.fallbackQueries[index % rules.fallbackQueries.length];
+
         return {
-          ...directMatch,
           slot: item.slot,
+          url: fallbackImageUrl(safeFallbackQuery, item.orientation),
+          alt: safeFallbackQuery,
+          source: "fallback" as const,
+        };
+      } catch {
+        const safeFallbackQuery =
+          rules.fallbackQueries[index % rules.fallbackQueries.length];
+
+        return {
+          slot: item.slot,
+          url: fallbackImageUrl(safeFallbackQuery, item.orientation),
+          alt: safeFallbackQuery,
+          source: "fallback" as const,
         };
       }
-
-      const safeFallbackQuery =
-        rules.fallbackQueries[index % rules.fallbackQueries.length];
-
-      const saferMatch = await findRelevantImage({
-        query: safeFallbackQuery,
-        orientation: item.orientation,
-        rules,
-      });
-
-      if (saferMatch) {
-        return {
-          ...saferMatch,
-          slot: item.slot,
-          alt: saferMatch.alt || safeFallbackQuery,
-        };
-      }
-
-      return {
-        slot: item.slot,
-        url: fallbackImageUrl(safeFallbackQuery, item.orientation),
-        alt: safeFallbackQuery,
-        source: "fallback" as const,
-      };
     })
   );
 
@@ -761,7 +781,7 @@ Důležitá pravidla:
 - styleDirection musí být KONKRÉTNÍ vizuální směr, ne obecná fráze
 - layoutArchetype musí být konkrétní kompoziční archetyp
 - imagePlan musí být užitečný a realistický
-- navrhni 4 až 6 obrázků
+- navrhni maximálně 3 obrázky
 - query musí být v angličtině kvůli image search
 - queries musí být konkrétní a popisné, ne abstraktní mood fráze
 - u profesních oborů používej konkrétní dotazy jako office, consultation, team, interior, documents apod.
@@ -779,36 +799,12 @@ DŮLEŽITÉ UX A ART DIRECTION ZÁSADY:
 - mobile menu musí být řešeno hamburgerem
 - layout musí počítat i s mobile verzí už ve fázi plánování
 - tablet verze musí být promyšlená, zejména spacing, zalamování a navigace
-- nevol stále stejný styl karet, oken a bloků
 - cílem je premium commercial quality
-
-OBOROVÉ STYLING PRAVIDLO:
-- právník / advokát / právní kancelář:
-  - seriózní a důstojná typografie
-  - menší radius nebo bez radiusů
-  - pevnější a architektoničtější grid
-  - méně „startup glow“, více autority a klidu
-- klinika:
-  - čistota, důvěra, vzdušnost, ale ne sterilní nuda
-- luxury / premium:
-  - editorial rhythm, výrazná hierarchie, velké kvalitní bloky
-- SaaS / tech:
-  - přesná konverzní struktura, modernější UI language
-- ecommerce / produkt:
-  - benefit-first struktura, produktové bloky, trust, FAQ, CTA
-
-STRUKTURNÍ PRAVIDLO:
-- web by měl mít ideálně 8 až 10 propracovaných sekcí, pokud to dává smysl pro typ projektu
-- sekce nemají být výplň, ale kvalitní a funkční
-- header a footer se počítají jako důležité části výsledku
-- footer musí být vždy dotažený, ne minimalisticky odbytý
 
 COPYWRITING PRAVIDLA:
 - hlavní hero headline musí být krátký, silný a dobře čitelný
 - preferuj 3 až 8 slov v hlavním hero nadpisu
-- nepoužívej zbytečně dlouhé věty v hlavním nadpisu
 - supporting text pod hero musí být stručný, jasný a prodejní
-- vyhýbej se ukecaným odstavcům v top části webu
 
 KONTEKST:
 - Build type: ${params.buildType || "neuvedeno"}
@@ -893,15 +889,14 @@ ${assetsText}
 
 STRICT DESIGN RULES:
 - use the provided images where appropriate
-- if an image is provided for legal, healthcare, saas, beauty or similar industries, use it semantically and not decoratively
 - use Czech copy, not lorem ipsum
 - ensure responsive design across desktop, tablet and mobile
 - avoid giant empty blank blocks
+- the result must be fast to render and production safe
 
 COPYWRITING RULES:
 - the main hero headline must be short, punchy and premium
 - prefer roughly 3 to 8 words for the main hero headline
-- never make the first headline unnecessarily long
 - supporting hero paragraph should be concise and easy to scan
 
 FINAL QA BEFORE OUTPUT:
@@ -914,52 +909,7 @@ FINAL QA BEFORE OUTPUT:
 - balanced hero section
 - responsive layout
 - commercial quality result
-- enough meaningful sections
 - short and strong hero headline
-`;
-}
-
-function selfCheckPrompt(params: {
-  prompt: string;
-  html: string;
-  css: string;
-  js: string;
-}) {
-  return `
-You are a brutally honest senior web design QA reviewer and frontend fixer.
-
-Review the provided website bundle and improve weak parts before final delivery.
-
-Return ONLY a structured JSON object matching the schema.
-
-IMPORTANT:
-- Preserve the overall direction unless it is clearly broken
-- Fix layout weaknesses
-- Fix empty/dead spaces
-- Fix weak hero composition
-- Shorten an overly long main hero headline if needed
-- Fix incomplete or weak navigation
-- Fix weak or underdeveloped footer
-- Ensure mobile hamburger menu works
-- Ensure tablet spacing is polished
-- Improve section balance if needed
-- Keep Czech copy
-- Keep semantic sections and data-section-id/data-section-type
-- Ensure data-section-id values remain unique and stable
-- Do not create nested editable sections with duplicate ids
-- Do not explain changes
-
-ORIGINAL PROJECT PROMPT:
-${params.prompt}
-
-CURRENT HTML:
-${params.html}
-
-CURRENT CSS:
-${params.css}
-
-CURRENT JS:
-${params.js}
 `;
 }
 
@@ -975,10 +925,14 @@ export async function POST(req: Request) {
       : [];
 
     if (!prompt || prompt.trim().length < 8) {
-      return Response.json({ error: "Missing or invalid prompt" }, { status: 400 });
+      return Response.json(
+        { error: "Missing or invalid prompt" },
+        { status: 400 }
+      );
     }
 
     const brief = await createStructuredObject<DesignBrief>({
+      model: OPENAI_PLANNER_MODEL,
       system: "You are a precise design strategist. Return only valid JSON.",
       user: plannerPrompt({
         prompt,
@@ -997,6 +951,7 @@ export async function POST(req: Request) {
     );
 
     const renderedBundle = await createStructuredObject<WebsiteBundle>({
+      model: OPENAI_RENDER_MODEL,
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
       user: renderPrompt({
@@ -1013,32 +968,10 @@ export async function POST(req: Request) {
 
     const safeRendered = sanitizeBundle(renderedBundle);
 
-    let safeFinal = safeRendered;
-
-    try {
-      const checkedBundle = await createStructuredObject<WebsiteBundle>({
-        system:
-          "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON.",
-        user: selfCheckPrompt({
-          prompt,
-          html: safeRendered.html,
-          css: safeRendered.css,
-          js: safeRendered.js,
-        }),
-        schemaName: "website_bundle_checked",
-        schema: websiteBundleSchema,
-      });
-
-      safeFinal = sanitizeBundle(checkedBundle);
-    } catch (selfCheckError) {
-      console.error("Self-check pass failed in /api/generate:", selfCheckError);
-      safeFinal = safeRendered;
-    }
-
     return Response.json({
-      html: safeFinal.html,
-      css: safeFinal.css,
-      js: safeFinal.js,
+      html: safeRendered.html,
+      css: safeRendered.css,
+      js: safeRendered.js,
       brief: {
         industry: brief.industry,
         audience: brief.audience,

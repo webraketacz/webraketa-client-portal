@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -19,16 +20,16 @@ type ImagePlanItem = {
   orientation: "landscape" | "portrait" | "square";
 };
 
-type WebsiteBundle = {
-  html: string;
-  css: string;
-  js: string;
-};
-
 type SectionBundle = {
   sectionHtml: string;
   sectionCss: string;
   sectionJs: string;
+};
+
+type WebsiteBundle = {
+  html: string;
+  css: string;
+  js: string;
 };
 
 type ResolvedAsset = {
@@ -52,19 +53,45 @@ type IndustryImageRules = {
   fallbackQueries: string[];
 };
 
+const OPENAI_PLANNER_MODEL = "gpt-4.1-mini";
+const OPENAI_RENDER_MODEL = "gpt-4.1";
+const IMAGE_FETCH_TIMEOUT_MS = 3500;
+
+async function withTimeout<T>(
+  promiseFactory: (signal?: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await promiseFactory(controller.signal);
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(errorMessage);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function createStructuredObject<T>({
+  model,
   system,
   user,
   schemaName,
   schema,
 }: {
+  model: string;
   system: string;
   user: string;
   schemaName: string;
   schema: Record<string, unknown>;
 }): Promise<T> {
   const completion = await client.chat.completions.create({
-    model: "gpt-4.1",
+    model,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -217,10 +244,7 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function getIndustryImageRules(
-  industry: string,
-  prompt: string
-): IndustryImageRules {
+function getIndustryImageRules(industry: string, prompt: string): IndustryImageRules {
   const text = normalizeText(`${industry} ${prompt}`);
 
   if (
@@ -251,147 +275,20 @@ function getIndustryImageRules(
       ],
       banned: [
         "mountain",
-        "mountains",
         "forest",
         "nature",
         "beach",
         "landscape",
         "waterfall",
-        "hiking",
         "travel",
         "animal",
         "dog",
         "cat",
-        "camping",
-        "lake",
       ],
       fallbackQueries: [
         "lawyer office consultation",
         "attorney meeting client",
         "law firm interior",
-        "legal documents desk",
-        "professional lawyer portrait",
-      ],
-    };
-  }
-
-  if (
-    text.includes("klin") ||
-    text.includes("doktor") ||
-    text.includes("ambul") ||
-    text.includes("medical") ||
-    text.includes("health") ||
-    text.includes("doctor")
-  ) {
-    return {
-      preferred: [
-        "doctor",
-        "medical",
-        "clinic",
-        "healthcare",
-        "consultation",
-        "patient",
-        "interior",
-        "clean",
-        "professional",
-        "nurse",
-        "team",
-      ],
-      banned: [
-        "mountain",
-        "forest",
-        "beach",
-        "landscape",
-        "travel",
-        "dog",
-        "cat",
-        "car",
-        "motorcycle",
-      ],
-      fallbackQueries: [
-        "doctor consultation clinic",
-        "modern clinic interior",
-        "healthcare professional portrait",
-        "medical team clean environment",
-      ],
-    };
-  }
-
-  if (
-    text.includes("beauty") ||
-    text.includes("esthetic") ||
-    text.includes("estet") ||
-    text.includes("skin") ||
-    text.includes("kosmet") ||
-    text.includes("derma")
-  ) {
-    return {
-      preferred: [
-        "beauty clinic",
-        "skin care",
-        "facial treatment",
-        "beauty consultation",
-        "esthetic doctor",
-        "clinic interior",
-        "skincare",
-        "woman",
-        "professional",
-      ],
-      banned: [
-        "mountain",
-        "forest",
-        "beach",
-        "landscape",
-        "travel",
-        "animal",
-        "dog",
-        "cat",
-      ],
-      fallbackQueries: [
-        "beauty clinic consultation",
-        "modern beauty clinic interior",
-        "skincare treatment woman",
-        "esthetic doctor consultation",
-      ],
-    };
-  }
-
-  if (
-    text.includes("saas") ||
-    text.includes("startup") ||
-    text.includes("software") ||
-    text.includes("tech") ||
-    text.includes("app")
-  ) {
-    return {
-      preferred: [
-        "dashboard",
-        "software",
-        "technology",
-        "startup",
-        "team",
-        "office",
-        "laptop",
-        "workspace",
-        "product",
-        "interface",
-        "developer",
-      ],
-      banned: [
-        "mountain",
-        "forest",
-        "beach",
-        "waterfall",
-        "wedding",
-        "dog",
-        "cat",
-        "farm",
-      ],
-      fallbackQueries: [
-        "modern saas dashboard",
-        "startup team office",
-        "technology workspace laptop",
-        "software product interface",
       ],
     };
   }
@@ -419,35 +316,6 @@ function getIndustryImageRules(
         "luxury apartment interior",
         "modern real estate office",
         "premium property exterior",
-        "architectural building facade",
-      ],
-    };
-  }
-
-  if (
-    text.includes("restaurant") ||
-    text.includes("hotel") ||
-    text.includes("cafe") ||
-    text.includes("gastro")
-  ) {
-    return {
-      preferred: [
-        "restaurant",
-        "food",
-        "chef",
-        "interior",
-        "dining",
-        "table",
-        "hospitality",
-        "kitchen",
-        "coffee",
-      ],
-      banned: ["mountain", "forest", "office documents", "lawyer", "dashboard"],
-      fallbackQueries: [
-        "restaurant interior premium",
-        "chef preparing food",
-        "elegant dining table",
-        "cafe interior aesthetic",
       ],
     };
   }
@@ -478,7 +346,6 @@ function getIndustryImageRules(
       "modern business office",
       "professional team meeting",
       "premium office interior",
-      "client consultation office",
     ],
   };
 }
@@ -489,19 +356,14 @@ function scoreImageRelevance(
   rules: IndustryImageRules
 ): number {
   const haystack = normalizeText(`${alt} ${query}`);
-
   let score = 0;
 
   for (const preferred of rules.preferred) {
-    if (haystack.includes(normalizeText(preferred))) {
-      score += 2;
-    }
+    if (haystack.includes(normalizeText(preferred))) score += 2;
   }
 
   for (const banned of rules.banned) {
-    if (haystack.includes(normalizeText(banned))) {
-      score -= 5;
-    }
+    if (haystack.includes(normalizeText(banned))) score -= 5;
   }
 
   return score;
@@ -522,50 +384,64 @@ async function searchPexelsCandidates(
   const apiKey = process.env.PEXELS_API_KEY;
   if (!apiKey) return [];
 
-  const url = new URL("https://api.pexels.com/v1/search");
-  url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "5");
-  url.searchParams.set("orientation", orientation);
+  try {
+    return await withTimeout(
+      async (signal) => {
+        const url = new URL("https://api.pexels.com/v1/search");
+        url.searchParams.set("query", query);
+        url.searchParams.set("per_page", "3");
+        url.searchParams.set("orientation", orientation);
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: apiKey,
-    },
-    cache: "no-store",
-  });
+        const res = await fetch(url.toString(), {
+          headers: {
+            Authorization: apiKey,
+          },
+          cache: "no-store",
+          signal,
+        });
 
-  if (!res.ok) return [];
+        if (!res.ok) return [];
 
-  const data = (await res.json()) as {
-    photos?: Array<{
-      alt?: string;
-      photographer?: string;
-      photographer_url?: string;
-      src?: {
-        large2x?: string;
-        large?: string;
-        original?: string;
-      };
-    }>;
-  };
+        const data = (await res.json()) as {
+          photos?: Array<{
+            alt?: string;
+            photographer?: string;
+            photographer_url?: string;
+            src?: {
+              large2x?: string;
+              large?: string;
+              original?: string;
+            };
+          }>;
+        };
 
-  return (data.photos || [])
-    .map((photo) => {
-      const imageUrl =
-        photo?.src?.large2x || photo?.src?.large || photo?.src?.original || "";
+        return (data.photos || [])
+          .map((photo) => {
+            const imageUrl =
+              photo?.src?.large2x ||
+              photo?.src?.large ||
+              photo?.src?.original ||
+              "";
 
-      if (!imageUrl) return null;
+            if (!imageUrl) return null;
 
-      return {
-        slot: "",
-        url: imageUrl,
-        alt: photo.alt || query,
-        source: "pexels" as const,
-        photographer: photo.photographer,
-        photographerUrl: photo.photographer_url,
-      };
-    })
-    .filter(Boolean) as ResolvedAsset[];
+            return {
+              slot: "",
+              url: imageUrl,
+              alt: photo.alt || query,
+              source: "pexels" as const,
+              photographer: photo.photographer,
+              photographerUrl: photo.photographer_url,
+            };
+          })
+          .filter(Boolean) as ResolvedAsset[];
+      },
+      IMAGE_FETCH_TIMEOUT_MS,
+      "Pexels timeout"
+    );
+  } catch {
+    return [];
+  }
 }
 
 async function searchUnsplashCandidates(
@@ -575,59 +451,70 @@ async function searchUnsplashCandidates(
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) return [];
 
-  const orientationMap =
-    orientation === "portrait"
-      ? "portrait"
-      : orientation === "square"
-      ? "squarish"
-      : "landscape";
+  try {
+    return await withTimeout(
+      async (signal) => {
+        const orientationMap =
+          orientation === "portrait"
+            ? "portrait"
+            : orientation === "square"
+            ? "squarish"
+            : "landscape";
 
-  const url = new URL("https://api.unsplash.com/search/photos");
-  url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "5");
-  url.searchParams.set("orientation", orientationMap);
+        const url = new URL("https://api.unsplash.com/search/photos");
+        url.searchParams.set("query", query);
+        url.searchParams.set("per_page", "3");
+        url.searchParams.set("orientation", orientationMap);
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Client-ID ${accessKey}`,
-    },
-    cache: "no-store",
-  });
+        const res = await fetch(url.toString(), {
+          headers: {
+            Authorization: `Client-ID ${accessKey}`,
+          },
+          cache: "no-store",
+          signal,
+        });
 
-  if (!res.ok) return [];
+        if (!res.ok) return [];
 
-  const data = (await res.json()) as {
-    results?: Array<{
-      alt_description?: string;
-      description?: string;
-      urls?: {
-        regular?: string;
-        full?: string;
-      };
-      user?: {
-        name?: string;
-        links?: {
-          html?: string;
+        const data = (await res.json()) as {
+          results?: Array<{
+            alt_description?: string;
+            description?: string;
+            urls?: {
+              regular?: string;
+              full?: string;
+            };
+            user?: {
+              name?: string;
+              links?: {
+                html?: string;
+              };
+            };
+          }>;
         };
-      };
-    }>;
-  };
 
-  return (data.results || [])
-    .map((photo) => {
-      const imageUrl = photo?.urls?.regular || photo?.urls?.full || "";
-      if (!imageUrl) return null;
+        return (data.results || [])
+          .map((photo) => {
+            const imageUrl = photo?.urls?.regular || photo?.urls?.full || "";
+            if (!imageUrl) return null;
 
-      return {
-        slot: "",
-        url: imageUrl,
-        alt: photo.alt_description || photo.description || query,
-        source: "unsplash" as const,
-        photographer: photo.user?.name,
-        photographerUrl: photo.user?.links?.html,
-      };
-    })
-    .filter(Boolean) as ResolvedAsset[];
+            return {
+              slot: "",
+              url: imageUrl,
+              alt: photo.alt_description || photo.description || query,
+              source: "unsplash" as const,
+              photographer: photo.user?.name,
+              photographerUrl: photo.user?.links?.html,
+            };
+          })
+          .filter(Boolean) as ResolvedAsset[];
+      },
+      IMAGE_FETCH_TIMEOUT_MS,
+      "Unsplash timeout"
+    );
+  } catch {
+    return [];
+  }
 }
 
 async function findRelevantImage(params: {
@@ -635,88 +522,69 @@ async function findRelevantImage(params: {
   orientation: "landscape" | "portrait" | "square";
   rules: IndustryImageRules;
 }) {
-  const pexelsCandidates = await searchPexelsCandidates(
-    params.query,
-    params.orientation
+  const [pexelsCandidates, unsplashCandidates] = await Promise.all([
+    searchPexelsCandidates(params.query, params.orientation),
+    searchUnsplashCandidates(params.query, params.orientation),
+  ]);
+
+  const candidates = [...pexelsCandidates, ...unsplashCandidates];
+
+  return (
+    candidates
+      .sort(
+        (a, b) =>
+          scoreImageRelevance(b.alt, params.query, params.rules) -
+          scoreImageRelevance(a.alt, params.query, params.rules)
+      )
+      .find((candidate) =>
+        isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
+      ) || null
   );
-
-  const bestPexels = pexelsCandidates
-    .sort(
-      (a, b) =>
-        scoreImageRelevance(b.alt, params.query, params.rules) -
-        scoreImageRelevance(a.alt, params.query, params.rules)
-    )
-    .find((candidate) =>
-      isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
-    );
-
-  if (bestPexels) return bestPexels;
-
-  const unsplashCandidates = await searchUnsplashCandidates(
-    params.query,
-    params.orientation
-  );
-
-  const bestUnsplash = unsplashCandidates
-    .sort(
-      (a, b) =>
-        scoreImageRelevance(b.alt, params.query, params.rules) -
-        scoreImageRelevance(a.alt, params.query, params.rules)
-    )
-    .find((candidate) =>
-      isImageRelevantForIndustry(candidate.alt, params.query, params.rules)
-    );
-
-  if (bestUnsplash) return bestUnsplash;
-
-  return null;
 }
 
 async function resolveImageAssets(
   imagePlan: ImagePlanItem[],
   prompt: string
 ): Promise<ResolvedAsset[]> {
-  const limitedPlan = imagePlan.slice(0, 4);
+  const limitedPlan = imagePlan.slice(0, 2);
   const rules = getIndustryImageRules(prompt, prompt);
 
   const resolved = await Promise.all(
     limitedPlan.map(async (item, index) => {
-      const directMatch = await findRelevantImage({
-        query: item.query,
-        orientation: item.orientation,
-        rules,
-      });
+      try {
+        const directMatch = await findRelevantImage({
+          query: item.query,
+          orientation: item.orientation,
+          rules,
+        });
 
-      if (directMatch) {
+        if (directMatch) {
+          return {
+            ...directMatch,
+            slot: item.slot,
+          };
+        }
+
+        const safeFallbackQuery =
+          rules.fallbackQueries[index % rules.fallbackQueries.length];
+
         return {
-          ...directMatch,
           slot: item.slot,
+          url: fallbackImageUrl(safeFallbackQuery, item.orientation),
+          alt: safeFallbackQuery,
+          source: "fallback" as const,
+        };
+      } catch {
+        const safeFallbackQuery =
+          rules.fallbackQueries[index % rules.fallbackQueries.length];
+
+        return {
+          slot: item.slot,
+          url: fallbackImageUrl(safeFallbackQuery, item.orientation),
+          alt: safeFallbackQuery,
+          source: "fallback" as const,
         };
       }
-
-      const safeFallbackQuery =
-        rules.fallbackQueries[index % rules.fallbackQueries.length];
-
-      const saferMatch = await findRelevantImage({
-        query: safeFallbackQuery,
-        orientation: item.orientation,
-        rules,
-      });
-
-      if (saferMatch) {
-        return {
-          ...saferMatch,
-          slot: item.slot,
-          alt: saferMatch.alt || safeFallbackQuery,
-        };
-      }
-
-      return {
-        slot: item.slot,
-        url: fallbackImageUrl(safeFallbackQuery, item.orientation),
-        alt: safeFallbackQuery,
-        source: "fallback" as const,
-      };
     })
   );
 
@@ -867,9 +735,6 @@ DŮLEŽITÉ:
 - query piš anglicky
 - pokud nejsou nové fotky potřeba, vrať prázdné pole
 - pokud je instrukce čistě textová, nesnaž se předělávat layout mimo sekci
-- pokud jde o navigation sekci, řeš jen navigation
-- pokud jde o about sekci, řeš jen about
-- pokud jde o header/hero, řeš jen tuto konkrétní sekci
 
 PŮVODNÍ PROMPT:
 ${params.prompt}
@@ -973,61 +838,6 @@ ${params.css}
 
 FULL JS FOR CONTEXT ONLY:
 ${params.js}
-
-FINAL QA BEFORE OUTPUT:
-- only the selected section is changed
-- sectionHtml contains exactly one section
-- data-section-id="${params.selectedSectionId}" remains present
-- no accidental edits to other sections
-- scoped CSS only
-- scoped JS only
-`;
-}
-
-function selfCheckPrompt(params: {
-  prompt: string;
-  instruction: string;
-  selectedSectionId: string;
-  selectedSectionHtml: string;
-  sectionHtml: string;
-  sectionCss: string;
-  sectionJs: string;
-}) {
-  return `
-You are a brutally honest senior web design QA reviewer and frontend fixer.
-
-Return ONLY a structured JSON object matching the schema.
-
-IMPORTANT:
-- Preserve the intended user change
-- Keep edits limited ONLY to data-section-id="${params.selectedSectionId}"
-- sectionHtml must contain exactly one root section
-- sectionHtml must preserve data-section-id="${params.selectedSectionId}"
-- sectionCss must stay scoped to [data-section-id="${params.selectedSectionId}"]
-- sectionJs must only target the selected section
-- Keep Czech copy
-- Do not touch any other page section
-
-ORIGINAL PROJECT PROMPT:
-${params.prompt}
-
-USER INSTRUCTION:
-${params.instruction}
-
-SELECTED SECTION ID:
-${params.selectedSectionId}
-
-ORIGINAL SELECTED SECTION HTML:
-${params.selectedSectionHtml}
-
-CURRENT GENERATED sectionHtml:
-${params.sectionHtml}
-
-CURRENT GENERATED sectionCss:
-${params.sectionCss}
-
-CURRENT GENERATED sectionJs:
-${params.sectionJs}
 `;
 }
 
@@ -1080,6 +890,7 @@ export async function POST(req: Request) {
     }
 
     const plan = await createStructuredObject<ImprovePlan>({
+      model: OPENAI_PLANNER_MODEL,
       system: "You are a precise AI design editor. Return only valid JSON.",
       user: improvePlannerPrompt({
         prompt,
@@ -1098,6 +909,7 @@ export async function POST(req: Request) {
     const assets = await resolveImageAssets(plan.imageRefreshPlan || [], prompt);
 
     const improvedSection = await createStructuredObject<SectionBundle>({
+      model: OPENAI_RENDER_MODEL,
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
       user: improveRenderPrompt({
@@ -1119,50 +931,24 @@ export async function POST(req: Request) {
     const safeImprovedSection = sanitizeSectionBundle(improvedSection);
     ensureSectionScope(safeImprovedSection.sectionHtml, selectedSectionId);
 
-    let safeFinalSection = safeImprovedSection;
-
-    try {
-      const checkedSection = await createStructuredObject<SectionBundle>({
-        system:
-          "You are a senior web design QA reviewer and frontend fixer. Return only valid JSON.",
-        user: selfCheckPrompt({
-          prompt,
-          instruction,
-          selectedSectionId,
-          selectedSectionHtml,
-          sectionHtml: safeImprovedSection.sectionHtml,
-          sectionCss: safeImprovedSection.sectionCss,
-          sectionJs: safeImprovedSection.sectionJs,
-        }),
-        schemaName: "improve_section_bundle_checked",
-        schema: sectionBundleSchema,
-      });
-
-      safeFinalSection = sanitizeSectionBundle(checkedSection);
-      ensureSectionScope(safeFinalSection.sectionHtml, selectedSectionId);
-    } catch (selfCheckError) {
-      console.error("Self-check pass failed in /api/improve:", selfCheckError);
-      safeFinalSection = safeImprovedSection;
-    }
-
     const mergedHtml = replaceSectionById({
       html,
       sectionId: selectedSectionId,
-      nextSectionHtml: safeFinalSection.sectionHtml,
+      nextSectionHtml: safeImprovedSection.sectionHtml,
     });
 
     const mergedCss = upsertManagedBlock({
       content: css,
       type: "css",
       sectionId: selectedSectionId,
-      patch: safeFinalSection.sectionCss,
+      patch: safeImprovedSection.sectionCss,
     });
 
     const mergedJs = upsertManagedBlock({
       content: js,
       type: "js",
       sectionId: selectedSectionId,
-      patch: safeFinalSection.sectionJs,
+      patch: safeImprovedSection.sectionJs,
     });
 
     const safeFinalBundle = sanitizeBundle({
