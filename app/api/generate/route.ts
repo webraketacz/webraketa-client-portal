@@ -1198,6 +1198,9 @@ SPACING AND COMPOSITION RULES:
 - if you use a grid or bento layout, make it disciplined and visually aligned
 - do not let one card have 18px padding and another similar card 44px unless clearly intentional
 - use a visible spacing rhythm and repeat it consistently
+- icons, micro badges and card headers must never feel glued to edges
+- icons inside cards need their own safe zone and visible breathing room
+- content inside cards must never be vertically cramped
 
 TYPOGRAPHY HIERARCHY RULES:
 - enforce a clear H1 / H2 / H3 / H4 hierarchy
@@ -1248,40 +1251,35 @@ MENU VARIATION RULES:
 - menu must have balanced internal padding and a deliberate silhouette
 - hamburger must be visually clear and functional on mobile
 
+MOBILE NAV RULES:
+- mobile navigation must be designed intentionally, not treated as an afterthought
+- on mobile, the logo block must stay on the left and the hamburger toggle must stay fully on the far right
+- the hamburger must never collapse toward the logo or sit awkwardly near the center
+- the mobile nav inner row must usually use:
+  - width: 100%
+  - display: flex
+  - align-items: center
+  - justify-content: space-between
+  - gap: 12px to 20px
+- the logo wrapper should usually be flex: 0 1 auto and min-width: 0
+- the toggle wrapper should usually be flex: 0 0 auto and margin-left: auto
+- minimum tap target for the toggle is 44px by 44px
+- the toggle must preserve the style of the site, not look generic
+- use a proper animated hamburger-to-X transition
+- use three bars or an equally premium line construction
+- when open:
+  - bar 1 rotates into 45deg
+  - middle bar fades or scales out
+  - bar 3 rotates into -45deg
+- animate open/close smoothly with transform, opacity and timing that feels premium
+- add aria-expanded handling in JS
+- the mobile menu panel should open with a refined fade, slide or scale transition
+- desktop nav and mobile nav must both look resolved and production-ready
+
 BENTO / CARD SYSTEM RULES:
 - if using bento or feature cards, cards should look intentionally designed as one family
 - match border color, padding logic, heading scale, icon size and internal spacing
 - avoid one visually weak card next to one very dense card unless it is part of the intended layout rhythm
-
-CARD, ICON AND INTERNAL SPACING RULES:
-- cards must never feel cramped
-- every card needs a deliberate internal spacing system
-- use comfortable card padding, usually at least:
-  - desktop card padding: 24px to 32px
-  - tablet card padding: 20px to 28px
-  - mobile card padding: 18px to 22px
-- if a card contains icon + title + paragraph, keep visible separation between all three
-- do not let icons touch card borders visually
-- icon wrappers must have their own breathing room
-- when using feature cards, stat cards or pricing cards, align content to a common baseline and internal rhythm
-- do not push long headlines too close to card edges
-- when cards sit next to each other, preserve consistent top alignment and internal padding logic
-
-ICON PLACEMENT RULES:
-- icons must live inside a dedicated visual wrapper or clearly padded area
-- icon wrapper should usually have at least 12px to 18px inner padding or an equivalent protected space
-- maintain space between icon and heading
-- do not place icons so close to borders that they feel glued into the corner
-- icon size, wrapper size and text spacing must feel like one coherent system
-
-DATA VISUALIZATION RULES:
-- if the website includes a chart, process graph, bars, dashboard panel, signal map or fake analytics preview, it must look geometrically clean
-- bars must share a clear baseline
-- nodes, dots and lines must align to an intentional grid
-- charts must not look random, crooked, stretched or broken
-- dashboard visuals should feel designed, not improvised
-- if a graph or chart cannot be made premium and aligned, prefer a simpler cleaner data panel instead
-- avoid visually wrong pseudo-graphs
 
 LAYOUT SYSTEM RULES:
 - use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
@@ -1387,9 +1385,8 @@ FINAL QA:
 - varied hero composition, not repetitive left-text/right-image fallback
 - safe padding around all overlayed or edge-near text
 - more varied font stacks and more refined font-weight usage
-- cards and icon wrappers have comfortable internal spacing
-- no cramped feature cards, stat cards or pricing cards
-- any chart / graph / dashboard visual is aligned and premium-looking
+- mobile nav toggle fully right-aligned on small screens
+- hamburger animates into X and back cleanly
 `;
 }
 
@@ -1455,7 +1452,7 @@ export async function POST(req: Request) {
         preferences: resolvedPreferences,
         brandLogo,
       }),
-      schemaName: "website_bundle_spacing_typography_brand_v9",
+      schemaName: "website_bundle_mobile_nav_alignment_v9",
       schema: generatedWebsiteSchema,
       requestId,
     });

@@ -381,8 +381,6 @@ DESIGN QUALITY RULES:
 - if the instruction is mainly visual, improve composition without breaking structure
 - do NOT silently convert unusual hero direction into a generic left-text/right-image split
 - if the user asks for text bottom-left, bottom-center, overlay, framed copy or layered composition, follow that request directly
-- improve padding wherever icons, text blocks or cards feel cramped
-- if a visual panel or chart feels off, redesign it into a cleaner premium composition
 
 SPACING RULES:
 - always add safe baseline inner padding to content wrappers, overlays, cards and text containers
@@ -393,6 +391,8 @@ SPACING RULES:
   - mobile horizontal inner padding: clamp(16px, 5vw, 24px)
 - if copy is positioned low in the section, ensure protected bottom padding too
 - spacing must feel premium and intentional, never cramped
+- icons, chips, badges and small UI controls must always have breathing room around them
+- cards must never feel text-cramped or icon-cramped
 
 TYPOGRAPHY RULES:
 - strengthen hierarchy between heading, body, label and CTA
@@ -401,24 +401,17 @@ TYPOGRAPHY RULES:
 - vary font weight more elegantly, usually body 400-500 and headings 500-700 unless a display moment truly needs more
 - if the section already uses a certain mood, refine it instead of flattening it
 
-CARD, ICON AND INTERNAL SPACING RULES:
-- cards must never feel cramped
-- preserve or improve internal spacing between icon, title, body and CTA
-- use comfortable padding inside feature cards, stat cards, pricing cards and content panels
-- if a card feels dense, increase its internal spacing before adding more content
-- keep consistent padding across similar cards in the same section
-
-ICON RULES:
-- icons must have their own protected visual space
-- never let icons sit too close to borders or too close to the heading
-- icon wrapper, icon size and text spacing must feel balanced and premium
-
-GRAPH / VISUAL PANEL RULES:
-- if this section contains a chart, graph, dashboard preview, bars, nodes or analytics visual, make it visually aligned
-- bars must share one baseline
-- dots and lines must align to a clean grid
-- avoid fake charts that look broken, random or amateur
-- if needed, simplify the graphic instead of forcing a bad-looking chart
+MOBILE NAV RULES:
+- if this section contains navigation or a mobile menu, keep the logo block on the left and the menu toggle fully on the far right
+- the mobile nav row must use a full-width wrapper with display:flex, align-items:center, justify-content:space-between and a clear gap
+- the toggle must never drift toward the logo or sit awkwardly near the center
+- the toggle should usually use margin-left:auto and flex:0 0 auto
+- minimum mobile target size for the toggle is 44px by 44px
+- the hamburger must animate into an X state when opened and animate back when closed
+- use three lines or an equivalent premium toggle construction with transform/opacity animation
+- keep the toggle aligned with the navigation style of the site
+- when open, the mobile menu panel should appear with a refined fade, slide or scale transition
+- if the current section is not navigation, do not add random nav code
 
 IMAGE RULES:
 - if you use a new image in this section, add data-image-slot="<slot>" to the image element
@@ -541,7 +534,7 @@ export async function POST(req: Request) {
         sectionIds,
         chatHistory,
       }),
-      schemaName: "improve_section_bundle_spacing_v4",
+      schemaName: "improve_section_bundle_mobile_nav_v4",
       schema: sectionBundleSchema,
       requestId,
     });
