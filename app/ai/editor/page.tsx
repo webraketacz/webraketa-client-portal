@@ -21,6 +21,12 @@ type ResolvedAsset = {
   photographerUrl?: string;
 };
 
+type BrandLogoAsset = {
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+};
+
 type SpeedMode = "fast" | "balanced" | "premium";
 type LayoutPreference =
   | "auto"
@@ -176,6 +182,7 @@ type Otazka = {
   id: keyof ClientAnswers;
   text: string;
   placeholder: string;
+  appendLabel?: string;
 };
 
 const GENERATE_LOADING_MESSAGES = [
@@ -201,6 +208,14 @@ const IMPROVE_LOADING_MESSAGES = [
   "Ladím výsledný vzhled…",
   "Aktualizuji sekce a CTA…",
   "Finalizuji upravený výstup…",
+];
+
+const ACCEPTED_LOGO_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/svg+xml",
+  "image/webp",
 ];
 
 function normalizeText(value: string) {
@@ -282,7 +297,9 @@ function inferIndustryKind(prompt: string): IndustryKind {
   if (
     text.includes("realit") ||
     text.includes("makler") ||
-    text.includes("nemovit")
+    text.includes("nemovit") ||
+    text.includes("developer") ||
+    text.includes("developersky projekt")
   ) {
     return "real-estate";
   }
@@ -480,165 +497,320 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
   const common: Otazka[] = [
     {
       id: "contactDetails",
-      text: "Jaké kontaktní údaje chcete na webu zobrazit? Můžete rovnou napsat telefon, e-mail, adresu nebo cokoliv dalšího.",
+      appendLabel: "Kontakty",
+      text: "Jaké kontaktní údaje chcete na webu zobrazit?",
       placeholder:
-        "Např. Telefon 777 888 999, e-mail info@firma.cz, adresa Praha 1…",
+        "Např. telefon, e-mail, adresa, otevírací doba, formulář…",
+    },
+    {
+      id: "offerNotes",
+      appendLabel: "Cíl webu",
+      text: "Komu je web určen a co má návštěvník po příchodu hlavně udělat?",
+      placeholder:
+        "Např. rezervovat termín, zavolat, vyplnit poptávku, prohlédnout nabídku…",
     },
     {
       id: "styleNotes",
-      text: "Jak má web působit? Klidně napište barvy, fonty, styl nebo konkrétní inspiraci.",
+      appendLabel: "Styl",
+      text: "Jak má web působit? Barvy, fonty, styl, úroveň luxusu nebo reference.",
       placeholder:
-        "Např. Tmavý elegantní styl, serif nadpisy, jemné animace…",
+        "Např. jemný editorial styl, světlý premium minimalismus, dark wow SaaS, serif nadpisy…",
+    },
+    {
+      id: "extras",
+      appendLabel: "Logo a značka",
+      text: "Máte logo, slogan nebo pravidla značky? Logo můžete nahrát i přímo v editoru.",
+      placeholder:
+        "Např. používáme zlatou a krémovou, logo je textové, značka má působit velmi prémiově…",
     },
   ];
 
   switch (industry) {
+    case "real-estate":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          appendLabel: "Nabídka / projekt",
+          text: "Prodáváte developerský projekt, jednotlivé nemovitosti nebo služby makléře?",
+          placeholder:
+            "Např. prémiový developerský projekt ve Vinohradech, prodej bytů, investiční nemovitosti…",
+        },
+        {
+          id: "styleNotes",
+          appendLabel: "Reference stylu",
+          text: "Má to působit spíš jako klidný luxusní editorial developerský web?",
+          placeholder:
+            "Např. velké full-bleed interiéry, tenké linky, jemná serif typografie, hodně vzduchu, velmi prémiové…",
+        },
+        {
+          id: "extras",
+          appendLabel: "Sekce navíc",
+          text: "Co na webu nesmí chybět?",
+          placeholder:
+            "Např. lokalita, galerie, standardy, financování, další projekty, kontakt, dostupnost bytů…",
+        },
+      ];
+
+    case "healthcare":
+      return [
+        ...common,
+        {
+          id: "offerNotes",
+          appendLabel: "Služby",
+          text: "Jaké služby nebo specializace chcete nejvíc zdůraznit?",
+          placeholder:
+            "Např. praktický lékař, prevence, očkování, vstupní prohlídky, objednání…",
+        },
+        {
+          id: "extras",
+          appendLabel: "Důvěra a obsah",
+          text: "Má být na webu něco navíc pro důvěryhodnost?",
+          placeholder:
+            "Např. tým lékařů, reference, ordinační hodiny, FAQ, mapa, pojišťovny…",
+        },
+      ];
+
     case "restaurant":
       return [
         ...common,
         {
           id: "offerNotes",
-          text: "Co chcete na webu restaurace nejvíc zdůraznit?",
+          appendLabel: "Hlavní nabídka",
+          text: "Co chcete na webu restaurace nejvíc prodat?",
           placeholder:
-            "Např. Čerstvé těstoviny, rezervace, degustační menu, rodinná atmosféra…",
+            "Např. degustační menu, rezervace, brunch, rodinná atmosféra…",
         },
         {
           id: "extras",
-          text: "Má tam být něco navíc? Třeba mapa, rezervace, denní menu nebo galerie?",
+          appendLabel: "Sekce navíc",
+          text: "Má tam být něco navíc?",
           placeholder:
-            "Např. Rezervační CTA, mapa, galerie jídel, otevírací doba…",
+            "Např. denní menu, rezervace, mapa, galerie, eventy, dárkové poukazy…",
         },
       ];
+
     case "catering":
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Hlavní nabídka",
           text: "Jaké služby cateringu chcete nejvíc prodat?",
           placeholder:
-            "Např. Firemní akce, svatby, rozvoz, coffee breaky…",
+            "Např. svatby, firemní eventy, coffee breaky, rozvoz, fine dining catering…",
         },
         {
           id: "extras",
+          appendLabel: "Sekce navíc",
           text: "Co ještě musí na webu být?",
           placeholder:
-            "Např. Poptávkový formulář, fotky realizací, balíčky služeb…",
+            "Např. poptávkový formulář, galerie realizací, balíčky, reference…",
         },
       ];
+
     case "barber":
     case "hair-salon":
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Služby",
           text: "Jaké služby nebo styl salonu chcete vypíchnout?",
           placeholder:
-            "Např. Pánské střihy, vousy, moderní salon, blond specialistka…",
+            "Např. pánské střihy, vousy, blond specialistka, moderní salon…",
         },
         {
           id: "extras",
+          appendLabel: "Sekce navíc",
           text: "Chcete zdůraznit rezervace, tým, ceník nebo galerii?",
           placeholder:
-            "Např. Online rezervace, fotky proměn, ceník, představení týmu…",
+            "Např. online rezervace, galerie proměn, tým, ceník, kosmetika…",
         },
       ];
+
     case "autoservis":
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Služby",
           text: "Jaké služby autoservisu jsou nejdůležitější?",
           placeholder:
-            "Např. Diagnostika, výměna oleje, pneuservis, servis klimatizace…",
+            "Např. diagnostika, pneuservis, detailing, klimatizace, servis vozů…",
         },
         {
           id: "extras",
+          appendLabel: "Sekce navíc",
           text: "Má tam být ceník, objednání nebo něco dalšího?",
           placeholder:
-            "Např. Objednávkový formulář, ceník, otevírací doba, reference…",
+            "Např. objednávkový formulář, reference, otevírací doba, FAQ, značky aut…",
         },
       ];
+
     case "car-dealer":
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Hlavní nabídka",
           text: "Co chcete na prodeji aut zdůraznit?",
           placeholder:
-            "Např. Prověřené vozy, financování, dovoz, záruka, firemní flotily…",
+            "Např. prověřené vozy, financování, dovoz, záruka, flotily…",
         },
         {
           id: "extras",
+          appendLabel: "Sekce navíc",
           text: "Má web obsahovat nabídku vozů, financování nebo reference?",
           placeholder:
-            "Např. Nabídka vozů, filtrování, financování, reference klientů…",
+            "Např. filtrování aut, reference, financování, kontakt, showroom…",
         },
       ];
+
     case "zednik":
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Služby",
           text: "Jaké služby nebo realizace chcete vypíchnout?",
           placeholder:
-            "Např. Rekonstrukce, fasády, obklady, rodinné domy…",
+            "Např. rekonstrukce, fasády, obklady, rodinné domy…",
         },
         {
           id: "extras",
+          appendLabel: "Sekce navíc",
           text: "Má tam být něco navíc?",
           placeholder:
-            "Např. Fotky realizací, reference, postup spolupráce, rychlá poptávka…",
+            "Např. reference, fotky realizací, postup spolupráce, rychlá poptávka…",
         },
       ];
+
     case "fintech":
     case "saas":
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Produkt",
           text: "Jaký hlavní produkt nebo výhodu chcete zdůraznit?",
           placeholder:
-            "Např. Platby, automatizace workflow, API, reporting…",
+            "Např. AI automatizace, reporting, API, platby, onboarding…",
         },
         {
           id: "extras",
-          text: "Chcete zdůraznit něco konkrétního navíc?",
+          appendLabel: "Sekce navíc",
+          text: "Chcete zdůraznit něco navíc?",
           placeholder:
-            "Např. Integrace, bezpečnost, reference, pricing, dashboard preview…",
+            "Např. integrace, pricing, dashboard preview, case studies, bezpečnost…",
         },
       ];
+
     case "food-product":
     case "ecommerce-product":
       return [
         ...common,
         {
           id: "offerNotes",
-          text: "Jaký produkt nebo hlavní benefit chcete nejvíc prodat?",
+          appendLabel: "Produkt",
+          text: "Jaký produkt nebo benefit chcete nejvíc prodat?",
           placeholder:
-            "Např. Třtinový cukr, přírodní sladidla, kvalita surovin, balení…",
+            "Např. přírodní složení, balení, chuť, kvalita surovin, edice…",
         },
         {
           id: "extras",
-          text: "Má tam být FAQ, varianty balení, recepty nebo něco dalšího?",
+          appendLabel: "Sekce navíc",
+          text: "Má tam být FAQ, balení, recepty nebo něco dalšího?",
           placeholder:
-            "Např. FAQ, recepty, druhy balení, výhody produktu, objednávka…",
+            "Např. FAQ, varianty balení, recepty, výhody produktu, objednávka…",
         },
       ];
+
     default:
       return [
         ...common,
         {
           id: "offerNotes",
+          appendLabel: "Hlavní nabídka",
           text: "Co je hlavní služba nebo nabídka, kterou má web prodávat?",
           placeholder:
-            "Např. Rekonstrukce, konzultace, prodej produktu, rezervace…",
+            "Např. konzultace, rezervace, prodej produktu, developerský projekt…",
         },
         {
           id: "extras",
+          appendLabel: "Sekce navíc",
           text: "Má tam být ještě něco důležitého?",
           placeholder:
-            "Např. Reference, ceník, mapa, tým, FAQ, galerie…",
+            "Např. reference, galerie, FAQ, tým, mapa, ceník…",
         },
+      ];
+  }
+}
+
+function getIndustryDisplayName(industry: IndustryKind) {
+  const industryTextMap: Record<IndustryKind, string> = {
+    fintech: "fintech",
+    saas: "SaaS / software",
+    "real-estate": "reality / developerský projekt",
+    resort: "resort / hotel",
+    "luxury-service": "prémiová služba",
+    "food-product": "produkt / potravina",
+    "ecommerce-product": "e-shop / produkt",
+    healthcare: "zdravotnictví",
+    legal: "právní služby",
+    beauty: "beauty",
+    restaurant: "restaurace",
+    catering: "catering",
+    barber: "barber",
+    "hair-salon": "kadeřnictví",
+    autoservis: "autoservis",
+    "car-dealer": "prodej aut",
+    zednik: "stavební / zednické práce",
+    "generic-business": "obecná firma",
+  };
+
+  return industryTextMap[industry];
+}
+
+function getPostGenerateSuggestions(industry: IndustryKind) {
+  switch (industry) {
+    case "real-estate":
+      return [
+        "Vylepši hero na luxusnější editorial prezentaci projektu.",
+        "Uprav navigaci a menu do prémiovější real-estate podoby.",
+        "Zesil důraz na lokalitu, galerii a standardy projektu.",
+        "Zjemni typografii a přidej víc vzduchu mezi bloky.",
+        "Přidej důvěryhodnější sekci kontaktu a poptávky.",
+      ];
+    case "healthcare":
+      return [
+        "Zpřehledni služby a ordinační hodiny.",
+        "Uprav web na důvěryhodnější a klidnější styl.",
+        "Posil sekci objednání a kontaktu.",
+        "Přidej víc lidského a profesionálního tónu do textů.",
+      ];
+    case "saas":
+    case "fintech":
+      return [
+        "Vylepši hero na výraznější wow produktovou sekci.",
+        "Uprav pricing a CTA pro vyšší konverzi.",
+        "Zpřehledni benefity a dashboard preview.",
+        "Přidej silnější social proof a reference.",
+      ];
+    case "restaurant":
+    case "catering":
+      return [
+        "Vylepši sekci nabídky a rezervace.",
+        "Přidej atmosféru a výraznější food vizuály.",
+        "Zpřehledni kontakt, mapu a otevírací dobu.",
+        "Uprav texty, aby působily víc prémiově a chutně.",
+      ];
+    default:
+      return [
+        "Vylepši hero a první dojem webu.",
+        "Zpřehledni hlavní nabídku a CTA.",
+        "Uprav texty na přesvědčivější prodejní styl.",
+        "Posil kontakt a důvěryhodnost.",
       ];
   }
 }
@@ -719,6 +891,19 @@ function injectEditableTextAttributes(html: string) {
   } catch {
     return html;
   }
+}
+
+function mergeAnswerValue(
+  originalValue: string | undefined,
+  appendLabel: string | undefined,
+  nextValue: string
+) {
+  const trimmed = nextValue.trim();
+  if (!trimmed) return originalValue || "";
+
+  const nextLine = appendLabel ? `${appendLabel}: ${trimmed}` : trimmed;
+  if (!originalValue?.trim()) return nextLine;
+  return `${originalValue.trim()}\n${nextLine}`;
 }
 
 async function parseApiResponse<T>(res: Response): Promise<T> {
@@ -1266,31 +1451,44 @@ export default function AiEditorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
-  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null
+  );
+  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(
+    null
+  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "system-initial",
       role: "system",
-      text: "Zyvia je připravena tvořit weby podle oboru a vašich odpovědí v chatu.",
+      text: "Zyvia je připravena tvořit weby podle oboru, loga a vašich odpovědí v chatu.",
     },
   ]);
 
   const [chatInput, setChatInput] = useState("");
 
   const [textModalOpen, setTextModalOpen] = useState(false);
-  const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
+  const [selectedText, setSelectedText] =
+    useState<EditableTextSelection | null>(null);
   const [editedTextValue, setEditedTextValue] = useState("");
   const [editedHrefValue, setEditedHrefValue] = useState("");
 
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<EditableImageSelection | null>(null);
-  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">("search");
+  const [selectedImage, setSelectedImage] =
+    useState<EditableImageSelection | null>(null);
+  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">(
+    "search"
+  );
   const [imageSearchQuery, setImageSearchQuery] = useState("");
-  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>([]);
+  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>(
+    []
+  );
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
+  const [uploadedLogo, setUploadedLogo] = useState<BrandLogoAsset | null>(null);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
   const [generationPreferences, setGenerationPreferences] =
     useState<GenerationPreferences>(createDefaultPreferences(""));
@@ -1299,14 +1497,24 @@ export default function AiEditorPage() {
   const [odpovedInput, setOdpovedInput] = useState("");
   const [otazkyDokonceny, setOtazkyDokonceny] = useState(false);
 
+  const [generatedIndustry, setGeneratedIndustry] =
+    useState<IndustryKind | null>(null);
+  const [postGenerateSuggestions, setPostGenerateSuggestions] = useState<
+    string[]
+  >([]);
+
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
   const autostartRef = useRef(false);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
-  const iframeKey = useMemo(() => `${html.length}-${css.length}-${js.length}`, [html, css, js]);
+  const iframeKey = useMemo(
+    () => `${html.length}-${css.length}-${js.length}`,
+    [html, css, js]
+  );
   const availableSections = useMemo(() => extractSectionsFromHtml(html), [html]);
 
   const selectedSectionMeta = useMemo(() => {
@@ -1359,33 +1567,12 @@ export default function AiEditorPage() {
     setOdpovedInput("");
     setOtazkyDokonceny(false);
 
-    const industryTextMap: Record<IndustryKind, string> = {
-      fintech: "fintech",
-      saas: "SaaS / software",
-      "real-estate": "reality",
-      resort: "resort / hotel",
-      "luxury-service": "prémiová služba",
-      "food-product": "produkt / potravina",
-      "ecommerce-product": "e-shop / produkt",
-      healthcare: "zdravotnictví",
-      legal: "právní služby",
-      beauty: "beauty",
-      restaurant: "restaurace",
-      catering: "catering",
-      barber: "barber",
-      "hair-salon": "kadeřnictví",
-      autoservis: "autoservis",
-      "car-dealer": "prodej aut",
-      zednik: "stavební / zednické práce",
-      "generic-business": "obecná firma",
-    };
-
     setMessages((prev) => [
       ...prev,
       {
         id: `industry-detected-${Date.now()}`,
         role: "system",
-        text: `Rozpoznaný obor: ${industryTextMap[industry]}. Před generováním se vás zeptám na pár stručných věcí.`,
+        text: `Rozpoznaný obor: ${getIndustryDisplayName(industry)}. Před generováním se vás zeptám na víc konkrétních věcí, aby výsledek lépe seděl projektu.`,
       },
       {
         id: `question-start-${Date.now() + 1}`,
@@ -1393,6 +1580,25 @@ export default function AiEditorPage() {
         text: nextOtazky[0]?.text || "Můžeme generovat.",
       },
     ]);
+  }
+
+  function applyFollowUpSuggestion(suggestion: string) {
+    setChatInput(
+      selectedSectionMeta
+        ? `${suggestion} Zaměř se na sekci ${selectedSectionMeta.label}.`
+        : `${suggestion} Vyberu pak konkrétní sekci v náhledu.`
+    );
+
+    if (isFullscreen) {
+      setIsFullscreen(false);
+      setTimeout(() => chatInputRef.current?.focus(), 200);
+      return;
+    }
+
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+      scrollChatToBottom(true);
+    }, 60);
   }
 
   async function resolveAssetsAndPatchHtml(
@@ -1420,7 +1626,9 @@ export default function AiEditorPage() {
           {
             id: `assets-resolved-${Date.now()}`,
             role: "system",
-            text: `Obrázky byly doplněny (${data.assets.map((a) => a.source).join(", ")}). Kliknutím na obrázek ho můžete změnit.`,
+            text: `Obrázky byly doplněny (${data.assets
+              .map((a) => a.source)
+              .join(", ")}). Kliknutím na obrázek ho můžete změnit.`,
           },
         ]);
       }
@@ -1430,7 +1638,9 @@ export default function AiEditorPage() {
         {
           id: `assets-failed-${Date.now()}`,
           role: "system",
-          text: `Layout zůstal zachovaný, ale obrázky se nepodařilo dohledat: ${e?.message ?? "neznámá chyba"}`,
+          text: `Layout zůstal zachovaný, ale obrázky se nepodařilo dohledat: ${
+            e?.message ?? "neznámá chyba"
+          }`,
         },
       ]);
     } finally {
@@ -1443,7 +1653,8 @@ export default function AiEditorPage() {
     orientationOverride?: "landscape" | "portrait" | "square"
   ) {
     const finalQuery = (queryOverride ?? imageSearchQuery).trim();
-    const finalOrientation = orientationOverride ?? selectedImage?.orientation ?? "landscape";
+    const finalOrientation =
+      orientationOverride ?? selectedImage?.orientation ?? "landscape";
 
     if (finalQuery.length < 2) {
       setImageSearchResults([]);
@@ -1489,7 +1700,10 @@ export default function AiEditorPage() {
       {
         id: `image-updated-${Date.now()}`,
         role: "assistant",
-        text: `Obrázek ve vybrané sekci ${prettifySectionLabel(selectedImage.sectionId, "")} byl změněn.`,
+        text: `Obrázek ve vybrané sekci ${prettifySectionLabel(
+          selectedImage.sectionId,
+          ""
+        )} byl změněn.`,
       },
     ]);
 
@@ -1538,9 +1752,89 @@ export default function AiEditorPage() {
     setImagePickerTab("search");
   }
 
+  function removeUploadedLogo() {
+    setUploadedLogo(null);
+    setLogoUploadError(null);
+    sessionStorage.removeItem("ai_webgen_logo_data_url");
+    sessionStorage.removeItem("ai_webgen_logo_name");
+    sessionStorage.removeItem("ai_webgen_logo_mime_type");
+  }
+
+  function handleLogoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const looksLikeSvg =
+      file.name.toLowerCase().endsWith(".svg") ||
+      file.type === "image/svg+xml";
+
+    const isAllowed =
+      ACCEPTED_LOGO_TYPES.includes(file.type) ||
+      looksLikeSvg ||
+      file.type === "";
+
+    if (!isAllowed) {
+      setLogoUploadError("Povolené jsou pouze PNG, JPG, SVG nebo WEBP.");
+      event.target.value = "";
+      return;
+    }
+
+    setLogoUploadError(null);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        setLogoUploadError("Logo se nepodařilo načíst.");
+        return;
+      }
+
+      const nextLogo: BrandLogoAsset = {
+        name: file.name,
+        mimeType: file.type || (looksLikeSvg ? "image/svg+xml" : "image/png"),
+        dataUrl: result,
+      };
+
+      setUploadedLogo(nextLogo);
+      sessionStorage.setItem("ai_webgen_logo_data_url", nextLogo.dataUrl);
+      sessionStorage.setItem("ai_webgen_logo_name", nextLogo.name);
+      sessionStorage.setItem("ai_webgen_logo_mime_type", nextLogo.mimeType);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `logo-uploaded-${Date.now()}`,
+          role: "system",
+          text: `Logo "${nextLogo.name}" bylo nahráno a odešle se do generování webu.`,
+        },
+      ]);
+    };
+
+    reader.onerror = () => {
+      setLogoUploadError("Nahrání loga selhalo.");
+    };
+
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
+
+    const storedLogoDataUrl =
+      sessionStorage.getItem("ai_webgen_logo_data_url") ?? "";
+    const storedLogoName = sessionStorage.getItem("ai_webgen_logo_name") ?? "";
+    const storedLogoMimeType =
+      sessionStorage.getItem("ai_webgen_logo_mime_type") ?? "image/png";
+
+    if (storedLogoDataUrl && storedLogoName) {
+      setUploadedLogo({
+        name: storedLogoName,
+        mimeType: storedLogoMimeType,
+        dataUrl: storedLogoDataUrl,
+      });
+    }
 
     if (initialPrompt) {
       setPrompt(initialPrompt);
@@ -1591,7 +1885,8 @@ export default function AiEditorPage() {
           slot: data.slot || "",
           tagName: data.tagName || "",
           sectionId: data.sectionId || "",
-          currentUrl: typeof data.currentUrl === "string" ? data.currentUrl : "",
+          currentUrl:
+            typeof data.currentUrl === "string" ? data.currentUrl : "",
           alt: typeof data.alt === "string" ? data.alt : "",
           orientation:
             data.orientation === "portrait" ||
@@ -1653,7 +1948,8 @@ export default function AiEditorPage() {
   useEffect(() => {
     if (!imageModalOpen || !selectedImage) return;
     const initialQuery =
-      selectedImage.alt?.trim() || selectedImage.slot.replace(/[-_]/g, " ").trim();
+      selectedImage.alt?.trim() ||
+      selectedImage.slot.replace(/[-_]/g, " ").trim();
     if (initialQuery.length >= 2) {
       void searchEditorImages(initialQuery, selectedImage.orientation);
     }
@@ -1721,6 +2017,8 @@ export default function AiEditorPage() {
     setSelectedSectionId(null);
     setSelectedSectionType(null);
     setSelectedImage(null);
+    setGeneratedIndustry(null);
+    setPostGenerateSuggestions([]);
     setProgress(0);
     setActiveTab("preview");
 
@@ -1734,6 +2032,7 @@ export default function AiEditorPage() {
           prompt: finalPrompt,
           generationPreferences: effectivePreferences,
           chatHistory: getChatHistoryPayload(),
+          brandLogo: uploadedLogo,
         }),
       });
 
@@ -1743,10 +2042,15 @@ export default function AiEditorPage() {
         throw new Error("API /api/generate nevrátilo validní HTML/CSS.");
       }
 
+      const detectedIndustry = inferIndustryKind(finalPrompt);
+      const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
+
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
       setHtml(data.html);
       setCss(data.css);
       setJs(data.js || "");
+      setGeneratedIndustry(detectedIndustry);
+      setPostGenerateSuggestions(nextSuggestions);
 
       setMessages((prev) => [
         ...prev,
@@ -1754,6 +2058,13 @@ export default function AiEditorPage() {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
           text: "Návrh je připraven. Klikněte na sekci, text nebo obrázek v náhledu a pokračujte v úpravách.",
+        },
+        {
+          id: `assistant-followup-${Date.now() + 1}`,
+          role: "assistant",
+          text: `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
+            detectedIndustry
+          )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,
         },
       ]);
 
@@ -1801,6 +2112,7 @@ export default function AiEditorPage() {
           js,
           selectedSectionId,
           chatHistory: getChatHistoryPayload(),
+          brandLogo: uploadedLogo,
         }),
       });
 
@@ -1935,8 +2247,14 @@ export default function AiEditorPage() {
         role: "assistant",
         text:
           selectedText.href !== undefined
-            ? `Text a odkaz byly upraveny pouze v sekci ${prettifySectionLabel(selectedText.sectionId, "")}.`
-            : `Text byl upraven pouze v sekci ${prettifySectionLabel(selectedText.sectionId, "")}.`,
+            ? `Text a odkaz byly upraveny pouze v sekci ${prettifySectionLabel(
+                selectedText.sectionId,
+                ""
+              )}.`
+            : `Text byl upraven pouze v sekci ${prettifySectionLabel(
+                selectedText.sectionId,
+                ""
+              )}.`,
       },
     ]);
 
@@ -1950,18 +2268,27 @@ export default function AiEditorPage() {
     if (!aktualniOtazka) return;
 
     const trimmed = odpovedInput.trim();
+
     const nextPreferences = {
       ...generationPreferences,
       clientAnswers: {
         ...generationPreferences.clientAnswers,
-        [aktualniOtazka.id]: trimmed,
+        [aktualniOtazka.id]: mergeAnswerValue(
+          generationPreferences.clientAnswers[aktualniOtazka.id],
+          aktualniOtazka.appendLabel,
+          trimmed
+        ),
       },
     };
 
     setGenerationPreferences(nextPreferences);
     setMessages((prev) => [
       ...prev,
-      { id: `question-answer-${Date.now()}`, role: "user", text: trimmed || "Bez odpovědi." },
+      {
+        id: `question-answer-${Date.now()}`,
+        role: "user",
+        text: trimmed || "Bez odpovědi.",
+      },
     ]);
 
     const nextIndex = aktivniOtazkaIndex + 1;
@@ -1971,7 +2298,11 @@ export default function AiEditorPage() {
       setAktivniOtazkaIndex(nextIndex);
       setMessages((prev) => [
         ...prev,
-        { id: `question-next-${Date.now() + 1}`, role: "assistant", text: otazky[nextIndex].text },
+        {
+          id: `question-next-${Date.now() + 1}`,
+          role: "assistant",
+          text: otazky[nextIndex].text,
+        },
       ]);
       return;
     }
@@ -1982,7 +2313,7 @@ export default function AiEditorPage() {
       {
         id: `question-finished-${Date.now()}`,
         role: "assistant",
-        text: "Děkuji, mám vše důležité. Teď můžeme web vygenerovat přesněji podle vašich odpovědí.",
+        text: "Děkuji, mám víc kontextu k projektu. Teď můžeme web vygenerovat přesněji podle vašich odpovědí.",
       },
     ]);
 
@@ -1996,7 +2327,7 @@ export default function AiEditorPage() {
       {
         id: `skip-questions-${Date.now()}`,
         role: "system",
-        text: "Otázky byly přeskočeny. Generuji web podle promptu a automatického rozpoznání oboru.",
+        text: "Otázky byly přeskočeny. Generuji web podle promptu, loga a automatického rozpoznání oboru.",
       },
     ]);
     void handleGenerate(prompt, generationPreferences);
@@ -2006,16 +2337,31 @@ export default function AiEditorPage() {
     <div className="relative h-dvh overflow-hidden bg-[#050507] text-zinc-100">
       <style jsx global>{`
         @keyframes zyviaEditorFloatA {
-          0% { transform: translate3d(0, 0, 0) scale(1); }
-          100% { transform: translate3d(28px, -18px, 0) scale(1.04); }
+          0% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          100% {
+            transform: translate3d(28px, -18px, 0) scale(1.04);
+          }
         }
         @keyframes zyviaEditorFloatB {
-          0% { transform: translate3d(0, 0, 0) scale(1); }
-          100% { transform: translate3d(-26px, 18px, 0) scale(1.05); }
+          0% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          100% {
+            transform: translate3d(-26px, 18px, 0) scale(1.05);
+          }
         }
         @keyframes zyviaPulse {
-          0%, 100% { opacity: 0.72; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.01); }
+          0%,
+          100% {
+            opacity: 0.72;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.01);
+          }
         }
       `}</style>
 
@@ -2041,7 +2387,11 @@ export default function AiEditorPage() {
         {!isFullscreen && (
           <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <img src="/zyvia-logo.svg" alt="Zyvia" className="h-[1.65rem] w-auto opacity-95" />
+              <img
+                src="/zyvia-logo.svg"
+                alt="Zyvia"
+                className="h-[1.65rem] w-auto opacity-95"
+              />
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -2102,7 +2452,11 @@ export default function AiEditorPage() {
                     <div className="text-sm font-medium text-white">Editor</div>
                     {(loading || improving || resolvingAssets) && (
                       <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
-                        {loading ? "Generuji" : improving ? "Upravuji" : "Doplňuji obrázky"}
+                        {loading
+                          ? "Generuji"
+                          : improving
+                          ? "Upravuji"
+                          : "Doplňuji obrázky"}
                       </div>
                     )}
                   </div>
@@ -2116,7 +2470,12 @@ export default function AiEditorPage() {
                       }
                       scrollChatToBottom(true);
                     }}
-                    disabled={loading || improving || resolvingAssets || prompt.trim().length < 12}
+                    disabled={
+                      loading ||
+                      improving ||
+                      resolvingAssets ||
+                      prompt.trim().length < 12
+                    }
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{
                       background:
@@ -2138,6 +2497,85 @@ export default function AiEditorPage() {
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                   <div className="space-y-3">
+                    <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="text-sm font-medium text-white">
+                          Logo projektu
+                        </div>
+
+                        {uploadedLogo && (
+                          <button
+                            type="button"
+                            onClick={removeUploadedLogo}
+                            className="text-xs text-zinc-500 transition hover:text-white"
+                          >
+                            Odebrat
+                          </button>
+                        )}
+                      </div>
+
+                      {uploadedLogo ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white">
+                              <img
+                                src={uploadedLogo.dataUrl}
+                                alt={uploadedLogo.name}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-sm text-white">
+                                {uploadedLogo.name}
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-500">
+                                PNG / JPG / SVG / WEBP
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => logoInputRef.current?.click()}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                          >
+                            <Icon icon="solar:refresh-linear" width={16} />
+                            Nahrát jiné logo
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="text-xs leading-6 text-zinc-500">
+                            Nahrajte logo před generováním a pošlu ho spolu se
+                            zadáním do backendu.
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => logoInputRef.current?.click()}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                          >
+                            <Icon icon="solar:upload-linear" width={16} />
+                            Nahrát logo
+                          </button>
+                        </div>
+                      )}
+
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+
+                      {logoUploadError && (
+                        <div className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">
+                          {logoUploadError}
+                        </div>
+                      )}
+                    </div>
+
                     {messages.map((message) => {
                       const isUser = message.role === "user";
                       const isSystem = message.role === "system";
@@ -2177,14 +2615,14 @@ export default function AiEditorPage() {
 
                       <div className="mt-3 text-xs leading-6 text-zinc-500">
                         {loading
-                          ? "Probíhá generování layoutu podle oboru a vašich odpovědí v chatu."
+                          ? "Probíhá generování layoutu podle oboru, loga a vašich odpovědí v chatu."
                           : improving
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
-                          : "Nejdřív odpovězte na pár stručných otázek v chatu, pak se web vygeneruje přesněji."}
+                          : "Nejdřív odpovězte na víc otázek v chatu, nahrajte případně logo a pak se web vygeneruje přesněji."}
                       </div>
                     </div>
 
@@ -2193,7 +2631,9 @@ export default function AiEditorPage() {
                         <div className="mb-2 text-sm font-medium text-white">
                           Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
                         </div>
-                        <div className="mb-3 text-sm text-zinc-200">{aktualniOtazka.text}</div>
+                        <div className="mb-3 text-sm text-zinc-200">
+                          {aktualniOtazka.text}
+                        </div>
 
                         <textarea
                           value={odpovedInput}
@@ -2222,9 +2662,35 @@ export default function AiEditorPage() {
                       </div>
                     )}
 
+                    {html && postGenerateSuggestions.length > 0 && (
+                      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
+                        <div className="mb-2 text-sm font-medium text-white">
+                          Co chcete dál vylepšit?
+                        </div>
+                        <div className="mb-3 text-xs leading-6 text-zinc-300">
+                          Vyberte sekci v náhledu a pak si můžete jedním klikem
+                          předpřipravit další zadání.
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {postGenerateSuggestions.map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => applyFollowUpSuggestion(item)}
+                              className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-100 transition hover:bg-white/[0.10]"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {availableSections.length > 0 && (
                       <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
-                        <div className="mb-2 text-sm font-medium text-white">Co chcete upravit?</div>
+                        <div className="mb-2 text-sm font-medium text-white">
+                          Co chcete upravit?
+                        </div>
                         <div className="mb-3 text-xs text-zinc-500">
                           Vyberte sekci přímo zde, nebo klikněte do náhledu.
                         </div>
@@ -2331,12 +2797,20 @@ export default function AiEditorPage() {
                     />
 
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <div className="text-xs text-zinc-500">Enter odešle úpravu</div>
+                      <div className="text-xs text-zinc-500">
+                        Enter odešle úpravu
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => handleImprove()}
-                        disabled={!html || loading || improving || resolvingAssets || chatInput.trim().length < 3}
+                        disabled={
+                          !html ||
+                          loading ||
+                          improving ||
+                          resolvingAssets ||
+                          chatInput.trim().length < 3
+                        }
                         className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:pen-2-linear" width={16} />
@@ -2451,7 +2925,9 @@ export default function AiEditorPage() {
                         }
                         width={16}
                       />
-                      {isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"}
+                      {isFullscreen
+                        ? "Ukončit celou obrazovku"
+                        : "Celá obrazovka"}
                     </button>
 
                     <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
@@ -2558,7 +3034,9 @@ export default function AiEditorPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-white">Upravit text</div>
-                <div className="mt-1 text-xs text-zinc-500">Tag: {selectedText.tagName.toLowerCase()}</div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Tag: {selectedText.tagName.toLowerCase()}
+                </div>
               </div>
 
               <button
@@ -2572,7 +3050,9 @@ export default function AiEditorPage() {
                 }}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
               >
-                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
+                <span className="block -translate-y-[1px] text-[24px] leading-none">
+                  ×
+                </span>
               </button>
             </div>
 
@@ -2630,7 +3110,8 @@ export default function AiEditorPage() {
               <div>
                 <div className="text-sm font-medium text-white">Upravit obrázek</div>
                 <div className="mt-1 text-xs text-zinc-500">
-                  Slot: {selectedImage.slot} • Sekce {prettifySectionLabel(selectedImage.sectionId, "")}
+                  Slot: {selectedImage.slot} • Sekce{" "}
+                  {prettifySectionLabel(selectedImage.sectionId, "")}
                 </div>
               </div>
 
@@ -2640,13 +3121,17 @@ export default function AiEditorPage() {
                 onClick={closeImageModal}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
               >
-                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
+                <span className="block -translate-y-[1px] text-[24px] leading-none">
+                  ×
+                </span>
               </button>
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
               <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
-                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">Aktuální obrázek</div>
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  Aktuální obrázek
+                </div>
 
                 <div className="overflow-hidden rounded-2xl border border-white/8 bg-black/30">
                   {selectedImage.currentUrl ? (
@@ -2689,16 +3174,27 @@ export default function AiEditorPage() {
 
                 {imagePickerTab === "upload" && (
                   <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4">
-                    <div className="mb-2 text-sm font-medium text-white">Nahrát vlastní obrázek</div>
+                    <div className="mb-2 text-sm font-medium text-white">
+                      Nahrát vlastní obrázek
+                    </div>
                     <div className="mb-3 text-sm text-zinc-500">
                       Vyberte obrázek z počítače a hned se vloží do náhledu.
                     </div>
 
                     <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-8 text-center transition hover:bg-white/[0.06]">
                       <Icon icon="solar:upload-linear" width={24} />
-                      <span className="mt-3 text-sm text-white">Klikněte pro nahrání obrázku</span>
-                      <span className="mt-1 text-xs text-zinc-500">PNG, JPG, WEBP, SVG</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                      <span className="mt-3 text-sm text-white">
+                        Klikněte pro nahrání obrázku
+                      </span>
+                      <span className="mt-1 text-xs text-zinc-500">
+                        PNG, JPG, WEBP, SVG
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
                     </label>
                   </div>
                 )}
@@ -2707,7 +3203,9 @@ export default function AiEditorPage() {
               <div className="min-w-0 rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
                 {imagePickerTab === "search" ? (
                   <>
-                    <div className="mb-3 text-sm font-medium text-white">Hledat nový obrázek</div>
+                    <div className="mb-3 text-sm font-medium text-white">
+                      Hledat nový obrázek
+                    </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row">
                       <input
@@ -2726,7 +3224,10 @@ export default function AiEditorPage() {
                       <button
                         type="button"
                         onClick={() => void searchEditorImages()}
-                        disabled={imageSearchLoading || imageSearchQuery.trim().length < 2}
+                        disabled={
+                          imageSearchLoading ||
+                          imageSearchQuery.trim().length < 2
+                        }
                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:magnifer-linear" width={16} />
@@ -2735,14 +3236,18 @@ export default function AiEditorPage() {
                     </div>
 
                     <div className="mt-3 text-xs text-zinc-500">
-                      Hledání používá zdroje jako Unsplash a Pexels podle typu obrázku.
+                      Hledání používá zdroje jako Unsplash a Pexels podle typu
+                      obrázku.
                     </div>
 
                     <div className="mt-4 max-h-[30rem] overflow-y-auto pr-1">
                       {imageSearchLoading ? (
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {Array.from({ length: 6 }).map((_, index) => (
-                            <div key={index} className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
+                            <div
+                              key={index}
+                              className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]"
+                            >
                               <div className="h-40 animate-pulse bg-white/[0.06]" />
                               <div className="space-y-2 p-3">
                                 <div className="h-3 w-3/4 rounded-full bg-white/[0.08]" />
@@ -2754,14 +3259,25 @@ export default function AiEditorPage() {
                       ) : imageSearchResults.length > 0 ? (
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {imageSearchResults.map((image, index) => (
-                            <div key={`${image.url}-${index}`} className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
-                              <img src={image.url} alt={image.alt} className="h-40 w-full object-cover" />
+                            <div
+                              key={`${image.url}-${index}`}
+                              className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]"
+                            >
+                              <img
+                                src={image.url}
+                                alt={image.alt}
+                                className="h-40 w-full object-cover"
+                              />
                               <div className="space-y-3 p-3">
                                 <div>
-                                  <div className="line-clamp-2 text-sm text-white">{image.alt}</div>
+                                  <div className="line-clamp-2 text-sm text-white">
+                                    {image.alt}
+                                  </div>
                                   <div className="mt-1 text-xs text-zinc-500">
                                     {image.source}
-                                    {image.photographer ? ` • ${image.photographer}` : ""}
+                                    {image.photographer
+                                      ? ` • ${image.photographer}`
+                                      : ""}
                                   </div>
                                 </div>
                                 <button
@@ -2769,7 +3285,10 @@ export default function AiEditorPage() {
                                   onClick={() => applyImageChange(image)}
                                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"
                                 >
-                                  <Icon icon="solar:gallery-add-linear" width={16} />
+                                  <Icon
+                                    icon="solar:gallery-add-linear"
+                                    width={16}
+                                  />
                                   Použít obrázek
                                 </button>
                               </div>
