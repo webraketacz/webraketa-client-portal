@@ -26,7 +26,8 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${appFontVariables} min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)] selection:bg-violet-500/30 selection:text-violet-100 antialiased`}
+        data-app-shell="zyvia"
+        className={`${appFontVariables} app-shell-font min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)] selection:bg-violet-500/30 selection:text-violet-100 antialiased`}
       >
         {children}
       </body>

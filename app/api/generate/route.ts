@@ -1,11 +1,4 @@
 import OpenAI from "openai";
-import {
-  getBlueprint,
-  getLayoutSeed,
-  type IndustryKind,
-  type ThemePreset,
-} from "@/lib/ai/design-system";
-import type { TypographyPresetId } from "@/lib/ai/typography-presets";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -88,6 +81,26 @@ type DesignReference =
   | "clean-automotive"
   | "service-trades";
 
+type IndustryKind =
+  | "fintech"
+  | "saas"
+  | "real-estate"
+  | "resort"
+  | "luxury-service"
+  | "food-product"
+  | "ecommerce-product"
+  | "healthcare"
+  | "legal"
+  | "beauty"
+  | "restaurant"
+  | "catering"
+  | "barber"
+  | "hair-salon"
+  | "autoservis"
+  | "car-dealer"
+  | "zednik"
+  | "generic-business";
+
 type ClientAnswers = {
   contactDetails?: string;
   styleNotes?: string;
@@ -112,25 +125,6 @@ type GeneratedWebsiteBundle = {
   css: string;
   js: string;
   assetPlan: AssetPlanItem[];
-};
-
-type ResolvedCreativeDirection = {
-  industry: IndustryKind;
-  themePreset: ThemePreset;
-  typographyPreset: TypographyPresetId;
-  imageMode: "ui-heavy" | "photo-heavy" | "mixed" | "product-heavy";
-  speedMode: SpeedMode;
-  layoutPreference: Exclude<LayoutPreference, "auto">;
-  visualStyle: Exclude<VisualStyle, "auto">;
-  animationLevel: AnimationLevel;
-  fontMood: Exclude<FontMood, "auto">;
-  iconStyle: Exclude<IconStyle, "auto">;
-  designReference: Exclude<DesignReference, "auto">;
-  contactItems: string[];
-  clientAnswers: ClientAnswers;
-  layoutSeed: string;
-  blueprintPromptHints: string[];
-  afterGeneratePrompts: string[];
 };
 
 function nowMs() {
@@ -194,8 +188,7 @@ function sanitizeBrandLogoAsset(value: unknown): BrandLogoAsset | null {
 }
 
 function buildBrandLogoMarkup(brandLogo: BrandLogoAsset) {
-  const altBase =
-    brandLogo.name.replace(/\.[^.]+$/, "").trim() || "Brand logo";
+  const altBase = brandLogo.name.replace(/\.[^.]+$/, "").trim() || "Brand logo";
 
   return `<img src="${escapeHtmlAttr(
     brandLogo.dataUrl
@@ -212,444 +205,527 @@ function injectBrandLogoMarkup(
   return content.replace(/__BRAND_LOGO__/g, buildBrandLogoMarkup(brandLogo));
 }
 
-function getIndustryVisualDefaults(industry: IndustryKind) {
+function makeDeterministicChoice<T>(input: string, items: T[]): T {
+  let hash = 0;
+
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+
+  return items[hash % items.length];
+}
+
+function inferIndustryKind(prompt: string): IndustryKind {
+  const text = normalizeText(prompt);
+
+  if (
+    text.includes("fintech") ||
+    text.includes("payment") ||
+    text.includes("platby") ||
+    text.includes("bank") ||
+    text.includes("finance") ||
+    text.includes("penez") ||
+    text.includes("money")
+  ) {
+    return "fintech";
+  }
+
+  if (
+    text.includes("saas") ||
+    text.includes("software") ||
+    text.includes("app") ||
+    text.includes("platform") ||
+    text.includes("automatiz") ||
+    text.includes("workflow") ||
+    text.includes("integrac")
+  ) {
+    return "saas";
+  }
+
+  if (
+    text.includes("realit") ||
+    text.includes("makler") ||
+    text.includes("nemovit") ||
+    text.includes("villa") ||
+    text.includes("byt") ||
+    text.includes("property") ||
+    text.includes("developer") ||
+    text.includes("developersky projekt") ||
+    text.includes("rezidence")
+  ) {
+    return "real-estate";
+  }
+
+  if (
+    text.includes("resort") ||
+    text.includes("hotel") ||
+    text.includes("wellness") ||
+    text.includes("retreat") ||
+    text.includes("ubytovani") ||
+    text.includes("forest")
+  ) {
+    return "resort";
+  }
+
+  if (
+    text.includes("advokat") ||
+    text.includes("pravnik") ||
+    text.includes("legal") ||
+    text.includes("law") ||
+    text.includes("notar")
+  ) {
+    return "legal";
+  }
+
+  if (
+    text.includes("clinic") ||
+    text.includes("klinika") ||
+    text.includes("medical") ||
+    text.includes("doctor") ||
+    text.includes("zubar") ||
+    text.includes("ordinace")
+  ) {
+    return "healthcare";
+  }
+
+  if (
+    text.includes("beauty") ||
+    text.includes("kosmet") ||
+    text.includes("salon krasy") ||
+    text.includes("esthetic") ||
+    text.includes("skincare")
+  ) {
+    return "beauty";
+  }
+
+  if (
+    text.includes("barber") ||
+    text.includes("barbershop") ||
+    text.includes("holic") ||
+    text.includes("panske strihani")
+  ) {
+    return "barber";
+  }
+
+  if (
+    text.includes("kadernice") ||
+    text.includes("kadernictvi") ||
+    text.includes("hair salon") ||
+    text.includes("strihani vlasu") ||
+    text.includes("hairstyle")
+  ) {
+    return "hair-salon";
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("restaurace") ||
+    text.includes("bistro") ||
+    text.includes("cafe") ||
+    text.includes("kavarna") ||
+    text.includes("gastro") ||
+    text.includes("osteria")
+  ) {
+    return "restaurant";
+  }
+
+  if (
+    text.includes("catering") ||
+    text.includes("rozvoz cateringu") ||
+    text.includes("firemni catering")
+  ) {
+    return "catering";
+  }
+
+  if (
+    text.includes("autoservis") ||
+    text.includes("servis aut") ||
+    text.includes("oprava aut") ||
+    text.includes("mechanik") ||
+    text.includes("vymena oleje")
+  ) {
+    return "autoservis";
+  }
+
+  if (
+    text.includes("prodej aut") ||
+    text.includes("autobazar") ||
+    text.includes("vozy") ||
+    text.includes("dealer") ||
+    text.includes("cars for sale")
+  ) {
+    return "car-dealer";
+  }
+
+  if (
+    text.includes("zednik") ||
+    text.includes("zednicke prace") ||
+    text.includes("stavba domu") ||
+    text.includes("fasady") ||
+    text.includes("rekonstrukce") ||
+    text.includes("stavebni firma")
+  ) {
+    return "zednik";
+  }
+
+  if (
+    text.includes("cukr") ||
+    text.includes("sugar") ||
+    text.includes("potrav") ||
+    text.includes("food") ||
+    text.includes("produkt") ||
+    text.includes("product") ||
+    text.includes("eshop") ||
+    text.includes("e-shop") ||
+    text.includes("shop") ||
+    text.includes("prodej") ||
+    text.includes("baleni")
+  ) {
+    if (
+      text.includes("cukr") ||
+      text.includes("sugar") ||
+      text.includes("food") ||
+      text.includes("potrav")
+    ) {
+      return "food-product";
+    }
+
+    return "ecommerce-product";
+  }
+
+  if (
+    text.includes("luxury") ||
+    text.includes("premium") ||
+    text.includes("boutique")
+  ) {
+    return "luxury-service";
+  }
+
+  return "generic-business";
+}
+
+function getIndustryDefaults(industry: IndustryKind) {
   switch (industry) {
     case "fintech":
       return {
-        layoutPreference: "split" as const,
-        visualStyle: "premium" as const,
-        fontMood: "tech" as const,
-        iconStyle: "outlined" as const,
-        imageMode: "ui-heavy" as const,
+        designReference: "fintech-neon" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "tech" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "ui-heavy",
       };
     case "saas":
       return {
-        layoutPreference: "grid" as const,
-        visualStyle: "premium" as const,
-        fontMood: "tech" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "ui-heavy" as const,
+        designReference: "signal-orchestration" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "tech" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "ui-heavy",
       };
     case "real-estate":
       return {
-        layoutPreference: "editorial" as const,
-        visualStyle: "luxury" as const,
-        fontMood: "editorial" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "editorial" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "resort":
       return {
-        layoutPreference: "story" as const,
-        visualStyle: "luxury" as const,
-        fontMood: "editorial" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "cinematic-resort" as DesignReference,
+        layoutPreference: "story" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "restaurant":
       return {
-        layoutPreference: "story" as const,
-        visualStyle: "luxury" as const,
-        fontMood: "editorial" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "restaurant-editorial" as DesignReference,
+        layoutPreference: "story" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "catering":
       return {
-        layoutPreference: "split" as const,
-        visualStyle: "premium" as const,
-        fontMood: "friendly" as const,
-        iconStyle: "solid" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "restaurant-editorial" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "friendly" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "barber":
       return {
-        layoutPreference: "asymmetrical" as const,
-        visualStyle: "bold" as const,
-        fontMood: "trustworthy" as const,
-        iconStyle: "solid" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "barber-premium" as DesignReference,
+        layoutPreference: "asymmetrical" as LayoutPreference,
+        visualStyle: "bold" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "hair-salon":
       return {
-        layoutPreference: "asymmetrical" as const,
-        visualStyle: "luxury" as const,
-        fontMood: "friendly" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "asymmetrical" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "friendly" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "autoservis":
       return {
-        layoutPreference: "grid" as const,
-        visualStyle: "bold" as const,
-        fontMood: "trustworthy" as const,
-        iconStyle: "solid" as const,
-        imageMode: "mixed" as const,
+        designReference: "clean-automotive" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "bold" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "mixed",
       };
     case "car-dealer":
       return {
-        layoutPreference: "split" as const,
-        visualStyle: "clean" as const,
-        fontMood: "geometric" as const,
-        iconStyle: "outlined" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "clean-automotive" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "geometric" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "zednik":
       return {
-        layoutPreference: "grid" as const,
-        visualStyle: "clean" as const,
-        fontMood: "trustworthy" as const,
-        iconStyle: "solid" as const,
-        imageMode: "mixed" as const,
+        designReference: "service-trades" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "mixed",
       };
     case "legal":
       return {
-        layoutPreference: "grid" as const,
-        visualStyle: "premium" as const,
-        fontMood: "trustworthy" as const,
-        iconStyle: "outlined" as const,
-        imageMode: "mixed" as const,
+        designReference: "clean-business" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "mixed",
       };
     case "healthcare":
       return {
-        layoutPreference: "split" as const,
-        visualStyle: "clean" as const,
-        fontMood: "trustworthy" as const,
-        iconStyle: "outlined" as const,
-        imageMode: "mixed" as const,
+        designReference: "clean-business" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "trustworthy" as FontMood,
+        iconStyle: "outlined" as IconStyle,
+        imageMode: "mixed",
       };
     case "beauty":
       return {
-        layoutPreference: "asymmetrical" as const,
-        visualStyle: "luxury" as const,
-        fontMood: "luxury" as const,
-        iconStyle: "custom" as const,
-        imageMode: "photo-heavy" as const,
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "asymmetrical" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "luxury" as FontMood,
+        iconStyle: "custom" as IconStyle,
+        imageMode: "photo-heavy",
       };
     case "food-product":
       return {
-        layoutPreference: "split" as const,
-        visualStyle: "clean" as const,
-        fontMood: "friendly" as const,
-        iconStyle: "solid" as const,
-        imageMode: "product-heavy" as const,
+        designReference: "product-commerce" as DesignReference,
+        layoutPreference: "split" as LayoutPreference,
+        visualStyle: "clean" as VisualStyle,
+        fontMood: "friendly" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "product-heavy",
       };
     case "ecommerce-product":
       return {
-        layoutPreference: "grid" as const,
-        visualStyle: "bold" as const,
-        fontMood: "geometric" as const,
-        iconStyle: "solid" as const,
-        imageMode: "product-heavy" as const,
+        designReference: "product-commerce" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "bold" as VisualStyle,
+        fontMood: "geometric" as FontMood,
+        iconStyle: "solid" as IconStyle,
+        imageMode: "product-heavy",
       };
     case "luxury-service":
       return {
-        layoutPreference: "editorial" as const,
-        visualStyle: "luxury" as const,
-        fontMood: "editorial" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "mixed" as const,
+        designReference: "luxury-editorial" as DesignReference,
+        layoutPreference: "editorial" as LayoutPreference,
+        visualStyle: "luxury" as VisualStyle,
+        fontMood: "editorial" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "mixed",
       };
     default:
       return {
-        layoutPreference: "grid" as const,
-        visualStyle: "premium" as const,
-        fontMood: "geometric" as const,
-        iconStyle: "minimal" as const,
-        imageMode: "mixed" as const,
+        designReference: "clean-business" as DesignReference,
+        layoutPreference: "grid" as LayoutPreference,
+        visualStyle: "premium" as VisualStyle,
+        fontMood: "geometric" as FontMood,
+        iconStyle: "minimal" as IconStyle,
+        imageMode: "mixed",
       };
   }
-}
-
-function getFallbackAnimation(industry: IndustryKind): AnimationLevel {
-  if (industry === "fintech" || industry === "saas") return "rich";
-  if (
-    industry === "resort" ||
-    industry === "beauty" ||
-    industry === "restaurant" ||
-    industry === "real-estate"
-  ) {
-    return "subtle";
-  }
-  return "subtle";
 }
 
 function resolveCreativeDirection(
   prompt: string,
   prefs: GenerationPreferences
-): ResolvedCreativeDirection {
-  const blueprint = getBlueprint(prompt);
-  const visualDefaults = getIndustryVisualDefaults(blueprint.industry);
-  const layoutSeed = getLayoutSeed(prompt);
+) {
+  const industry = inferIndustryKind(prompt);
+  const industryDefaults = getIndustryDefaults(industry);
+
+  const fallbackAnimation =
+    industry === "fintech" || industry === "saas"
+      ? "rich"
+      : industry === "resort" ||
+        industry === "beauty" ||
+        industry === "restaurant" ||
+        industry === "real-estate"
+      ? "subtle"
+      : "subtle";
+
+  const layoutSeedPool = {
+    fintech: [
+      "hero-center-dashboard-below",
+      "offset-bottom-left-copy",
+      "framed-hero-with-floating-ui",
+      "stacked-analytics-panels",
+      "full-bleed-dark-hero-with-overlay-copy",
+      "glassy-signal-columns",
+    ],
+    saas: [
+      "hero-center-dashboard-below",
+      "offset-bottom-left-copy",
+      "stacked-storyflow",
+      "grid-led-platform-layout",
+      "observability-hub-layout",
+      "floating-control-room-hero",
+    ],
+    realEstate: [
+      "full-bleed-editorial-property-cover",
+      "centered-crest-navigation-with-cover-image",
+      "bottom-left-copy-over-architecture-shot",
+      "oversized-serif-copy-on-airy-canvas",
+      "gallery-led-development-microsite",
+      "editorial-project-cover-with-thin-dividers",
+    ],
+    resort: [
+      "full-bleed-photo-editorial",
+      "bottom-left-copy-over-photo",
+      "immersive-cinematic-hero",
+      "story-led-split-panels",
+      "framed-photo-window-hero",
+      "layered-editorial-cover",
+    ],
+    restaurant: [
+      "full-bleed-photo-editorial",
+      "bottom-left-copy-over-photo",
+      "editorial-story-menu-flow",
+      "floating-reservation-panel",
+      "hero-top-right-copy-over-image",
+      "stacked-gallery-cover-hero",
+    ],
+    product: [
+      "product-hero-with-packshot",
+      "benefit-led-commerce-layout",
+      "clean-product-split",
+      "bento-product-panels",
+      "bottom-anchored-product-copy",
+      "hero-with-overlap-packshot-cards",
+    ],
+    automotive: [
+      "clean-automotive-hero",
+      "trust-led-service-grid",
+      "split-vehicle-showcase",
+      "service-dashboard-clean",
+      "bottom-left-copy-over-car-shot",
+      "angled-vehicle-cover-layout",
+    ],
+    trades: [
+      "trust-led-service-grid",
+      "clean-process-layout",
+      "split-service-hero",
+      "practical-bento-layout",
+      "bottom-left-copy-over-project-shot",
+      "framed-construction-cover",
+    ],
+    luxury: [
+      "editorial-cover-layout",
+      "framed-luxury-hero",
+      "bottom-left-copy-over-visual",
+      "airy-serif-hero-with-gallery-rhythm",
+      "layered-brand-story-layout",
+      "offset-luxury-panels",
+    ],
+    generic: [
+      "hero-center-dashboard-below",
+      "stacked-storyflow",
+      "asymmetric-panel-composition",
+      "disciplined-bento-layout",
+      "bottom-left-copy-over-visual",
+      "hero-with-layered-overlap-cards",
+    ],
+  };
+
+  const seedChoices =
+    industry === "fintech"
+      ? layoutSeedPool.fintech
+      : industry === "saas"
+      ? layoutSeedPool.saas
+      : industry === "real-estate"
+      ? layoutSeedPool.realEstate
+      : industry === "resort"
+      ? layoutSeedPool.resort
+      : industry === "restaurant" || industry === "catering"
+      ? layoutSeedPool.restaurant
+      : industry === "food-product" || industry === "ecommerce-product"
+      ? layoutSeedPool.product
+      : industry === "autoservis" || industry === "car-dealer"
+      ? layoutSeedPool.automotive
+      : industry === "zednik"
+      ? layoutSeedPool.trades
+      : industry === "luxury-service" || industry === "beauty"
+      ? layoutSeedPool.luxury
+      : layoutSeedPool.generic;
+
+  const layoutSeed = makeDeterministicChoice(`${prompt}-seed`, seedChoices);
 
   return {
-    industry: blueprint.industry,
-    themePreset: blueprint.themePreset,
-    typographyPreset: blueprint.typographyPreset,
-    imageMode: visualDefaults.imageMode,
+    industry,
+    imageMode: industryDefaults.imageMode,
     speedMode: prefs.speedMode || "balanced",
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
         ? prefs.layoutPreference
-        : visualDefaults.layoutPreference,
+        : industryDefaults.layoutPreference,
     visualStyle:
       prefs.visualStyle && prefs.visualStyle !== "auto"
         ? prefs.visualStyle
-        : visualDefaults.visualStyle,
-    animationLevel:
-      prefs.animationLevel || getFallbackAnimation(blueprint.industry),
+        : industryDefaults.visualStyle,
+    animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
       prefs.fontMood && prefs.fontMood !== "auto"
         ? prefs.fontMood
-        : visualDefaults.fontMood,
+        : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
-        : visualDefaults.iconStyle,
+        : industryDefaults.iconStyle,
     designReference:
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
-        : (blueprint.designReference as Exclude<DesignReference, "auto">),
+        : industryDefaults.designReference,
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
     clientAnswers: prefs.clientAnswers || {},
     layoutSeed,
-    blueprintPromptHints: blueprint.promptHints,
-    afterGeneratePrompts: blueprint.afterGeneratePrompts,
   };
 }
 
-function getThemePresetRecipe(themePreset: ThemePreset) {
-  switch (themePreset) {
-    case "saas-dark":
-      return `
-THEME PRESET: SAAS DARK
-- dark, premium, clean product UI atmosphere
-- preferred root tokens:
-  --color-bg: #06070b
-  --color-surface-1: #0d1017
-  --color-surface-2: #121722
-  --color-surface-3: #161d2b
-  --color-text: #f7fbff
-  --color-text-muted: #9ca8bc
-  --color-border: rgba(123,161,255,0.12)
-  --color-border-strong: rgba(123,161,255,0.2)
-  --color-accent: #7c5cff
-  --color-accent-strong: #57d6ff
-`;
-
-    case "clinic-light":
-      return `
-THEME PRESET: CLINIC LIGHT
-- soft light healthcare palette
-- preferred root tokens:
-  --color-bg: #f6f8fb
-  --color-surface-1: #ffffff
-  --color-surface-2: #f2f5f8
-  --color-surface-3: #eaf0f5
-  --color-text: #17202c
-  --color-text-muted: #5f6d81
-  --color-border: rgba(23,32,44,0.08)
-  --color-border-strong: rgba(23,32,44,0.14)
-  --color-accent: #1e9bc8
-  --color-accent-strong: #4abccf
-`;
-
-    case "real-estate-editorial":
-      return `
-THEME PRESET: REAL ESTATE EDITORIAL
-- calm editorial premium palette
-- preferred root tokens:
-  --color-bg: #f4efe8
-  --color-surface-1: #fbf8f3
-  --color-surface-2: #efe7dc
-  --color-surface-3: #e4d8ca
-  --color-text: #201c18
-  --color-text-muted: #6d6257
-  --color-border: rgba(32,28,24,0.08)
-  --color-border-strong: rgba(32,28,24,0.14)
-  --color-accent: #9f7d59
-  --color-accent-strong: #c5a57d
-`;
-
-    case "luxury-dark":
-      return `
-THEME PRESET: LUXURY DARK
-- rich premium dark palette
-- preferred root tokens:
-  --color-bg: #0c0a09
-  --color-surface-1: #14110f
-  --color-surface-2: #1a1614
-  --color-surface-3: #211c18
-  --color-text: #f8f3ed
-  --color-text-muted: #b1a69a
-  --color-border: rgba(255,241,226,0.09)
-  --color-border-strong: rgba(255,241,226,0.16)
-  --color-accent: #c8a36b
-  --color-accent-strong: #f0d2a7
-`;
-
-    case "neutral-premium":
-    default:
-      return `
-THEME PRESET: NEUTRAL PREMIUM
-- flexible premium neutral palette
-- preferred root tokens:
-  --color-bg: #0b0c10
-  --color-surface-1: #13151a
-  --color-surface-2: #1a1e25
-  --color-surface-3: #222832
-  --color-text: #f4f7fb
-  --color-text-muted: #9ca4b3
-  --color-border: rgba(255,255,255,0.08)
-  --color-border-strong: rgba(255,255,255,0.14)
-  --color-accent: #7c5cff
-  --color-accent-strong: #77c6ff
-`;
-  }
-}
-
-function getTypographySystemRecipe(typographyPreset: TypographyPresetId) {
-  switch (typographyPreset) {
-    case "tech-sans":
-      return `
-TYPOGRAPHY PRESET: TECH SANS
-- define in CSS:
-  --font-display: "Plus Jakarta Sans", "Inter", "Segoe UI", sans-serif;
-  --font-body: "Plus Jakarta Sans", "Inter", "Segoe UI", sans-serif;
-- preferred weights:
-  body 430-500
-  strong body 560
-  section headings 620-680
-  display 700-760
-- tracking:
-  body -0.005em
-  headings -0.025em
-  display -0.045em
-`;
-
-    case "enterprise-sans":
-      return `
-TYPOGRAPHY PRESET: ENTERPRISE SANS
-- define in CSS:
-  --font-display: "Plus Jakarta Sans", "Inter", "Segoe UI", sans-serif;
-  --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
-- preferred weights:
-  body 420-500
-  strong body 540
-  section headings 600-660
-  display 680-720
-- tracking:
-  body -0.003em
-  headings -0.02em
-  display -0.035em
-`;
-
-    case "trust-sans":
-      return `
-TYPOGRAPHY PRESET: TRUST SANS
-- define in CSS:
-  --font-display: "Inter", "Manrope", "Segoe UI", sans-serif;
-  --font-body: "Inter", "Manrope", "Segoe UI", sans-serif;
-- preferred weights:
-  body 400-480
-  strong body 520
-  section headings 560-620
-  display 620-660
-- tracking:
-  body 0em
-  headings -0.015em
-  display -0.028em
-`;
-
-    case "editorial-serif":
-      return `
-TYPOGRAPHY PRESET: EDITORIAL SERIF
-- define in CSS:
-  --font-display: "Playfair Display", "Cormorant Garamond", Georgia, serif;
-  --font-body: "DM Sans", "Inter", "Segoe UI", sans-serif;
-- preferred weights:
-  body 400-480
-  strong body 520
-  section headings 540-600
-  display 600-640
-- tracking:
-  body 0em
-  headings -0.018em
-  display -0.04em
-`;
-
-    case "luxury-serif":
-      return `
-TYPOGRAPHY PRESET: LUXURY SERIF
-- define in CSS:
-  --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-  --font-body: "DM Sans", "Inter", "Helvetica Neue", sans-serif;
-- preferred weights:
-  body 400-470
-  strong body 510
-  section headings 540-590
-  display 590-630
-- tracking:
-  body 0em
-  headings -0.02em
-  display -0.05em
-`;
-
-    case "soft-premium-sans":
-      return `
-TYPOGRAPHY PRESET: SOFT PREMIUM SANS
-- define in CSS:
-  --font-display: "DM Sans", "Inter", "Avenir Next", "Segoe UI", sans-serif;
-  --font-body: "DM Sans", "Inter", "Avenir Next", "Segoe UI", sans-serif;
-- preferred weights:
-  body 400-470
-  strong body 520
-  section headings 560-620
-  display 620-660
-- tracking:
-  body 0em
-  headings -0.018em
-  display -0.032em
-`;
-
-    case "commerce-sans":
-      return `
-TYPOGRAPHY PRESET: COMMERCE SANS
-- define in CSS:
-  --font-display: "Manrope", "Inter", "Segoe UI", sans-serif;
-  --font-body: "Manrope", "Inter", "Segoe UI", sans-serif;
-- preferred weights:
-  body 420-500
-  strong body 540
-  section headings 620-680
-  display 700-740
-- tracking:
-  body -0.003em
-  headings -0.024em
-  display -0.04em
-`;
-
-    case "boutique-contrast":
-    default:
-      return `
-TYPOGRAPHY PRESET: BOUTIQUE CONTRAST
-- define in CSS:
-  --font-display: "Fraunces", "Cormorant Garamond", Georgia, serif;
-  --font-body: "DM Sans", "Inter", "Segoe UI", sans-serif;
-- preferred weights:
-  body 400-480
-  strong body 520
-  section headings 560-620
-  display 620-680
-- tracking:
-  body 0em
-  headings -0.02em
-  display -0.05em
-`;
-  }
-}
-
-function getDesignReferenceRecipe(designReference: Exclude<DesignReference, "auto">) {
+function getDesignReferenceRecipe(designReference: DesignReference) {
   switch (designReference) {
     case "fintech-neon":
       return `
@@ -661,7 +737,6 @@ REFERENCE FAMILY: FINTECH NEON
 - product / analytics / payment mockups may sit beside, below or layered behind content
 - pill navigation, glassy panels, elegant CTA glow
 `;
-
     case "signal-orchestration":
       return `
 REFERENCE FAMILY: SIGNAL ORCHESTRATION
@@ -671,7 +746,6 @@ REFERENCE FAMILY: SIGNAL ORCHESTRATION
 - central hero or offset-copy hero with strong system-message headline
 - product panel may be below hero instead of always to the right
 `;
-
     case "angled-enterprise":
       return `
 REFERENCE FAMILY: ANGLED ENTERPRISE
@@ -679,7 +753,6 @@ REFERENCE FAMILY: ANGLED ENTERPRISE
 - dark premium bands with strong statistics and trust sections
 - orbital glow, subtle sci-fi depth, clean readability
 `;
-
     case "cinematic-resort":
       return `
 REFERENCE FAMILY: CINEMATIC RESORT
@@ -689,7 +762,6 @@ REFERENCE FAMILY: CINEMATIC RESORT
 - atmospheric overlays and cinematic mood
 - copy may sit bottom-left, bottom-center or inside framed overlay panels
 `;
-
     case "luxury-editorial":
       return `
 REFERENCE FAMILY: LUXURY EDITORIAL
@@ -704,7 +776,6 @@ REFERENCE FAMILY: LUXURY EDITORIAL
   - thin dividers, muted palette, restrained luxury
   - full-bleed interiors or architectural photography
 `;
-
     case "product-commerce":
       return `
 REFERENCE FAMILY: PRODUCT COMMERCE
@@ -713,7 +784,6 @@ REFERENCE FAMILY: PRODUCT COMMERCE
 - product packshots, ingredient / benefit visuals, lifestyle photos
 - strong product CTA, variants, trust points, FAQ
 `;
-
     case "restaurant-editorial":
       return `
 REFERENCE FAMILY: RESTAURANT EDITORIAL
@@ -723,7 +793,6 @@ REFERENCE FAMILY: RESTAURANT EDITORIAL
 - reservation CTA, menu highlights, atmosphere and story
 - can include subtle map and visit section
 `;
-
     case "barber-premium":
       return `
 REFERENCE FAMILY: BARBER PREMIUM
@@ -731,7 +800,6 @@ REFERENCE FAMILY: BARBER PREMIUM
 - stronger contrast, sharp typography, dark or warm palette
 - service cards, craft story, gallery, booking CTA
 `;
-
     case "clean-automotive":
       return `
 REFERENCE FAMILY: CLEAN AUTOMOTIVE
@@ -741,7 +809,6 @@ REFERENCE FAMILY: CLEAN AUTOMOTIVE
 - useful for autoservis and dealers
 - vehicles, services, trust, availability, contact
 `;
-
     case "service-trades":
       return `
 REFERENCE FAMILY: SERVICE TRADES
@@ -749,25 +816,26 @@ REFERENCE FAMILY: SERVICE TRADES
 - practical trust-first structure
 - clear services, realizace, process, references, contact
 `;
-
     case "clean-business":
-    default:
       return `
 REFERENCE FAMILY: CLEAN BUSINESS
 - modern commercial website
 - balanced spacing, structured sections, clear conversion hierarchy
 `;
+    default:
+      return `
+REFERENCE FAMILY: AUTO
+- choose the strongest fitting premium commercial family for the business
+- do not fall back to a generic template
+`;
   }
 }
 
-function getIndustrySpecificRules(
-  industry: IndustryKind,
-  imageMode: ResolvedCreativeDirection["imageMode"]
-) {
+function getIndustrySpecificRules(industry: IndustryKind, imageMode: string) {
   switch (industry) {
     case "food-product":
       return `
-INDUSTRY RULES: FOOD PRODUCT / PACKAGED GOODS
+INDUSTRY RULES: FOOD PRODUCT / SUGAR / PACKAGED GOODS
 - do NOT use fintech / dashboard / orchestration / dark SaaS composition
 - the site must feel like a commercial product website
 - use 2 to 4 meaningful product / ingredient / packaging / lifestyle images
@@ -781,7 +849,6 @@ INDUSTRY RULES: FOOD PRODUCT / PACKAGED GOODS
   - FAQ
   - contact or order CTA
 `;
-
     case "restaurant":
       return `
 INDUSTRY RULES: RESTAURANT
@@ -790,28 +857,24 @@ INDUSTRY RULES: RESTAURANT
 - menu highlights, atmosphere, story, visit section and map make sense
 - avoid product dashboard style
 `;
-
     case "catering":
       return `
 INDUSTRY RULES: CATERING
 - use food and event imagery
 - emphasize nabídka, firemní akce, svatby, rozvoz, kontakt, poptávka
 `;
-
     case "barber":
       return `
 INDUSTRY RULES: BARBER
 - use craft / portrait / interior imagery
 - focus on služby, styl, galerie, tým, rezervace
 `;
-
     case "hair-salon":
       return `
 INDUSTRY RULES: HAIR SALON
 - use salon / portrait / styling imagery
 - focus on služby, proměny, rezervace, kontakt
 `;
-
     case "autoservis":
       return `
 INDUSTRY RULES: AUTOSERVIS
@@ -820,7 +883,6 @@ INDUSTRY RULES: AUTOSERVIS
 - focus on služby, ceník, objednání, důvěra, kontakt
 - do not use fintech or futuristic SaaS layout
 `;
-
     case "car-dealer":
       return `
 INDUSTRY RULES: CAR DEALER
@@ -829,29 +891,25 @@ INDUSTRY RULES: CAR DEALER
 - structure can include nabídka vozů, výhody, financování, reference, kontakt
 - keep it business-clean and not experimental
 `;
-
     case "zednik":
       return `
-INDUSTRY RULES: CONSTRUCTION / TRADES
+INDUSTRY RULES: MASONRY / CONSTRUCTION TRADES
 - practical trustworthy local service website
 - use project / facade / construction imagery
 - include služby, realizace, proces, reference, kontakt
 `;
-
     case "ecommerce-product":
       return `
 INDUSTRY RULES: E-COMMERCE PRODUCT
 - product or category images are REQUIRED
 - use a conversion-first commerce structure
 `;
-
     case "resort":
       return `
 INDUSTRY RULES: RESORT / HOSPITALITY
 - immersive image-led design
 - atmosphere matters more than generic cards
 `;
-
     case "real-estate":
       return `
 INDUSTRY RULES: REAL ESTATE / DEVELOPMENT PROJECT
@@ -865,20 +923,17 @@ INDUSTRY RULES: REAL ESTATE / DEVELOPMENT PROJECT
 - navigation may be centered, split around a logo, or refined and minimal
 - avoid generic corporate cards if a calmer premium editorial system is more fitting
 `;
-
     case "fintech":
       return `
 INDUSTRY RULES: FINTECH
 - dark premium product direction is appropriate
 - product mockups, data panels and trust blocks are allowed
 `;
-
     case "saas":
       return `
 INDUSTRY RULES: SAAS / SOFTWARE
 - dashboard / orchestration / interface-led design is appropriate
 `;
-
     default:
       return `
 INDUSTRY RULES:
@@ -1041,7 +1096,7 @@ function renderPrompt(params: {
   buildType?: string;
   model?: string;
   chatHistory?: ChatHistoryItem[];
-  preferences: ResolvedCreativeDirection;
+  preferences: ReturnType<typeof resolveCreativeDirection>;
   brandLogo?: BrandLogoAsset | null;
 }) {
   return `
@@ -1072,7 +1127,6 @@ OUTPUT RULES:
 - do not use external libraries
 - do not use Tailwind CDN
 - do not rely on remote CSS
-- output must be standalone and export-safe
 - every major page block must use a semantic <section> tag
 - every major section must have data-section-id and data-section-type
 - data-section-id values must be stable, unique and human-readable
@@ -1083,39 +1137,6 @@ OUTPUT RULES:
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
 - footer must be complete and visually polished
-- generated CSS must be clean, organized and production-safe
-
-DESIGN TOKEN RULES:
-- in css, define a :root token system
-- define at minimum:
-  --font-display
-  --font-body
-  --color-bg
-  --color-surface-1
-  --color-surface-2
-  --color-surface-3
-  --color-text
-  --color-text-muted
-  --color-border
-  --color-border-strong
-  --color-accent
-  --color-accent-strong
-  --radius-sm
-  --radius-md
-  --radius-lg
-  --radius-xl
-  --shadow-soft
-  --shadow-medium
-  --section-space
-  --container-gutter
-- body must use font-family: var(--font-body)
-- key headings must use font-family: var(--font-display)
-- the website must not depend on app-level CSS variables to look correct
-- the output must look correct when exported as plain HTML/CSS/JS
-
-${getThemePresetRecipe(params.preferences.themePreset)}
-
-${getTypographySystemRecipe(params.preferences.typographyPreset)}
 
 BRAND LOGO RULES:
 ${
@@ -1124,8 +1145,7 @@ ${
 - when rendering the navigation and any footer brand area, place the exact token __BRAND_LOGO__ where the real logo should appear
 - wrap that token in a tasteful logo container or link
 - do not invent a generic text logo if a real brand logo is available
-- make sure the logo area has premium spacing and alignment
-- include CSS for .brand-logo-image so the uploaded logo fits elegantly`
+- make sure the logo area has premium spacing and alignment`
     : `- if no real logo is provided, create an elegant text or monogram logo treatment`
 }
 
@@ -1139,8 +1159,6 @@ DO NOT GENERATE THE SAME DEFAULT LAYOUT:
 
 SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
-- Theme preset: ${params.preferences.themePreset}
-- Typography preset: ${params.preferences.typographyPreset}
 - Image mode: ${params.preferences.imageMode}
 - Speed mode: ${params.preferences.speedMode}
 - Layout preference: ${params.preferences.layoutPreference}
@@ -1155,9 +1173,6 @@ SELECTED CREATIVE DIRECTION:
       ? params.preferences.contactItems.join(", ")
       : "phone, email, office, CTA form"
   }
-
-BLUEPRINT HINTS:
-${params.preferences.blueprintPromptHints.map((item) => `- ${item}`).join("\n")}
 
 ${getDesignReferenceRecipe(params.preferences.designReference)}
 
@@ -1196,8 +1211,10 @@ TYPOGRAPHY HIERARCHY RULES:
 FONT VARIATION RULES:
 - create more visible font variety between projects
 - do not keep using the same 2 generic stacks for most outputs
-- do not default to extremely heavy heading weights
-- avoid overusing 800 or 900
+- use CSS variables for font stacks, for example --font-display and --font-body
+- choose CSS stacks that clearly differ by mood
+- headings must not always use extremely heavy weights
+- avoid overusing 800 or 900 weight
 - default body copy should usually live around 400 to 500
 - secondary headings often work better at 500 to 700 instead of 800+
 - display headlines may be strong, but keep them refined and not always ultra-bold
@@ -1236,6 +1253,36 @@ BENTO / CARD SYSTEM RULES:
 - match border color, padding logic, heading scale, icon size and internal spacing
 - avoid one visually weak card next to one very dense card unless it is part of the intended layout rhythm
 
+CARD, ICON AND INTERNAL SPACING RULES:
+- cards must never feel cramped
+- every card needs a deliberate internal spacing system
+- use comfortable card padding, usually at least:
+  - desktop card padding: 24px to 32px
+  - tablet card padding: 20px to 28px
+  - mobile card padding: 18px to 22px
+- if a card contains icon + title + paragraph, keep visible separation between all three
+- do not let icons touch card borders visually
+- icon wrappers must have their own breathing room
+- when using feature cards, stat cards or pricing cards, align content to a common baseline and internal rhythm
+- do not push long headlines too close to card edges
+- when cards sit next to each other, preserve consistent top alignment and internal padding logic
+
+ICON PLACEMENT RULES:
+- icons must live inside a dedicated visual wrapper or clearly padded area
+- icon wrapper should usually have at least 12px to 18px inner padding or an equivalent protected space
+- maintain space between icon and heading
+- do not place icons so close to borders that they feel glued into the corner
+- icon size, wrapper size and text spacing must feel like one coherent system
+
+DATA VISUALIZATION RULES:
+- if the website includes a chart, process graph, bars, dashboard panel, signal map or fake analytics preview, it must look geometrically clean
+- bars must share a clear baseline
+- nodes, dots and lines must align to an intentional grid
+- charts must not look random, crooked, stretched or broken
+- dashboard visuals should feel designed, not improvised
+- if a graph or chart cannot be made premium and aligned, prefer a simpler cleaner data panel instead
+- avoid visually wrong pseudo-graphs
+
 LAYOUT SYSTEM RULES:
 - use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
 - the layout seed is not decorative text; it is a hard directional clue for hero composition and section rhythm
@@ -1251,6 +1298,15 @@ LAYOUT SYSTEM RULES:
   - real-estate project cover with huge serif title and airy sections after hero
 - do not flatten everything into the same rectangular rhythm
 - do not silently convert unusual hero requests into left-text/right-image fallback
+
+FONT DIRECTION RULES:
+- use CSS font stacks that visually suggest the chosen mood
+- geometric: clean modern sans
+- editorial: elegant serif headlines + neutral body
+- luxury: refined contrast display feeling
+- trustworthy: calm professional humanist feeling
+- tech: precise UI-driven modern feel
+- friendly: softer approachable tone
 
 ICON RULES:
 - create elegant inline SVG icons directly in the HTML where useful
@@ -1303,18 +1359,6 @@ CONTACT RULES:
 - if contact items were requested, reflect them in the contact section and footer
 - make the contact section useful, not placeholder-like
 
-CODE QUALITY RULES:
-- use semantic markup
-- keep css organized in this order:
-  1. root tokens
-  2. base
-  3. layout
-  4. components
-  5. responsive rules
-- avoid messy duplicated selectors
-- keep JavaScript minimal and purposeful
-- ensure buttons, inputs and menu toggles are accessible
-
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
 - Build type: ${params.buildType || "neuvedeno"}
@@ -1343,6 +1387,9 @@ FINAL QA:
 - varied hero composition, not repetitive left-text/right-image fallback
 - safe padding around all overlayed or edge-near text
 - more varied font stacks and more refined font-weight usage
+- cards and icon wrappers have comfortable internal spacing
+- no cramped feature cards, stat cards or pricing cards
+- any chart / graph / dashboard visual is aligned and premium-looking
 `;
 }
 
@@ -1408,7 +1455,7 @@ export async function POST(req: Request) {
         preferences: resolvedPreferences,
         brandLogo,
       }),
-      schemaName: "website_bundle_design_system_v9",
+      schemaName: "website_bundle_spacing_typography_brand_v9",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -1446,15 +1493,14 @@ export async function POST(req: Request) {
       brief: {
         industry: resolvedPreferences.industry,
         audience: "",
-        style: `${resolvedPreferences.visualStyle} • ${resolvedPreferences.fontMood} • ${resolvedPreferences.designReference} • ${resolvedPreferences.typographyPreset}`,
-        layoutTone: `${resolvedPreferences.layoutPreference} • ${resolvedPreferences.animationLevel} • ${resolvedPreferences.layoutSeed} • ${resolvedPreferences.themePreset}`,
+        style: `${resolvedPreferences.visualStyle} • ${resolvedPreferences.fontMood} • ${resolvedPreferences.designReference}`,
+        layoutTone: `${resolvedPreferences.layoutPreference} • ${resolvedPreferences.animationLevel} • ${resolvedPreferences.layoutSeed}`,
       },
       assets: [],
       twoStepMode: true,
       modelUsed: WEB_MODEL,
       requestId,
       generationPreferences: resolvedPreferences,
-      suggestedFollowups: resolvedPreferences.afterGeneratePrompts,
     });
   } catch (e: any) {
     console.error(

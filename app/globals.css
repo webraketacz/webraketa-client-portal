@@ -1,6 +1,43 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
+:root {
+  --font-ui-local:
+    "Nohemi",
+    "Nohemi Medium",
+    "Nohemi Regular",
+    var(--font-ui),
+    var(--font-body),
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --font-display-local:
+    "Nohemi",
+    "Nohemi Medium",
+    "Nohemi Regular",
+    var(--font-display),
+    var(--font-body),
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --font-body-local:
+    "Nohemi",
+    "Nohemi Medium",
+    "Nohemi Regular",
+    var(--font-body),
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
 @theme inline {
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text);
@@ -41,6 +78,43 @@ body {
   font-family: var(--font-body), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+body[data-app-shell="zyvia"] {
+  font-family: var(--font-ui-local);
+}
+
+body[data-app-shell="zyvia"] button,
+body[data-app-shell="zyvia"] input,
+body[data-app-shell="zyvia"] textarea,
+body[data-app-shell="zyvia"] select,
+body[data-app-shell="zyvia"] nav,
+body[data-app-shell="zyvia"] a,
+body[data-app-shell="zyvia"] label {
+  font-family: inherit;
+}
+
+body[data-app-shell="zyvia"] h1,
+body[data-app-shell="zyvia"] h2,
+body[data-app-shell="zyvia"] h3,
+body[data-app-shell="zyvia"] h4,
+body[data-app-shell="zyvia"] h5,
+body[data-app-shell="zyvia"] h6 {
+  font-family: var(--font-display-local);
+  letter-spacing: -0.02em;
+}
+
+.font-app-ui {
+  font-family: var(--font-ui-local);
+}
+
+.font-app-display {
+  font-family: var(--font-display-local);
+  letter-spacing: -0.02em;
+}
+
+.font-app-body {
+  font-family: var(--font-body-local);
 }
 
 /* Selection */

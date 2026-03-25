@@ -24,12 +24,6 @@ type AssetPlanItem = {
   orientation: "landscape" | "portrait" | "square";
 };
 
-type BrandLogoAsset = {
-  name: string;
-  mimeType: string;
-  dataUrl: string;
-};
-
 type SectionBundle = {
   sectionHtml: string;
   sectionCss: string;
@@ -63,64 +57,6 @@ function logStep(
       ...(extra || {}),
     })
   );
-}
-
-function escapeHtmlAttr(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function sanitizeBrandLogoAsset(value: unknown): BrandLogoAsset | null {
-  if (!value || typeof value !== "object") return null;
-
-  const candidate = value as Partial<BrandLogoAsset>;
-  const name =
-    typeof candidate.name === "string" ? candidate.name.trim().slice(0, 160) : "";
-  const mimeType =
-    typeof candidate.mimeType === "string"
-      ? candidate.mimeType.trim().slice(0, 120)
-      : "";
-  const dataUrl =
-    typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
-
-  if (!dataUrl.startsWith("data:image/")) return null;
-  if (dataUrl.length > 4_000_000) return null;
-
-  return {
-    name: name || "logo",
-    mimeType: mimeType || "image/png",
-    dataUrl,
-  };
-}
-
-function buildBrandLogoMarkup(brandLogo: BrandLogoAsset) {
-  const altBase =
-    brandLogo.name.replace(/\.[^.]+$/, "").trim() || "Brand logo";
-
-  return `<img src="${escapeHtmlAttr(
-    brandLogo.dataUrl
-  )}" alt="${escapeHtmlAttr(
-    altBase
-  )}" class="brand-logo-image" loading="eager" decoding="async" />`;
-}
-
-function injectBrandLogoMarkup(
-  content: string,
-  brandLogo: BrandLogoAsset | null
-) {
-  if (!content || !brandLogo) return content;
-  return content.replace(/__BRAND_LOGO__/g, buildBrandLogoMarkup(brandLogo));
-}
-
-function replaceBrandLogoDataUrlWithToken(
-  content: string,
-  brandLogo: BrandLogoAsset | null
-) {
-  if (!content || !brandLogo?.dataUrl) return content;
-  return content.split(brandLogo.dataUrl).join("__BRAND_LOGO__");
 }
 
 async function createStructuredObject<T>({
@@ -412,7 +348,6 @@ function improveRenderPrompt(params: {
   selectedSectionHtml: string;
   sectionIds: string[];
   chatHistory?: ChatHistoryItem[];
-  brandLogo?: BrandLogoAsset | null;
 }) {
   return `
 You are a world-class commercial web designer and senior frontend engineer.
@@ -446,6 +381,8 @@ DESIGN QUALITY RULES:
 - if the instruction is mainly visual, improve composition without breaking structure
 - do NOT silently convert unusual hero direction into a generic left-text/right-image split
 - if the user asks for text bottom-left, bottom-center, overlay, framed copy or layered composition, follow that request directly
+- improve padding wherever icons, text blocks or cards feel cramped
+- if a visual panel or chart feels off, redesign it into a cleaner premium composition
 
 SPACING RULES:
 - always add safe baseline inner padding to content wrappers, overlays, cards and text containers
@@ -464,15 +401,24 @@ TYPOGRAPHY RULES:
 - vary font weight more elegantly, usually body 400-500 and headings 500-700 unless a display moment truly needs more
 - if the section already uses a certain mood, refine it instead of flattening it
 
-BRAND LOGO RULES:
-${
-  params.brandLogo
-    ? `- a real uploaded logo exists for this project
-- when this selected section contains branding, navigation, hero brand block or footer brand area, use the exact token __BRAND_LOGO__ where the real logo should render
-- do not invent a generic text logo if branding is visible in this section
-- preserve elegant spacing around the brand mark`
-    : `- no uploaded logo was provided`
-}
+CARD, ICON AND INTERNAL SPACING RULES:
+- cards must never feel cramped
+- preserve or improve internal spacing between icon, title, body and CTA
+- use comfortable padding inside feature cards, stat cards, pricing cards and content panels
+- if a card feels dense, increase its internal spacing before adding more content
+- keep consistent padding across similar cards in the same section
+
+ICON RULES:
+- icons must have their own protected visual space
+- never let icons sit too close to borders or too close to the heading
+- icon wrapper, icon size and text spacing must feel balanced and premium
+
+GRAPH / VISUAL PANEL RULES:
+- if this section contains a chart, graph, dashboard preview, bars, nodes or analytics visual, make it visually aligned
+- bars must share one baseline
+- dots and lines must align to a clean grid
+- avoid fake charts that look broken, random or amateur
+- if needed, simplify the graphic instead of forcing a bad-looking chart
 
 IMAGE RULES:
 - if you use a new image in this section, add data-image-slot="<slot>" to the image element
@@ -522,7 +468,6 @@ export async function POST(req: Request) {
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
-    const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
     console.log(
       JSON.stringify({
@@ -536,7 +481,6 @@ export async function POST(req: Request) {
         cssLength: css.length,
         jsLength: js.length,
         selectedSectionId,
-        hasBrandLogo: Boolean(brandLogo),
       })
     );
 
@@ -583,11 +527,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const selectedSectionHtmlForPrompt = replaceBrandLogoDataUrlWithToken(
-      selectedSectionHtml,
-      brandLogo
-    );
-
     const improveStartedAt = nowMs();
 
     const improvedSection = await createStructuredObject<SectionBundle>({
@@ -598,12 +537,11 @@ export async function POST(req: Request) {
         prompt,
         instruction,
         selectedSectionId,
-        selectedSectionHtml: selectedSectionHtmlForPrompt,
+        selectedSectionHtml,
         sectionIds,
         chatHistory,
-        brandLogo,
       }),
-      schemaName: "improve_section_bundle_spacing_brand_v4",
+      schemaName: "improve_section_bundle_spacing_v4",
       schema: sectionBundleSchema,
       requestId,
     });
@@ -617,24 +555,16 @@ export async function POST(req: Request) {
 
     const sanitizeStartedAt = nowMs();
     const safeImprovedSection = sanitizeSectionBundle(improvedSection);
-
-    const sectionHtmlWithBrandLogo = injectBrandLogoMarkup(
-      safeImprovedSection.sectionHtml,
-      brandLogo
-    );
-
-    ensureSectionScope(sectionHtmlWithBrandLogo, selectedSectionId);
-
+    ensureSectionScope(safeImprovedSection.sectionHtml, selectedSectionId);
     logStep(requestId, "sanitize-section", sanitizeStartedAt, {
       assetPlanCount: safeImprovedSection.assetPlan.length,
-      hasBrandLogo: Boolean(brandLogo),
     });
 
     const mergeStartedAt = nowMs();
     const mergedHtml = replaceSectionById({
       html,
       sectionId: selectedSectionId,
-      nextSectionHtml: sectionHtmlWithBrandLogo,
+      nextSectionHtml: safeImprovedSection.sectionHtml,
     });
 
     const mergedCss = upsertManagedBlock({
