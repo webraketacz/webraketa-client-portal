@@ -1,0 +1,234 @@
+:root {
+  --font-ui: var(--font-ui);
+  --font-body: var(--font-body-sans);
+  --font-display: var(--font-display-serif);
+
+  --weight-body: 420;
+  --weight-body-strong: 520;
+  --weight-heading: 620;
+  --weight-display: 680;
+
+  --color-bg: #09090d;
+  --color-surface-1: #111118;
+  --color-surface-2: #171721;
+  --color-surface-3: #1d1d28;
+  --color-text: #f7f8fb;
+  --color-text-muted: #a6adbd;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+
+  --color-accent: #7c5cff;
+  --color-accent-strong: #5ad1ff;
+  --color-accent-soft: rgba(124, 92, 255, 0.12);
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #35d39a;
+  --color-warning: #f3b64f;
+  --color-danger: #ef6262;
+
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-28: 7rem;
+  --space-32: 8rem;
+
+  --container-max: 1280px;
+  --container-gutter-x: clamp(16px, 4vw, 40px);
+  --section-space-y-tight: clamp(56px, 8vw, 88px);
+  --section-space-y: clamp(72px, 10vw, 128px);
+  --section-space-y-loose: clamp(88px, 12vw, 152px);
+  --hero-content-padding: clamp(20px, 4vw, 56px);
+  --overlay-padding: clamp(20px, 3vw, 40px);
+  --card-padding: clamp(18px, 2vw, 28px);
+
+  --radius-xs: 10px;
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 40px;
+  --radius-2xl: 56px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 18px 54px rgba(0, 0, 0, 0.16);
+  --shadow-strong: 0 28px 90px rgba(0, 0, 0, 0.22);
+  --shadow-glow: 0 0 60px rgba(124, 92, 255, 0.18);
+
+  --motion-fast: 160ms;
+  --motion-base: 260ms;
+  --motion-slow: 420ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme-preset="saas-dark"] {
+  --font-display: var(--font-body-sans);
+  --font-body: var(--font-body-sans);
+  --weight-body: 430;
+  --weight-body-strong: 560;
+  --weight-heading: 640;
+  --weight-display: 720;
+
+  --color-bg: #06070b;
+  --color-surface-1: #0d1017;
+  --color-surface-2: #121722;
+  --color-surface-3: #161d2b;
+  --color-text: #f7fbff;
+  --color-text-muted: #9ca8bc;
+  --color-border: rgba(123, 161, 255, 0.12);
+  --color-border-strong: rgba(123, 161, 255, 0.2);
+  --color-accent: #7c5cff;
+  --color-accent-strong: #57d6ff;
+  --color-accent-soft: rgba(87, 214, 255, 0.12);
+}
+
+[data-theme-preset="clinic-light"] {
+  --font-display: var(--font-body-sans);
+  --font-body: var(--font-body-sans);
+  --weight-body: 430;
+  --weight-body-strong: 530;
+  --weight-heading: 600;
+  --weight-display: 640;
+
+  --color-bg: #f6f8fb;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f2f5f8;
+  --color-surface-3: #eaf0f5;
+  --color-text: #17202c;
+  --color-text-muted: #5f6d81;
+  --color-border: rgba(23, 32, 44, 0.08);
+  --color-border-strong: rgba(23, 32, 44, 0.14);
+  --color-accent: #1e9bc8;
+  --color-accent-strong: #4abccf;
+  --color-accent-soft: rgba(30, 155, 200, 0.1);
+  --shadow-soft: 0 10px 30px rgba(20, 35, 55, 0.06);
+  --shadow-medium: 0 20px 50px rgba(20, 35, 55, 0.08);
+  --shadow-strong: 0 28px 80px rgba(20, 35, 55, 0.1);
+}
+
+[data-theme-preset="real-estate-editorial"] {
+  --font-display: var(--font-display-editorial);
+  --font-body: var(--font-body-sans);
+  --weight-body: 430;
+  --weight-body-strong: 540;
+  --weight-heading: 560;
+  --weight-display: 620;
+
+  --color-bg: #f4efe8;
+  --color-surface-1: #fbf8f3;
+  --color-surface-2: #efe7dc;
+  --color-surface-3: #e4d8ca;
+  --color-text: #201c18;
+  --color-text-muted: #6d6257;
+  --color-border: rgba(32, 28, 24, 0.08);
+  --color-border-strong: rgba(32, 28, 24, 0.14);
+  --color-accent: #9f7d59;
+  --color-accent-strong: #c5a57d;
+  --color-accent-soft: rgba(159, 125, 89, 0.1);
+  --shadow-soft: 0 12px 40px rgba(42, 30, 18, 0.08);
+  --shadow-medium: 0 20px 70px rgba(42, 30, 18, 0.12);
+  --shadow-strong: 0 30px 100px rgba(42, 30, 18, 0.16);
+}
+
+[data-theme-preset="luxury-dark"] {
+  --font-display: var(--font-display-serif);
+  --font-body: var(--font-body-sans);
+  --weight-body: 420;
+  --weight-body-strong: 520;
+  --weight-heading: 600;
+  --weight-display: 650;
+
+  --color-bg: #0c0a09;
+  --color-surface-1: #14110f;
+  --color-surface-2: #1a1614;
+  --color-surface-3: #211c18;
+  --color-text: #f8f3ed;
+  --color-text-muted: #b1a69a;
+  --color-border: rgba(255, 241, 226, 0.09);
+  --color-border-strong: rgba(255, 241, 226, 0.16);
+  --color-accent: #c8a36b;
+  --color-accent-strong: #f0d2a7;
+  --color-accent-soft: rgba(200, 163, 107, 0.12);
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.zyvia-container {
+  width: min(100% - (var(--container-gutter-x) * 2), var(--container-max));
+  margin-inline: auto;
+}
+
+.zyvia-section {
+  padding-block: var(--section-space-y);
+}
+
+.zyvia-section-tight {
+  padding-block: var(--section-space-y-tight);
+}
+
+.zyvia-section-loose {
+  padding-block: var(--section-space-y-loose);
+}
+
+.zyvia-display {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: var(--weight-display);
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+}
+
+.zyvia-heading {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: var(--weight-heading);
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+}
+
+.zyvia-body {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: var(--weight-body);
+  line-height: 1.7;
+}
+
+.zyvia-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-1);
+  box-shadow: var(--shadow-soft);
+}
+
+.zyvia-overlay-panel {
+  padding: var(--overlay-padding);
+  border-radius: var(--radius-xl);
+}
+
+.zyvia-safe-copy {
+  padding-inline: clamp(16px, 5vw, 32px);
+  padding-block: clamp(16px, 4vw, 28px);
+}
+
+.brand-logo-image {
+  display: block;
+  width: auto;
+  max-width: 180px;
+  max-height: 56px;
+  object-fit: contain;
+}
