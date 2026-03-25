@@ -24,6 +24,12 @@ type AssetPlanItem = {
   orientation: "landscape" | "portrait" | "square";
 };
 
+type BrandLogoAsset = {
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+};
+
 type SpeedMode = "fast" | "balanced" | "premium";
 type LayoutPreference =
   | "auto"
@@ -150,6 +156,56 @@ function normalizeText(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function escapeHtmlAttr(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function sanitizeBrandLogoAsset(value: unknown): BrandLogoAsset | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Partial<BrandLogoAsset>;
+  const name =
+    typeof candidate.name === "string" ? candidate.name.trim().slice(0, 160) : "";
+  const mimeType =
+    typeof candidate.mimeType === "string"
+      ? candidate.mimeType.trim().slice(0, 120)
+      : "";
+  const dataUrl =
+    typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
+
+  if (!dataUrl.startsWith("data:image/")) return null;
+  if (dataUrl.length > 4_000_000) return null;
+
+  return {
+    name: name || "logo",
+    mimeType: mimeType || "image/png",
+    dataUrl,
+  };
+}
+
+function buildBrandLogoMarkup(brandLogo: BrandLogoAsset) {
+  const altBase =
+    brandLogo.name.replace(/\.[^.]+$/, "").trim() || "Brand logo";
+
+  return `<img src="${escapeHtmlAttr(
+    brandLogo.dataUrl
+  )}" alt="${escapeHtmlAttr(
+    altBase
+  )}" class="brand-logo-image" loading="eager" decoding="async" />`;
+}
+
+function injectBrandLogoMarkup(
+  content: string,
+  brandLogo: BrandLogoAsset | null
+) {
+  if (!content || !brandLogo) return content;
+  return content.replace(/__BRAND_LOGO__/g, buildBrandLogoMarkup(brandLogo));
+}
+
 function makeDeterministicChoice<T>(input: string, items: T[]): T {
   let hash = 0;
 
@@ -193,7 +249,10 @@ function inferIndustryKind(prompt: string): IndustryKind {
     text.includes("nemovit") ||
     text.includes("villa") ||
     text.includes("byt") ||
-    text.includes("property")
+    text.includes("property") ||
+    text.includes("developer") ||
+    text.includes("developersky projekt") ||
+    text.includes("rezidence")
   ) {
     return "real-estate";
   }
@@ -357,7 +416,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "outlined" as IconStyle,
         imageMode: "ui-heavy",
       };
-
     case "saas":
       return {
         designReference: "signal-orchestration" as DesignReference,
@@ -367,17 +425,15 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "minimal" as IconStyle,
         imageMode: "ui-heavy",
       };
-
     case "real-estate":
       return {
         designReference: "luxury-editorial" as DesignReference,
         layoutPreference: "editorial" as LayoutPreference,
         visualStyle: "luxury" as VisualStyle,
-        fontMood: "luxury" as FontMood,
+        fontMood: "editorial" as FontMood,
         iconStyle: "minimal" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "resort":
       return {
         designReference: "cinematic-resort" as DesignReference,
@@ -387,7 +443,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "minimal" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "restaurant":
       return {
         designReference: "restaurant-editorial" as DesignReference,
@@ -397,7 +452,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "minimal" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "catering":
       return {
         designReference: "restaurant-editorial" as DesignReference,
@@ -407,7 +461,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "solid" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "barber":
       return {
         designReference: "barber-premium" as DesignReference,
@@ -417,7 +470,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "solid" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "hair-salon":
       return {
         designReference: "luxury-editorial" as DesignReference,
@@ -427,7 +479,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "minimal" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "autoservis":
       return {
         designReference: "clean-automotive" as DesignReference,
@@ -437,7 +488,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "solid" as IconStyle,
         imageMode: "mixed",
       };
-
     case "car-dealer":
       return {
         designReference: "clean-automotive" as DesignReference,
@@ -447,7 +497,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "outlined" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "zednik":
       return {
         designReference: "service-trades" as DesignReference,
@@ -457,7 +506,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "solid" as IconStyle,
         imageMode: "mixed",
       };
-
     case "legal":
       return {
         designReference: "clean-business" as DesignReference,
@@ -467,7 +515,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "outlined" as IconStyle,
         imageMode: "mixed",
       };
-
     case "healthcare":
       return {
         designReference: "clean-business" as DesignReference,
@@ -477,7 +524,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "outlined" as IconStyle,
         imageMode: "mixed",
       };
-
     case "beauty":
       return {
         designReference: "luxury-editorial" as DesignReference,
@@ -487,7 +533,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "custom" as IconStyle,
         imageMode: "photo-heavy",
       };
-
     case "food-product":
       return {
         designReference: "product-commerce" as DesignReference,
@@ -497,7 +542,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "solid" as IconStyle,
         imageMode: "product-heavy",
       };
-
     case "ecommerce-product":
       return {
         designReference: "product-commerce" as DesignReference,
@@ -507,7 +551,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "solid" as IconStyle,
         imageMode: "product-heavy",
       };
-
     case "luxury-service":
       return {
         designReference: "luxury-editorial" as DesignReference,
@@ -517,7 +560,6 @@ function getIndustryDefaults(industry: IndustryKind) {
         iconStyle: "minimal" as IconStyle,
         imageMode: "mixed",
       };
-
     default:
       return {
         designReference: "clean-business" as DesignReference,
@@ -542,58 +584,91 @@ function resolveCreativeDirection(
       ? "rich"
       : industry === "resort" ||
         industry === "beauty" ||
-        industry === "restaurant"
+        industry === "restaurant" ||
+        industry === "real-estate"
       ? "subtle"
       : "subtle";
 
   const layoutSeedPool = {
     fintech: [
-      "hero-left-ui-right",
       "hero-center-dashboard-below",
-      "layered-analytics-panels",
+      "offset-bottom-left-copy",
+      "framed-hero-with-floating-ui",
+      "stacked-analytics-panels",
+      "full-bleed-dark-hero-with-overlay-copy",
       "glassy-signal-columns",
     ],
     saas: [
       "hero-center-dashboard-below",
+      "offset-bottom-left-copy",
       "stacked-storyflow",
       "grid-led-platform-layout",
       "observability-hub-layout",
+      "floating-control-room-hero",
+    ],
+    realEstate: [
+      "full-bleed-editorial-property-cover",
+      "centered-crest-navigation-with-cover-image",
+      "bottom-left-copy-over-architecture-shot",
+      "oversized-serif-copy-on-airy-canvas",
+      "gallery-led-development-microsite",
+      "editorial-project-cover-with-thin-dividers",
     ],
     resort: [
       "full-bleed-photo-editorial",
-      "stacked-storyflow",
+      "bottom-left-copy-over-photo",
       "immersive-cinematic-hero",
       "story-led-split-panels",
+      "framed-photo-window-hero",
+      "layered-editorial-cover",
     ],
     restaurant: [
       "full-bleed-photo-editorial",
-      "immersive-cinematic-hero",
+      "bottom-left-copy-over-photo",
       "editorial-story-menu-flow",
       "floating-reservation-panel",
+      "hero-top-right-copy-over-image",
+      "stacked-gallery-cover-hero",
     ],
     product: [
       "product-hero-with-packshot",
       "benefit-led-commerce-layout",
       "clean-product-split",
       "bento-product-panels",
+      "bottom-anchored-product-copy",
+      "hero-with-overlap-packshot-cards",
     ],
     automotive: [
       "clean-automotive-hero",
       "trust-led-service-grid",
       "split-vehicle-showcase",
       "service-dashboard-clean",
+      "bottom-left-copy-over-car-shot",
+      "angled-vehicle-cover-layout",
     ],
     trades: [
       "trust-led-service-grid",
       "clean-process-layout",
       "split-service-hero",
       "practical-bento-layout",
+      "bottom-left-copy-over-project-shot",
+      "framed-construction-cover",
+    ],
+    luxury: [
+      "editorial-cover-layout",
+      "framed-luxury-hero",
+      "bottom-left-copy-over-visual",
+      "airy-serif-hero-with-gallery-rhythm",
+      "layered-brand-story-layout",
+      "offset-luxury-panels",
     ],
     generic: [
-      "hero-left-ui-right",
+      "hero-center-dashboard-below",
       "stacked-storyflow",
       "asymmetric-panel-composition",
       "disciplined-bento-layout",
+      "bottom-left-copy-over-visual",
+      "hero-with-layered-overlap-cards",
     ],
   };
 
@@ -602,6 +677,8 @@ function resolveCreativeDirection(
       ? layoutSeedPool.fintech
       : industry === "saas"
       ? layoutSeedPool.saas
+      : industry === "real-estate"
+      ? layoutSeedPool.realEstate
       : industry === "resort"
       ? layoutSeedPool.resort
       : industry === "restaurant" || industry === "catering"
@@ -612,6 +689,8 @@ function resolveCreativeDirection(
       ? layoutSeedPool.automotive
       : industry === "zednik"
       ? layoutSeedPool.trades
+      : industry === "luxury-service" || industry === "beauty"
+      ? layoutSeedPool.luxury
       : layoutSeedPool.generic;
 
   const layoutSeed = makeDeterministicChoice(`${prompt}-seed`, seedChoices);
@@ -655,21 +734,19 @@ REFERENCE FAMILY: FINTECH NEON
 - dark premium fintech look
 - deep navy / black base with electric cyan, indigo or violet accents
 - luminous vertical beams, soft glow columns or layered light bars
-- large conversion headline on one side
-- product / analytics / payment mockups on the other side
+- large conversion headline on one side or bottom-anchored over visual if fitting seed
+- product / analytics / payment mockups may sit beside, below or layered behind content
 - pill navigation, glassy panels, elegant CTA glow
 `;
-
     case "signal-orchestration":
       return `
 REFERENCE FAMILY: SIGNAL ORCHESTRATION
 - dark interface-led system design
 - glass navigation, cyan / teal glow, HUD feeling
 - radial arcs, rings, targeting lines, orchestration grid overlays
-- central hero with strong system-message headline
-- large product panel or observability dashboard below hero
+- central hero or offset-copy hero with strong system-message headline
+- product panel may be below hero instead of always to the right
 `;
-
     case "angled-enterprise":
       return `
 REFERENCE FAMILY: ANGLED ENTERPRISE
@@ -677,7 +754,6 @@ REFERENCE FAMILY: ANGLED ENTERPRISE
 - dark premium bands with strong statistics and trust sections
 - orbital glow, subtle sci-fi depth, clean readability
 `;
-
     case "cinematic-resort":
       return `
 REFERENCE FAMILY: CINEMATIC RESORT
@@ -685,8 +761,8 @@ REFERENCE FAMILY: CINEMATIC RESORT
 - editorial luxury composition
 - oversized display headline
 - atmospheric overlays and cinematic mood
+- copy may sit bottom-left, bottom-center or inside framed overlay panels
 `;
-
     case "luxury-editorial":
       return `
 REFERENCE FAMILY: LUXURY EDITORIAL
@@ -694,8 +770,13 @@ REFERENCE FAMILY: LUXURY EDITORIAL
 - refined serif or contrast typography
 - strong image-led sections
 - asymmetry, generous spacing, layered cards and elegant separators
+- for premium real estate or development projects, this may include:
+  - centered or split navigation with refined logo treatment
+  - huge elegant serif headlines
+  - airy white sections after the hero
+  - thin dividers, muted palette, restrained luxury
+  - full-bleed interiors or architectural photography
 `;
-
     case "product-commerce":
       return `
 REFERENCE FAMILY: PRODUCT COMMERCE
@@ -704,7 +785,6 @@ REFERENCE FAMILY: PRODUCT COMMERCE
 - product packshots, ingredient / benefit visuals, lifestyle photos
 - strong product CTA, variants, trust points, FAQ
 `;
-
     case "restaurant-editorial":
       return `
 REFERENCE FAMILY: RESTAURANT EDITORIAL
@@ -714,7 +794,6 @@ REFERENCE FAMILY: RESTAURANT EDITORIAL
 - reservation CTA, menu highlights, atmosphere and story
 - can include subtle map and visit section
 `;
-
     case "barber-premium":
       return `
 REFERENCE FAMILY: BARBER PREMIUM
@@ -722,7 +801,6 @@ REFERENCE FAMILY: BARBER PREMIUM
 - stronger contrast, sharp typography, dark or warm palette
 - service cards, craft story, gallery, booking CTA
 `;
-
     case "clean-automotive":
       return `
 REFERENCE FAMILY: CLEAN AUTOMOTIVE
@@ -732,7 +810,6 @@ REFERENCE FAMILY: CLEAN AUTOMOTIVE
 - useful for autoservis and dealers
 - vehicles, services, trust, availability, contact
 `;
-
     case "service-trades":
       return `
 REFERENCE FAMILY: SERVICE TRADES
@@ -740,14 +817,12 @@ REFERENCE FAMILY: SERVICE TRADES
 - practical trust-first structure
 - clear services, realizace, process, references, contact
 `;
-
     case "clean-business":
       return `
 REFERENCE FAMILY: CLEAN BUSINESS
 - modern commercial website
 - balanced spacing, structured sections, clear conversion hierarchy
 `;
-
     default:
       return `
 REFERENCE FAMILY: AUTO
@@ -775,7 +850,6 @@ INDUSTRY RULES: FOOD PRODUCT / SUGAR / PACKAGED GOODS
   - FAQ
   - contact or order CTA
 `;
-
     case "restaurant":
       return `
 INDUSTRY RULES: RESTAURANT
@@ -784,28 +858,24 @@ INDUSTRY RULES: RESTAURANT
 - menu highlights, atmosphere, story, visit section and map make sense
 - avoid product dashboard style
 `;
-
     case "catering":
       return `
 INDUSTRY RULES: CATERING
 - use food and event imagery
 - emphasize nabídka, firemní akce, svatby, rozvoz, kontakt, poptávka
 `;
-
     case "barber":
       return `
 INDUSTRY RULES: BARBER
 - use craft / portrait / interior imagery
 - focus on služby, styl, galerie, tým, rezervace
 `;
-
     case "hair-salon":
       return `
 INDUSTRY RULES: HAIR SALON
 - use salon / portrait / styling imagery
 - focus on služby, proměny, rezervace, kontakt
 `;
-
     case "autoservis":
       return `
 INDUSTRY RULES: AUTOSERVIS
@@ -814,7 +884,6 @@ INDUSTRY RULES: AUTOSERVIS
 - focus on služby, ceník, objednání, důvěra, kontakt
 - do not use fintech or futuristic SaaS layout
 `;
-
     case "car-dealer":
       return `
 INDUSTRY RULES: CAR DEALER
@@ -823,7 +892,6 @@ INDUSTRY RULES: CAR DEALER
 - structure can include nabídka vozů, výhody, financování, reference, kontakt
 - keep it business-clean and not experimental
 `;
-
     case "zednik":
       return `
 INDUSTRY RULES: MASONRY / CONSTRUCTION TRADES
@@ -831,41 +899,42 @@ INDUSTRY RULES: MASONRY / CONSTRUCTION TRADES
 - use project / facade / construction imagery
 - include služby, realizace, proces, reference, kontakt
 `;
-
     case "ecommerce-product":
       return `
 INDUSTRY RULES: E-COMMERCE PRODUCT
 - product or category images are REQUIRED
 - use a conversion-first commerce structure
 `;
-
     case "resort":
       return `
 INDUSTRY RULES: RESORT / HOSPITALITY
 - immersive image-led design
 - atmosphere matters more than generic cards
 `;
-
     case "real-estate":
       return `
-INDUSTRY RULES: REAL ESTATE
+INDUSTRY RULES: REAL ESTATE / DEVELOPMENT PROJECT
 - use architecture / interior / exterior imagery
 - premium editorial composition
+- for luxury real-estate or development sites, the design may resemble a refined editorial project microsite
+- large full-bleed property visuals are welcome
+- oversized elegant serif headlines are welcome
+- airy white sections with restrained palette are welcome
+- thin dividers, calm rhythm and strong premium spacing are welcome
+- navigation may be centered, split around a logo, or refined and minimal
+- avoid generic corporate cards if a calmer premium editorial system is more fitting
 `;
-
     case "fintech":
       return `
 INDUSTRY RULES: FINTECH
 - dark premium product direction is appropriate
 - product mockups, data panels and trust blocks are allowed
 `;
-
     case "saas":
       return `
 INDUSTRY RULES: SAAS / SOFTWARE
 - dashboard / orchestration / interface-led design is appropriate
 `;
-
     default:
       return `
 INDUSTRY RULES:
@@ -1029,6 +1098,7 @@ function renderPrompt(params: {
   model?: string;
   chatHistory?: ChatHistoryItem[];
   preferences: ReturnType<typeof resolveCreativeDirection>;
+  brandLogo?: BrandLogoAsset | null;
 }) {
   return `
 You are a world-class commercial web designer, art director and senior frontend developer.
@@ -1069,10 +1139,24 @@ OUTPUT RULES:
 - include a CTA button in the main navigation
 - footer must be complete and visually polished
 
+BRAND LOGO RULES:
+${
+  params.brandLogo
+    ? `- a real uploaded logo exists for this project
+- when rendering the navigation and any footer brand area, place the exact token __BRAND_LOGO__ where the real logo should appear
+- wrap that token in a tasteful logo container or link
+- do not invent a generic text logo if a real brand logo is available
+- make sure the logo area has premium spacing and alignment`
+    : `- if no real logo is provided, create an elegant text or monogram logo treatment`
+}
+
 DO NOT GENERATE THE SAME DEFAULT LAYOUT:
 - avoid repeating the same generic hero + cards + services pattern
+- DO NOT default to hero text on the left and image on the right
+- if a split layout is used, it must still feel custom and not be the default fallback
 - strongly commit to one design family and one layout system
 - make the composition visibly distinct
+- hero may be centered, bottom-left over image, bottom-centered, top-right overlay, stacked with media below, framed inside a window, or built with overlapping panels
 
 SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
@@ -1094,9 +1178,9 @@ SELECTED CREATIVE DIRECTION:
 ${getDesignReferenceRecipe(params.preferences.designReference)}
 
 ${getIndustrySpecificRules(
-  params.preferences.industry,
-  params.preferences.imageMode
-)}
+    params.preferences.industry,
+    params.preferences.imageMode
+  )}
 
 SPACING AND COMPOSITION RULES:
 - spacing must feel deliberate and premium, not compressed
@@ -1104,6 +1188,14 @@ SPACING AND COMPOSITION RULES:
 - tablet spacing should stay generous, not collapse too hard
 - mobile spacing must still breathe
 - keep consistent inner card padding inside similar components
+- every hero, overlay card, floating panel, content column and text block must have explicit safe inner padding
+- never place text flush to viewport edges or image edges
+- use base horizontal gutters at minimum:
+  - desktop: clamp(24px, 4vw, 56px)
+  - tablet: clamp(20px, 5vw, 40px)
+  - mobile: clamp(16px, 5vw, 24px)
+- if copy is anchored bottom-left, bottom-center or over media, wrap it in a padded container
+- if the user asks for text low in the hero, it must still have protected padding from the bottom and left edges
 - if you use a grid or bento layout, make it disciplined and visually aligned
 - do not let one card have 18px padding and another similar card 44px unless clearly intentional
 - use a visible spacing rhythm and repeat it consistently
@@ -1116,6 +1208,18 @@ TYPOGRAPHY HIERARCHY RULES:
 - avoid oversized headings inside secondary sections
 - subheadings should support, not compete with the hero
 - paragraphs must have readable line-height and sufficient distance from titles
+
+FONT VARIATION RULES:
+- create more visible font variety between projects
+- do not keep using the same 2 generic stacks for most outputs
+- use CSS variables for font stacks, for example --font-display and --font-body
+- choose CSS stacks that clearly differ by mood
+- headings must not always use extremely heavy weights
+- avoid overusing 800 or 900 weight
+- default body copy should usually live around 400 to 500
+- secondary headings often work better at 500 to 700 instead of 800+
+- display headlines may be strong, but keep them refined and not always ultra-bold
+- vary font weight rhythm intentionally across hero, section titles, buttons and microcopy
 
 RADIUS SYSTEM RULES:
 - do NOT use the same radius everywhere by default
@@ -1141,6 +1245,7 @@ MENU VARIATION RULES:
   - glass pill navigation over hero
   - clean enterprise top bar with CTA anchored right
   - editorial top navigation with lighter structure
+  - centered premium real-estate navigation with logo emphasis
 - menu must have balanced internal padding and a deliberate silhouette
 - hamburger must be visually clear and functional on mobile
 
@@ -1151,16 +1256,19 @@ BENTO / CARD SYSTEM RULES:
 
 LAYOUT SYSTEM RULES:
 - use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
+- the layout seed is not decorative text; it is a hard directional clue for hero composition and section rhythm
 - examples of acceptable layout systems:
-  - hero-left + product-UI-right
   - centered hero + control panel below
-  - immersive image-first editorial hero
-  - dark angled band sections
+  - immersive full-bleed photo with padded bottom-left copy
+  - hero with framed window and floating stat cards
+  - bottom-anchored product copy with overlapping packshot
   - layered narrative flow with alternating section directions
   - asymmetrical luxury panel rhythm
-  - product-led hero with packshot and benefit blocks
-  - clean service hero with trust grid
+  - editorial cover layout with text overlay inside safe padded wrapper
+  - clean service hero with trust grid below
+  - real-estate project cover with huge serif title and airy sections after hero
 - do not flatten everything into the same rectangular rhythm
+- do not silently convert unusual hero requests into left-text/right-image fallback
 
 FONT DIRECTION RULES:
 - use CSS font stacks that visually suggest the chosen mood
@@ -1247,6 +1355,9 @@ FINAL QA:
 - strong CTA contrast
 - polished bento and cards
 - short strong hero headline
+- varied hero composition, not repetitive left-text/right-image fallback
+- safe padding around all overlayed or edge-near text
+- more varied font stacks and more refined font-weight usage
 `;
 }
 
@@ -1260,7 +1371,8 @@ export async function POST(req: Request) {
     logStep(requestId, "parse-body", bodyStartedAt);
 
     const prompt = typeof body?.prompt === "string" ? body.prompt : "";
-    const buildType = typeof body?.buildType === "string" ? body.buildType : "";
+    const buildType =
+      typeof body?.buildType === "string" ? body.buildType : "";
     const model = typeof body?.model === "string" ? body.model : "";
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
@@ -1270,6 +1382,7 @@ export async function POST(req: Request) {
       typeof body.generationPreferences === "object"
         ? (body.generationPreferences as GenerationPreferences)
         : {};
+    const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
     if (!prompt || prompt.trim().length < 8) {
       return Response.json(
@@ -1292,6 +1405,7 @@ export async function POST(req: Request) {
         promptLength: prompt.length,
         chatHistoryCount: chatHistory.length,
         generationPreferences: resolvedPreferences,
+        hasBrandLogo: Boolean(brandLogo),
       })
     );
 
@@ -1307,8 +1421,9 @@ export async function POST(req: Request) {
         model,
         chatHistory,
         preferences: resolvedPreferences,
+        brandLogo,
       }),
-      schemaName: "website_bundle_spacing_typography_v6",
+      schemaName: "website_bundle_spacing_typography_brand_v8",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -1322,8 +1437,15 @@ export async function POST(req: Request) {
 
     const sanitizeStartedAt = nowMs();
     const safeRendered = sanitizeBundle(renderedBundle);
+
+    const htmlWithBrandLogo = injectBrandLogoMarkup(
+      safeRendered.html,
+      brandLogo
+    );
+
     logStep(requestId, "sanitize-bundle", sanitizeStartedAt, {
       assetPlanCount: safeRendered.assetPlan.length,
+      hasBrandLogo: Boolean(brandLogo),
     });
 
     logStep(requestId, "done", routeStartedAt, {
@@ -1332,7 +1454,7 @@ export async function POST(req: Request) {
     });
 
     return Response.json({
-      html: safeRendered.html,
+      html: htmlWithBrandLogo,
       css: safeRendered.css,
       js: safeRendered.js,
       assetPlan: safeRendered.assetPlan,
