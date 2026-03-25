@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html
       lang="cs"
-      className="dark"
+      className={`dark ${appFontVariables}`}
       data-theme-preset="saas-dark"
       suppressHydrationWarning
     >
@@ -25,9 +25,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body
-        className={`${appFontVariables} font-sans min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)] selection:bg-violet-500/30 selection:text-violet-100 antialiased`}
-      >
+      <body className="min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)] selection:bg-violet-500/30 selection:text-violet-100 antialiased">
         {children}
       </body>
     </html>

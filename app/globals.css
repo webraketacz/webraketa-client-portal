@@ -1,12 +1,6 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
-:root {
-  --font-display: var(--font-nohemi), Inter, system-ui, sans-serif;
-  --font-body: var(--font-nohemi), Inter, system-ui, sans-serif;
-  --font-ui: var(--font-nohemi), Inter, system-ui, sans-serif;
-}
-
 @theme inline {
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text);
@@ -24,6 +18,12 @@
   --font-ui: var(--font-ui);
 }
 
+:root {
+  --font-display: var(--font-nohemi), Inter, system-ui, sans-serif;
+  --font-body: var(--font-nohemi), Inter, system-ui, sans-serif;
+  --font-ui: var(--font-nohemi), Inter, system-ui, sans-serif;
+}
+
 *,
 *::before,
 *::after {
@@ -33,6 +33,7 @@
 
 html {
   color-scheme: dark;
+  font-family: var(--font-body);
 }
 
 html,
@@ -44,17 +45,20 @@ body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body);
+  font-weight: 400;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body,
 button,
 input,
 textarea,
-select {
-  font-family: var(--font-ui), var(--font-body), system-ui, sans-serif;
+select,
+label {
+  font: inherit;
+  font-family: var(--font-ui);
 }
 
 h1,
@@ -62,10 +66,21 @@ h2,
 h3,
 h4,
 h5,
-h6,
+h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 .font-display {
-  font-family: var(--font-display), system-ui, sans-serif;
-  letter-spacing: -0.04em;
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
 }
 
 /* Selection */
@@ -78,16 +93,13 @@ h6,
 ::-webkit-scrollbar {
   width: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--color-bg);
 }
-
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.18);
 }
@@ -140,6 +152,21 @@ h6,
 
 .section-premium-loose {
   padding-block: var(--section-space-y-loose);
+}
+
+/* App shell force */
+[data-theme-preset],
+[data-theme-preset] * {
+  font-family: var(--font-body);
+}
+
+[data-theme-preset] h1,
+[data-theme-preset] h2,
+[data-theme-preset] h3,
+[data-theme-preset] h4,
+[data-theme-preset] h5,
+[data-theme-preset] h6 {
+  font-family: var(--font-display);
 }
 
 /* Animations */
