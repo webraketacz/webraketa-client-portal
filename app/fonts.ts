@@ -1,76 +1,57 @@
-import {
-  Cormorant_Garamond,
-  DM_Sans,
-  Fraunces,
-  Inter,
-  Manrope,
-  Playfair_Display,
-  Plus_Jakarta_Sans,
-} from "next/font/google";
+import localFont from "next/font/local";
 
-const fontUi = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-ui",
+export const nohemi = localFont({
+  src: [
+    {
+      path: "../public/fonts/nohemi/Nohemi-Thin.woff2",
+      weight: "100",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-ExtraLight.woff2",
+      weight: "200",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-Light.woff2",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-SemiBold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-ExtraBold.woff2",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/nohemi/Nohemi-Black.woff2",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-nohemi",
   display: "swap",
+  preload: true,
+  fallback: ["Inter", "system-ui", "Arial", "sans-serif"],
 });
 
-const fontTechBody = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-tech-body",
-  display: "swap",
-});
-
-const fontTrustBody = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-trust-body",
-  display: "swap",
-});
-
-const fontSoftBody = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-soft-body",
-  display: "swap",
-});
-
-const fontCommerceBody = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-commerce-body",
-  display: "swap",
-});
-
-const fontDisplayEditorial = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-display-editorial",
-  display: "swap",
-});
-
-const fontDisplayLuxury = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-display-luxury",
-  display: "swap",
-});
-
-const fontDisplayContrast = Fraunces({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-display-contrast",
-  display: "swap",
-});
-
-export const appFontVariables = [
-  fontUi.variable,
-  fontTechBody.variable,
-  fontTrustBody.variable,
-  fontSoftBody.variable,
-  fontCommerceBody.variable,
-  fontDisplayEditorial.variable,
-  fontDisplayLuxury.variable,
-  fontDisplayContrast.variable,
-].join(" ");
+export const appFontVariables = nohemi.variable;
