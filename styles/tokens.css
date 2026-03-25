@@ -1,12 +1,26 @@
 :root {
   --font-ui: var(--font-ui);
-  --font-body: var(--font-body-sans);
-  --font-display: var(--font-display-serif);
+
+  --font-tech-body: var(--font-tech-body);
+  --font-trust-body: var(--font-trust-body);
+  --font-soft-body: var(--font-soft-body);
+  --font-commerce-body: var(--font-commerce-body);
+
+  --font-display-editorial: var(--font-display-editorial);
+  --font-display-luxury: var(--font-display-luxury);
+  --font-display-contrast: var(--font-display-contrast);
+
+  --font-body: var(--font-tech-body);
+  --font-display: var(--font-display-contrast);
 
   --weight-body: 420;
-  --weight-body-strong: 520;
+  --weight-body-strong: 540;
   --weight-heading: 620;
-  --weight-display: 680;
+  --weight-display: 700;
+
+  --tracking-body: 0em;
+  --tracking-heading: -0.02em;
+  --tracking-display: -0.04em;
 
   --color-bg: #09090d;
   --color-surface-1: #111118;
@@ -69,14 +83,107 @@
   --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-[data-theme-preset="saas-dark"] {
-  --font-display: var(--font-body-sans);
-  --font-body: var(--font-body-sans);
+/* TYPOGRAPHY PRESETS */
+
+[data-typography-preset="tech-sans"] {
+  --font-display: var(--font-tech-body);
+  --font-body: var(--font-tech-body);
   --weight-body: 430;
   --weight-body-strong: 560;
   --weight-heading: 640;
-  --weight-display: 720;
+  --weight-display: 760;
+  --tracking-body: -0.005em;
+  --tracking-heading: -0.025em;
+  --tracking-display: -0.045em;
+}
 
+[data-typography-preset="enterprise-sans"] {
+  --font-display: var(--font-tech-body);
+  --font-body: var(--font-trust-body);
+  --weight-body: 420;
+  --weight-body-strong: 540;
+  --weight-heading: 620;
+  --weight-display: 700;
+  --tracking-body: -0.003em;
+  --tracking-heading: -0.02em;
+  --tracking-display: -0.035em;
+}
+
+[data-typography-preset="trust-sans"] {
+  --font-display: var(--font-trust-body);
+  --font-body: var(--font-trust-body);
+  --weight-body: 420;
+  --weight-body-strong: 520;
+  --weight-heading: 590;
+  --weight-display: 650;
+  --tracking-body: 0em;
+  --tracking-heading: -0.015em;
+  --tracking-display: -0.028em;
+}
+
+[data-typography-preset="editorial-serif"] {
+  --font-display: var(--font-display-editorial);
+  --font-body: var(--font-soft-body);
+  --weight-body: 410;
+  --weight-body-strong: 520;
+  --weight-heading: 560;
+  --weight-display: 620;
+  --tracking-body: 0em;
+  --tracking-heading: -0.018em;
+  --tracking-display: -0.04em;
+}
+
+[data-typography-preset="luxury-serif"] {
+  --font-display: var(--font-display-luxury);
+  --font-body: var(--font-soft-body);
+  --weight-body: 410;
+  --weight-body-strong: 510;
+  --weight-heading: 550;
+  --weight-display: 610;
+  --tracking-body: 0em;
+  --tracking-heading: -0.02em;
+  --tracking-display: -0.05em;
+}
+
+[data-typography-preset="soft-premium-sans"] {
+  --font-display: var(--font-soft-body);
+  --font-body: var(--font-soft-body);
+  --weight-body: 400;
+  --weight-body-strong: 520;
+  --weight-heading: 580;
+  --weight-display: 640;
+  --tracking-body: 0em;
+  --tracking-heading: -0.018em;
+  --tracking-display: -0.032em;
+}
+
+[data-typography-preset="commerce-sans"] {
+  --font-display: var(--font-commerce-body);
+  --font-body: var(--font-commerce-body);
+  --weight-body: 420;
+  --weight-body-strong: 540;
+  --weight-heading: 640;
+  --weight-display: 720;
+  --tracking-body: -0.003em;
+  --tracking-heading: -0.024em;
+  --tracking-display: -0.04em;
+}
+
+[data-typography-preset="boutique-contrast"] {
+  --font-display: var(--font-display-contrast);
+  --font-body: var(--font-soft-body);
+  --weight-body: 410;
+  --weight-body-strong: 520;
+  --weight-heading: 580;
+  --weight-display: 650;
+  --tracking-body: 0em;
+  --tracking-heading: -0.02em;
+  --tracking-display: -0.05em;
+}
+
+/* THEME PRESETS */
+
+[data-theme-preset="saas-dark"] {
   --color-bg: #06070b;
   --color-surface-1: #0d1017;
   --color-surface-2: #121722;
@@ -91,13 +198,6 @@
 }
 
 [data-theme-preset="clinic-light"] {
-  --font-display: var(--font-body-sans);
-  --font-body: var(--font-body-sans);
-  --weight-body: 430;
-  --weight-body-strong: 530;
-  --weight-heading: 600;
-  --weight-display: 640;
-
   --color-bg: #f6f8fb;
   --color-surface-1: #ffffff;
   --color-surface-2: #f2f5f8;
@@ -115,13 +215,6 @@
 }
 
 [data-theme-preset="real-estate-editorial"] {
-  --font-display: var(--font-display-editorial);
-  --font-body: var(--font-body-sans);
-  --weight-body: 430;
-  --weight-body-strong: 540;
-  --weight-heading: 560;
-  --weight-display: 620;
-
   --color-bg: #f4efe8;
   --color-surface-1: #fbf8f3;
   --color-surface-2: #efe7dc;
@@ -139,13 +232,6 @@
 }
 
 [data-theme-preset="luxury-dark"] {
-  --font-display: var(--font-display-serif);
-  --font-body: var(--font-body-sans);
-  --weight-body: 420;
-  --weight-body-strong: 520;
-  --weight-heading: 600;
-  --weight-display: 650;
-
   --color-bg: #0c0a09;
   --color-surface-1: #14110f;
   --color-surface-2: #1a1614;
@@ -157,6 +243,20 @@
   --color-accent: #c8a36b;
   --color-accent-strong: #f0d2a7;
   --color-accent-soft: rgba(200, 163, 107, 0.12);
+}
+
+[data-theme-preset="neutral-premium"] {
+  --color-bg: #0b0c10;
+  --color-surface-1: #13151a;
+  --color-surface-2: #1a1e25;
+  --color-surface-3: #222832;
+  --color-text: #f4f7fb;
+  --color-text-muted: #9ca4b3;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-accent: #7c5cff;
+  --color-accent-strong: #77c6ff;
+  --color-accent-soft: rgba(124, 92, 255, 0.12);
 }
 
 html,
@@ -191,20 +291,21 @@ body {
 .zyvia-display {
   font-family: var(--font-display), Georgia, serif;
   font-weight: var(--weight-display);
-  letter-spacing: -0.035em;
+  letter-spacing: var(--tracking-display);
   line-height: 0.96;
 }
 
 .zyvia-heading {
   font-family: var(--font-display), Georgia, serif;
   font-weight: var(--weight-heading);
-  letter-spacing: -0.025em;
+  letter-spacing: var(--tracking-heading);
   line-height: 1.02;
 }
 
 .zyvia-body {
   font-family: var(--font-body), system-ui, sans-serif;
   font-weight: var(--weight-body);
+  letter-spacing: var(--tracking-body);
   line-height: 1.7;
 }
 

@@ -1,3 +1,8 @@
+import {
+  buildTypographyPromptFragment,
+  type TypographyPresetId,
+} from "@/lib/ai/typography-presets";
+
 export type IndustryKind =
   | "fintech"
   | "saas"
@@ -63,6 +68,7 @@ export type Blueprint = {
   industry: IndustryKind;
   themePreset: ThemePreset;
   designReference: DesignReference;
+  typographyPreset: TypographyPresetId;
   defaultLayoutSeed: LayoutSeed;
   allowedLayoutSeeds: LayoutSeed[];
   promptHints: string[];
@@ -214,6 +220,14 @@ export function inferIndustryKind(prompt: string): IndustryKind {
     return "ecommerce-product";
   }
 
+  if (
+    text.includes("luxury") ||
+    text.includes("premium") ||
+    text.includes("boutique")
+  ) {
+    return "luxury-service";
+  }
+
   return "generic-business";
 }
 
@@ -222,6 +236,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "fintech",
     themePreset: "saas-dark",
     designReference: "fintech-neon",
+    typographyPreset: "tech-sans",
     defaultLayoutSeed: "floating-control-room-hero",
     allowedLayoutSeeds: [
       "hero-center-dashboard-below",
@@ -233,7 +248,6 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     promptHints: [
       "dark premium product feeling",
       "luminous accents but disciplined spacing",
-      "do not overuse ultra-bold headings",
       "product mockups may sit below hero instead of always on the right",
     ],
     afterGeneratePrompts: [
@@ -246,6 +260,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "saas",
     themePreset: "saas-dark",
     designReference: "signal-orchestration",
+    typographyPreset: "enterprise-sans",
     defaultLayoutSeed: "hero-center-dashboard-below",
     allowedLayoutSeeds: [
       "hero-center-dashboard-below",
@@ -269,6 +284,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "real-estate",
     themePreset: "real-estate-editorial",
     designReference: "luxury-editorial",
+    typographyPreset: "editorial-serif",
     defaultLayoutSeed: "full-bleed-editorial-property-cover",
     allowedLayoutSeeds: [
       "full-bleed-editorial-property-cover",
@@ -279,7 +295,6 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     ],
     promptHints: [
       "luxury editorial real-estate direction",
-      "huge elegant serif headlines are welcome",
       "airy white sections after hero are welcome",
       "thin dividers and restrained palette are welcome",
       "navigation may be centered or symmetrically composed around branding",
@@ -294,6 +309,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "resort",
     themePreset: "luxury-dark",
     designReference: "cinematic-resort",
+    typographyPreset: "luxury-serif",
     defaultLayoutSeed: "immersive-cinematic-hero",
     allowedLayoutSeeds: [
       "immersive-cinematic-hero",
@@ -314,6 +330,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "luxury-service",
     themePreset: "luxury-dark",
     designReference: "luxury-editorial",
+    typographyPreset: "boutique-contrast",
     defaultLayoutSeed: "oversized-serif-copy-on-airy-canvas",
     allowedLayoutSeeds: [
       "oversized-serif-copy-on-airy-canvas",
@@ -321,7 +338,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
       "disciplined-bento-layout",
     ],
     promptHints: [
-      "refined serif direction",
+      "refined luxury service direction",
       "restrained premium instead of noisy luxury",
     ],
     afterGeneratePrompts: [
@@ -334,6 +351,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "food-product",
     themePreset: "neutral-premium",
     designReference: "product-commerce",
+    typographyPreset: "commerce-sans",
     defaultLayoutSeed: "product-hero-with-packshot",
     allowedLayoutSeeds: [
       "product-hero-with-packshot",
@@ -352,6 +370,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "ecommerce-product",
     themePreset: "neutral-premium",
     designReference: "product-commerce",
+    typographyPreset: "commerce-sans",
     defaultLayoutSeed: "benefit-led-commerce-layout",
     allowedLayoutSeeds: [
       "product-hero-with-packshot",
@@ -370,6 +389,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "healthcare",
     themePreset: "clinic-light",
     designReference: "clean-business",
+    typographyPreset: "trust-sans",
     defaultLayoutSeed: "calm-trust-split",
     allowedLayoutSeeds: [
       "calm-trust-split",
@@ -391,6 +411,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "legal",
     themePreset: "neutral-premium",
     designReference: "clean-business",
+    typographyPreset: "trust-sans",
     defaultLayoutSeed: "disciplined-bento-layout",
     allowedLayoutSeeds: [
       "disciplined-bento-layout",
@@ -409,6 +430,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "beauty",
     themePreset: "luxury-dark",
     designReference: "luxury-editorial",
+    typographyPreset: "luxury-serif",
     defaultLayoutSeed: "bottom-left-copy-over-photo",
     allowedLayoutSeeds: [
       "bottom-left-copy-over-photo",
@@ -427,6 +449,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "restaurant",
     themePreset: "luxury-dark",
     designReference: "restaurant-editorial",
+    typographyPreset: "editorial-serif",
     defaultLayoutSeed: "editorial-story-menu-flow",
     allowedLayoutSeeds: [
       "bottom-left-copy-over-photo",
@@ -445,6 +468,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "catering",
     themePreset: "neutral-premium",
     designReference: "restaurant-editorial",
+    typographyPreset: "soft-premium-sans",
     defaultLayoutSeed: "bottom-left-copy-over-photo",
     allowedLayoutSeeds: [
       "bottom-left-copy-over-photo",
@@ -462,6 +486,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "barber",
     themePreset: "luxury-dark",
     designReference: "barber-premium",
+    typographyPreset: "boutique-contrast",
     defaultLayoutSeed: "bottom-left-copy-over-photo",
     allowedLayoutSeeds: [
       "bottom-left-copy-over-photo",
@@ -479,6 +504,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "hair-salon",
     themePreset: "neutral-premium",
     designReference: "luxury-editorial",
+    typographyPreset: "soft-premium-sans",
     defaultLayoutSeed: "bottom-left-copy-over-photo",
     allowedLayoutSeeds: [
       "bottom-left-copy-over-photo",
@@ -496,6 +522,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "autoservis",
     themePreset: "neutral-premium",
     designReference: "clean-automotive",
+    typographyPreset: "enterprise-sans",
     defaultLayoutSeed: "trust-led-service-grid",
     allowedLayoutSeeds: [
       "trust-led-service-grid",
@@ -513,6 +540,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "car-dealer",
     themePreset: "neutral-premium",
     designReference: "clean-automotive",
+    typographyPreset: "enterprise-sans",
     defaultLayoutSeed: "bottom-left-copy-over-project-shot",
     allowedLayoutSeeds: [
       "bottom-left-copy-over-project-shot",
@@ -530,6 +558,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "zednik",
     themePreset: "neutral-premium",
     designReference: "service-trades",
+    typographyPreset: "trust-sans",
     defaultLayoutSeed: "trust-led-service-grid",
     allowedLayoutSeeds: [
       "trust-led-service-grid",
@@ -547,6 +576,7 @@ const BLUEPRINTS: Record<IndustryKind, Blueprint> = {
     industry: "generic-business",
     themePreset: "neutral-premium",
     designReference: "clean-business",
+    typographyPreset: "soft-premium-sans",
     defaultLayoutSeed: "disciplined-bento-layout",
     allowedLayoutSeeds: [
       "disciplined-bento-layout",
@@ -573,9 +603,16 @@ export function getLayoutSeed(prompt: string): LayoutSeed {
   return deterministicPick(prompt, blueprint.allowedLayoutSeeds);
 }
 
+export function getTypographyPresetForPrompt(prompt: string): TypographyPresetId {
+  return getBlueprint(prompt).typographyPreset;
+}
+
 export function buildBlueprintPromptFragment(prompt: string) {
   const blueprint = getBlueprint(prompt);
   const layoutSeed = getLayoutSeed(prompt);
+  const typographyFragment = buildTypographyPromptFragment(
+    blueprint.typographyPreset
+  );
 
   return {
     blueprint,
@@ -587,11 +624,16 @@ THEME PRESET:
 DESIGN REFERENCE:
 - ${blueprint.designReference}
 
+TYPOGRAPHY PRESET:
+- ${blueprint.typographyPreset}
+
 LAYOUT SEED:
 - ${layoutSeed}
 
 INDUSTRY-SPECIFIC PREMIUM HINTS:
 ${blueprint.promptHints.map((item) => `- ${item}`).join("\n")}
+
+${typographyFragment}
 `.trim(),
   };
 }
