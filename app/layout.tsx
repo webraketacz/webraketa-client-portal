@@ -1,21 +1,24 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import Script from "next/script";
-import { Inter } from "next/font/google";
+import { appFontVariables } from "./fonts";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
-export const metadata = {
-  title: "Klientská zóna | Webraketa.cz",
+export const metadata: Metadata = {
+  title: "Zyvia | AI Web Builder",
+  description: "Prémiový AI builder pro generování moderních webů.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="cs" className="dark">
+    <html
+      lang="cs"
+      className="dark"
+      data-theme-preset="saas-dark"
+      suppressHydrationWarning
+    >
       <head>
-        {/* Iconify web component (kvůli <iconify-icon />) */}
         <Script
           src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"
           strategy="beforeInteractive"
@@ -23,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
 
       <body
-        className={`${inter.className} text-zinc-400 min-h-screen relative overflow-x-hidden selection:bg-violet-500/30 selection:text-violet-200`}
+        className={`${appFontVariables} min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)] selection:bg-violet-500/30 selection:text-violet-100 antialiased`}
       >
         {children}
       </body>

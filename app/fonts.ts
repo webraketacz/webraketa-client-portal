@@ -1,25 +1,29 @@
 import { Fraunces, Inter, Manrope, Playfair_Display } from "next/font/google";
 
-export const fontUi = Inter({
+const fontUi = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-ui",
   display: "swap",
 });
 
-export const fontBody = Manrope({
+const fontBody = Manrope({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-body-sans",
   display: "swap",
 });
 
-export const fontDisplaySerif = Fraunces({
+const fontDisplaySerif = Fraunces({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-display-serif",
   display: "swap",
 });
 
-export const fontDisplayEditorial = Playfair_Display({
+const fontDisplayEditorial = Playfair_Display({
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
   variable: "--font-display-editorial",
   display: "swap",
 });
