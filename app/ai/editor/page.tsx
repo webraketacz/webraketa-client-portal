@@ -1354,8 +1354,8 @@ function BuilderPlaceholder({ status }: { status: string }) {
     <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-5">
       <div className="relative h-full min-h-[680px] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06070b]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
-        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-full bg-violet-500/10 blur-[80px]" />
-        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-full bg-cyan-500/10 blur-[90px]" />
+        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/10 blur-[80px]" />
+        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/10 blur-[90px]" />
 
         <div className="relative z-10 flex h-full flex-col p-5 md:p-7">
           <div className="mx-auto w-full max-w-5xl flex-1">
@@ -1363,45 +1363,45 @@ function BuilderPlaceholder({ status }: { status: string }) {
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-2xl border border-cyan-400/20 bg-cyan-400/10" />
                 <div className="space-y-2">
-                  <div className="h-3 w-36 rounded-full bg-white/10" />
-                  <div className="h-3 w-20 rounded-full bg-white/5" />
+                  <div className="h-3 w-36 rounded-[10px] bg-white/10" />
+                  <div className="h-3 w-20 rounded-[10px] bg-white/5" />
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <div className="h-9 w-20 rounded-full border border-white/10 bg-white/[0.04]" />
-                <div className="h-9 w-24 rounded-full border border-cyan-400/20 bg-cyan-400/10" />
+                <div className="h-9 w-20 rounded-[10px] border border-white/10 bg-white/[0.04]" />
+                <div className="h-9 w-24 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10" />
               </div>
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="rounded-[1.7rem] border border-violet-400/20 bg-gradient-to-br from-violet-500/10 via-white/[0.02] to-cyan-500/10 p-5 animate-[zyviaPulse_2.5s_ease-in-out_infinite]">
-                <div className="mb-4 h-7 w-40 rounded-full border border-cyan-400/20 bg-cyan-400/10" />
+                <div className="mb-4 h-7 w-40 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10" />
                 <div className="space-y-3">
-                  <div className="h-7 w-[92%] rounded-full bg-white/10" />
-                  <div className="h-7 w-[84%] rounded-full bg-white/10" />
-                  <div className="h-7 w-[78%] rounded-full bg-white/10" />
-                  <div className="h-7 w-[62%] rounded-full bg-white/10" />
+                  <div className="h-7 w-[92%] rounded-[10px] bg-white/10" />
+                  <div className="h-7 w-[84%] rounded-[10px] bg-white/10" />
+                  <div className="h-7 w-[78%] rounded-[10px] bg-white/10" />
+                  <div className="h-7 w-[62%] rounded-[10px] bg-white/10" />
                 </div>
 
                 <div className="mt-8 space-y-3">
-                  <div className="h-4 w-[88%] rounded-full bg-white/6" />
-                  <div className="h-4 w-[81%] rounded-full bg-white/6" />
-                  <div className="h-4 w-[72%] rounded-full bg-white/6" />
+                  <div className="h-4 w-[88%] rounded-[10px] bg-white/6" />
+                  <div className="h-4 w-[81%] rounded-[10px] bg-white/6" />
+                  <div className="h-4 w-[72%] rounded-[10px] bg-white/6" />
                 </div>
 
                 <div className="mt-8 flex gap-3">
-                  <div className="h-11 w-32 rounded-full border border-cyan-400/20 bg-cyan-400/15" />
-                  <div className="h-11 w-36 rounded-full border border-white/10 bg-white/[0.04]" />
+                  <div className="h-11 w-32 rounded-[10px] border border-cyan-400/20 bg-cyan-400/15" />
+                  <div className="h-11 w-36 rounded-[10px] border border-white/10 bg-white/[0.04]" />
                 </div>
               </div>
 
               <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.03] p-5 animate-[zyviaPulse_2.8s_ease-in-out_infinite]">
                 <div className="mb-4 h-[320px] rounded-[1.3rem] border border-white/10 bg-gradient-to-br from-white/5 to-cyan-400/5" />
                 <div className="space-y-3">
-                  <div className="h-5 w-36 rounded-full bg-white/10" />
-                  <div className="h-4 w-[92%] rounded-full bg-white/6" />
-                  <div className="h-4 w-[84%] rounded-full bg-white/6" />
+                  <div className="h-5 w-36 rounded-[10px] bg-white/10" />
+                  <div className="h-4 w-[92%] rounded-[10px] bg-white/6" />
+                  <div className="h-4 w-[84%] rounded-[10px] bg-white/6" />
                 </div>
               </div>
             </div>
@@ -1409,8 +1409,8 @@ function BuilderPlaceholder({ status }: { status: string }) {
 
           <div className="relative z-10 mt-5 border-t border-white/8 px-2 pt-5">
             <div className="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-100">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300 animate-pulse" />
+              <div className="mb-4 inline-flex items-center gap-2 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-100">
+                <span className="inline-block h-2.5 w-2.5 rounded-[10px] bg-cyan-300 animate-pulse" />
                 Builder právě skládá jednotlivé sekce
               </div>
 
@@ -2363,7 +2363,7 @@ export default function AiEditorPage() {
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.08]" />
       <div
-        className="pointer-events-none absolute left-[-120px] top-[-120px] h-[24rem] w-[24rem] rounded-full blur-[120px]"
+        className="pointer-events-none absolute left-[-120px] top-[-120px] h-[24rem] w-[24rem] rounded-[10px] blur-[120px]"
         style={{
           background:
             "radial-gradient(circle, rgba(124,92,255,0.18) 0%, rgba(124,92,255,0.05) 35%, transparent 75%)",
@@ -2371,7 +2371,7 @@ export default function AiEditorPage() {
         }}
       />
       <div
-        className="pointer-events-none absolute bottom-[-140px] right-[-100px] h-[28rem] w-[28rem] rounded-full blur-[120px]"
+        className="pointer-events-none absolute bottom-[-140px] right-[-100px] h-[28rem] w-[28rem] rounded-[10px] blur-[120px]"
         style={{
           background:
             "radial-gradient(circle, rgba(90,209,255,0.14) 0%, rgba(90,209,255,0.05) 35%, transparent 75%)",
@@ -2387,7 +2387,7 @@ export default function AiEditorPage() {
                 type="button"
                 onClick={() => downloadZipSite(html, css, js)}
                 disabled={!html}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
               >
                 <Icon icon="solar:download-linear" width={14} />
                 Export
@@ -2397,7 +2397,7 @@ export default function AiEditorPage() {
                 type="button"
                 onClick={handlePublish}
                 disabled={!html || publishing}
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
               >
                 <Icon icon="solar:upload-linear" width={14} />
                 {publishing ? "Publikuji…" : "Publikovat"}
@@ -2422,7 +2422,7 @@ export default function AiEditorPage() {
                       Editor
                     </div>
                     {(loading || improving || resolvingAssets) && (
-                      <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-300">
+                      <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-300">
                         {loading
                           ? "Generuji"
                           : improving
@@ -2447,7 +2447,7 @@ export default function AiEditorPage() {
                       resolvingAssets ||
                       prompt.trim().length < 12
                     }
-                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{
                       background:
                         "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
@@ -2494,9 +2494,9 @@ export default function AiEditorPage() {
                         <span>{Math.round(progress)}%</span>
                       </div>
 
-                      <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+                      <div className="h-2 overflow-hidden rounded-[10px] bg-zinc-800">
                         <div
-                          className="h-full rounded-full transition-all duration-500"
+                          className="h-full rounded-[10px] transition-all duration-500"
                           style={{
                             width: `${progress}%`,
                             background:
@@ -2528,7 +2528,7 @@ export default function AiEditorPage() {
                           <button
                             type="button"
                             onClick={() => logoInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                            className="inline-flex items-center gap-1.5 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
                           >
                             <Icon icon="solar:upload-linear" width={13} />
                             {uploadedLogo ? "Změnit logo" : "Nahrát logo"}
@@ -2591,7 +2591,7 @@ export default function AiEditorPage() {
                           <button
                             type="button"
                             onClick={preskocitOtazkyAGenerovat}
-                            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                            className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
                           >
                             Přeskočit a generovat
                           </button>
@@ -2599,7 +2599,7 @@ export default function AiEditorPage() {
                           <button
                             type="button"
                             onClick={ulozitOdpovedNaOtazku}
-                            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                            className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
                           >
                             Uložit odpověď
                           </button>
@@ -2621,7 +2621,7 @@ export default function AiEditorPage() {
                               key={item}
                               type="button"
                               onClick={() => applyFollowUpSuggestion(item)}
-                              className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-100 transition hover:bg-white/[0.10]"
+                              className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-100 transition hover:bg-white/[0.10]"
                             >
                               {item}
                             </button>
@@ -2639,21 +2639,21 @@ export default function AiEditorPage() {
                           <button
                             type="button"
                             onClick={() => useSectionAction("text")}
-                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
+                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
                           >
                             Změnit text
                           </button>
                           <button
                             type="button"
                             onClick={() => useSectionAction("visual")}
-                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
+                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
                           >
                             Změnit vzhled
                           </button>
                           <button
                             type="button"
                             onClick={() => useSectionAction("regenerate")}
-                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
+                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
                           >
                             Přegenerovat
                           </button>
@@ -2725,7 +2725,7 @@ export default function AiEditorPage() {
                           resolvingAssets ||
                           chatInput.trim().length < 3
                         }
-                        className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
+                        className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:pen-2-linear" width={14} />
                         {improving ? "Upravuji…" : "Použít"}
@@ -2740,11 +2740,11 @@ export default function AiEditorPage() {
           <main className="relative min-h-0 bg-[#050507]">
             {isFullscreen && activeTab === "preview" && (
               <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center p-4">
-                <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-[#08080c]/88 px-3 py-2 shadow-2xl backdrop-blur-2xl">
+                <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-[10px] border border-white/10 bg-[#08080c]/88 px-3 py-2 shadow-2xl backdrop-blur-2xl">
                   <button
                     type="button"
                     onClick={() => setIsFullscreen(false)}
-                    className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"
+                    className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"
                   >
                     <Icon icon="solar:arrow-left-linear" width={14} />
                     Zpět do editoru
@@ -2754,7 +2754,7 @@ export default function AiEditorPage() {
 
                   <button
                     type="button"
-                    className="inline-flex h-9 items-center rounded-full bg-white/[0.10] px-4 text-[13px] text-white"
+                    className="inline-flex h-9 items-center rounded-[10px] bg-white/[0.10] px-4 text-[13px] text-white"
                   >
                     Náhled
                   </button>
@@ -2764,7 +2764,7 @@ export default function AiEditorPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode("desktop")}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
                       viewMode === "desktop"
                         ? "bg-white/[0.10] text-white"
                         : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
@@ -2776,7 +2776,7 @@ export default function AiEditorPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode("tablet")}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
                       viewMode === "tablet"
                         ? "bg-white/[0.10] text-white"
                         : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
@@ -2788,7 +2788,7 @@ export default function AiEditorPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode("mobile")}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
                       viewMode === "mobile"
                         ? "bg-white/[0.10] text-white"
                         : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
@@ -2805,13 +2805,13 @@ export default function AiEditorPage() {
               {!isFullscreen && (
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5 md:px-5">
                   <div className="flex items-center gap-2">
-                    <div className="rounded-full bg-white/[0.10] px-4 py-2 text-[13px] text-white">
+                    <div className="rounded-[10px] bg-white/[0.10] px-4 py-2 text-[13px] text-white">
                       Náhled
                     </div>
                     <button
                       type="button"
                       onClick={() => setActiveTab("editor")}
-                      className={`rounded-full px-4 py-2 text-[13px] transition ${
+                      className={`rounded-[10px] px-4 py-2 text-[13px] transition ${
                         activeTab === "editor"
                           ? "bg-white/[0.10] text-white"
                           : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
@@ -2828,7 +2828,7 @@ export default function AiEditorPage() {
                         if (!isFullscreen) setActiveTab("preview");
                         setIsFullscreen((prev) => !prev);
                       }}
-                      className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                      className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
                     >
                       <Icon
                         icon={
@@ -2846,7 +2846,7 @@ export default function AiEditorPage() {
                     <button
                       type="button"
                       onClick={() => setViewMode("desktop")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
                         viewMode === "desktop"
                           ? "bg-white/[0.10] text-white"
                           : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
@@ -2858,7 +2858,7 @@ export default function AiEditorPage() {
                     <button
                       type="button"
                       onClick={() => setViewMode("tablet")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
                         viewMode === "tablet"
                           ? "bg-white/[0.10] text-white"
                           : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
@@ -2870,7 +2870,7 @@ export default function AiEditorPage() {
                     <button
                       type="button"
                       onClick={() => setViewMode("mobile")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
                         viewMode === "mobile"
                           ? "bg-white/[0.10] text-white"
                           : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
@@ -2998,7 +2998,7 @@ export default function AiEditorPage() {
                   setEditedTextValue("");
                   setEditedHrefValue("");
                 }}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
               >
                 <span className="block -translate-y-[1px] text-[24px] leading-none">
                   ×
@@ -3036,7 +3036,7 @@ export default function AiEditorPage() {
                   setEditedTextValue("");
                   setEditedHrefValue("");
                 }}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
               >
                 Zrušit
               </button>
@@ -3044,7 +3044,7 @@ export default function AiEditorPage() {
               <button
                 type="button"
                 onClick={handleSaveInlineText}
-                className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
               >
                 Uložit text
               </button>
@@ -3069,7 +3069,7 @@ export default function AiEditorPage() {
                 type="button"
                 aria-label="Zavřít"
                 onClick={closeImageModal}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
               >
                 <span className="block -translate-y-[1px] text-[24px] leading-none">
                   ×
@@ -3097,11 +3097,11 @@ export default function AiEditorPage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-1">
+                <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.03] p-1">
                   <button
                     type="button"
                     onClick={() => setImagePickerTab("search")}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm transition ${
+                    className={`flex-1 rounded-[10px] px-4 py-2 text-sm transition ${
                       imagePickerTab === "search"
                         ? "bg-white/[0.10] text-white"
                         : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
@@ -3112,7 +3112,7 @@ export default function AiEditorPage() {
                   <button
                     type="button"
                     onClick={() => setImagePickerTab("upload")}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm transition ${
+                    className={`flex-1 rounded-[10px] px-4 py-2 text-sm transition ${
                       imagePickerTab === "upload"
                         ? "bg-white/[0.10] text-white"
                         : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
@@ -3200,8 +3200,8 @@ export default function AiEditorPage() {
                             >
                               <div className="h-40 animate-pulse bg-white/[0.06]" />
                               <div className="space-y-2 p-3">
-                                <div className="h-3 w-3/4 rounded-full bg-white/[0.08]" />
-                                <div className="h-3 w-1/2 rounded-full bg-white/[0.06]" />
+                                <div className="h-3 w-3/4 rounded-[10px] bg-white/[0.08]" />
+                                <div className="h-3 w-1/2 rounded-[10px] bg-white/[0.06]" />
                               </div>
                             </div>
                           ))}
@@ -3233,7 +3233,7 @@ export default function AiEditorPage() {
                                 <button
                                   type="button"
                                   onClick={() => applyImageChange(image)}
-                                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"
+                                  className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"
                                 >
                                   <Icon
                                     icon="solar:gallery-add-linear"
