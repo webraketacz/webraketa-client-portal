@@ -127,6 +127,7 @@ type PublishResponse = {
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
+type ActiveTab = "preview" | "editor";
 
 type ChatMessage = {
   id: string;
@@ -1448,10 +1449,11 @@ export default function AiEditorPage() {
   const [status, setStatus] = useState("Připraveno");
 
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    null
-  );
+  null
+);
   const [selectedSectionType, setSelectedSectionType] = useState<string | null>(
     null
   );
