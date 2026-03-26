@@ -127,7 +127,6 @@ type PublishResponse = {
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
-type ActiveTab = "preview" | "code";
 
 type ChatMessage = {
   id: string;
@@ -519,7 +518,7 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
     {
       id: "extras",
       appendLabel: "Logo a značka",
-      text: "Máte logo, slogan nebo pravidla značky? Logo můžete nahrát i přímo v editoru.",
+      text: "Máte logo, slogan nebo pravidla značky? Logo můžete nahrát níže přímo během otázek.",
       placeholder:
         "Např. používáme zlatou a krémovou, logo je textové, značka má působit velmi prémiově…",
     },
@@ -1351,37 +1350,37 @@ ${html}
 
 function BuilderPlaceholder({ status }: { status: string }) {
   return (
-    <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-6">
+    <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-5">
       <div className="relative h-full min-h-[680px] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06070b]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
         <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-full bg-violet-500/10 blur-[80px]" />
         <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-full bg-cyan-500/10 blur-[90px]" />
 
-        <div className="relative z-10 flex h-full flex-col p-6 md:p-8">
+        <div className="relative z-10 flex h-full flex-col p-5 md:p-7">
           <div className="mx-auto w-full max-w-5xl flex-1">
-            <div className="mb-5 flex items-center justify-between rounded-[1.4rem] border border-white/10 bg-white/[0.03] px-5 py-4 animate-[zyviaPulse_2.2s_ease-in-out_infinite]">
+            <div className="mb-4 flex items-center justify-between rounded-[1.3rem] border border-white/10 bg-white/[0.03] px-4 py-3 animate-[zyviaPulse_2.2s_ease-in-out_infinite]">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl border border-cyan-400/20 bg-cyan-400/10" />
+                <div className="h-9 w-9 rounded-2xl border border-cyan-400/20 bg-cyan-400/10" />
                 <div className="space-y-2">
-                  <div className="h-3 w-40 rounded-full bg-white/10" />
-                  <div className="h-3 w-24 rounded-full bg-white/5" />
+                  <div className="h-3 w-36 rounded-full bg-white/10" />
+                  <div className="h-3 w-20 rounded-full bg-white/5" />
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <div className="h-10 w-24 rounded-full border border-white/10 bg-white/[0.04]" />
-                <div className="h-10 w-28 rounded-full border border-cyan-400/20 bg-cyan-400/10" />
+                <div className="h-9 w-20 rounded-full border border-white/10 bg-white/[0.04]" />
+                <div className="h-9 w-24 rounded-full border border-cyan-400/20 bg-cyan-400/10" />
               </div>
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[1.8rem] border border-violet-400/20 bg-gradient-to-br from-violet-500/10 via-white/[0.02] to-cyan-500/10 p-6 animate-[zyviaPulse_2.5s_ease-in-out_infinite]">
-                <div className="mb-4 h-8 w-44 rounded-full border border-cyan-400/20 bg-cyan-400/10" />
+              <div className="rounded-[1.7rem] border border-violet-400/20 bg-gradient-to-br from-violet-500/10 via-white/[0.02] to-cyan-500/10 p-5 animate-[zyviaPulse_2.5s_ease-in-out_infinite]">
+                <div className="mb-4 h-7 w-40 rounded-full border border-cyan-400/20 bg-cyan-400/10" />
                 <div className="space-y-3">
-                  <div className="h-8 w-[92%] rounded-full bg-white/10" />
-                  <div className="h-8 w-[84%] rounded-full bg-white/10" />
-                  <div className="h-8 w-[78%] rounded-full bg-white/10" />
-                  <div className="h-8 w-[62%] rounded-full bg-white/10" />
+                  <div className="h-7 w-[92%] rounded-full bg-white/10" />
+                  <div className="h-7 w-[84%] rounded-full bg-white/10" />
+                  <div className="h-7 w-[78%] rounded-full bg-white/10" />
+                  <div className="h-7 w-[62%] rounded-full bg-white/10" />
                 </div>
 
                 <div className="mt-8 space-y-3">
@@ -1391,15 +1390,15 @@ function BuilderPlaceholder({ status }: { status: string }) {
                 </div>
 
                 <div className="mt-8 flex gap-3">
-                  <div className="h-12 w-36 rounded-full border border-cyan-400/20 bg-cyan-400/15" />
-                  <div className="h-12 w-40 rounded-full border border-white/10 bg-white/[0.04]" />
+                  <div className="h-11 w-32 rounded-full border border-cyan-400/20 bg-cyan-400/15" />
+                  <div className="h-11 w-36 rounded-full border border-white/10 bg-white/[0.04]" />
                 </div>
               </div>
 
-              <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5 animate-[zyviaPulse_2.8s_ease-in-out_infinite]">
-                <div className="mb-4 h-[320px] rounded-[1.4rem] border border-white/10 bg-gradient-to-br from-white/5 to-cyan-400/5" />
+              <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.03] p-5 animate-[zyviaPulse_2.8s_ease-in-out_infinite]">
+                <div className="mb-4 h-[320px] rounded-[1.3rem] border border-white/10 bg-gradient-to-br from-white/5 to-cyan-400/5" />
                 <div className="space-y-3">
-                  <div className="h-5 w-40 rounded-full bg-white/10" />
+                  <div className="h-5 w-36 rounded-full bg-white/10" />
                   <div className="h-4 w-[92%] rounded-full bg-white/6" />
                   <div className="h-4 w-[84%] rounded-full bg-white/6" />
                 </div>
@@ -1407,18 +1406,18 @@ function BuilderPlaceholder({ status }: { status: string }) {
             </div>
           </div>
 
-          <div className="relative z-10 mt-6 border-t border-white/8 px-2 pt-6">
+          <div className="relative z-10 mt-5 border-t border-white/8 px-2 pt-5">
             <div className="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-100">
                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300 animate-pulse" />
                 Builder právě skládá jednotlivé sekce
               </div>
 
-              <div className="text-lg font-medium text-white md:text-xl">
+              <div className="text-base font-medium text-white md:text-lg">
                 {status || "Sestavuji strukturu webu…"}
               </div>
 
-              <div className="mt-2 text-sm text-zinc-500 md:text-base">
+              <div className="mt-2 text-sm text-zinc-500">
                 Vytvářím layout, hierarchii obsahu, CTA prvky a vizuální směr.
               </div>
             </div>
@@ -1449,7 +1448,6 @@ export default function AiEditorPage() {
   const [status, setStatus] = useState("Připraveno");
 
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
-  const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
     null
@@ -1935,11 +1933,7 @@ export default function AiEditorPage() {
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
 
-    iframeRef.current.contentWindow.postMessage(
-      { type: "zyvia-set-selected-section", sectionId: selectedSectionId },
-      "*"
-    );
-    iframeRef.current.contentWindow.postMessage(
+        iframeRef.current.contentWindow.postMessage(
       { type: "zyvia-set-selected-image", slot: selectedImage?.slot || null },
       "*"
     );
@@ -2385,54 +2379,27 @@ export default function AiEditorPage() {
 
       <div className="relative z-10 flex h-full flex-col">
         {!isFullscreen && (
-          <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-3 backdrop-blur-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <img
-                src="/zyvia-logo.svg"
-                alt="Zyvia"
-                className="h-[1.65rem] w-auto opacity-95"
-              />
+          <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-2.5 backdrop-blur-2xl">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => downloadZipSite(html, css, js)}
+                disabled={!html}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+              >
+                <Icon icon="solar:download-linear" width={14} />
+                Export
+              </button>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => startQuestionFlow(prompt)}
-                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-sm text-violet-200 transition hover:bg-violet-500/15"
-                >
-                  <Icon icon="solar:settings-linear" width={16} />
-                  Upřesnit web
-                </button>
-
-                <button
-                  type="button"
-                  onClick={focusEditInput}
-                  disabled={!html}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-                >
-                  <Icon icon="solar:pen-2-linear" width={16} />
-                  Upravit
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => downloadZipSite(html, css, js)}
-                  disabled={!html}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-                >
-                  <Icon icon="solar:download-linear" width={16} />
-                  Export
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={!html || publishing}
-                  className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
-                >
-                  <Icon icon="solar:upload-linear" width={16} />
-                  {publishing ? "Publikuji…" : "Publikovat"}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={!html || publishing}
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
+              >
+                <Icon icon="solar:upload-linear" width={14} />
+                {publishing ? "Publikuji…" : "Publikovat"}
+              </button>
             </div>
           </header>
         )}
@@ -2441,17 +2408,19 @@ export default function AiEditorPage() {
           className={`min-h-0 flex-1 ${
             isFullscreen
               ? "grid grid-cols-1"
-              : "grid grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)]"
+              : "grid grid-cols-1 xl:grid-cols-[380px_minmax(0,1fr)]"
           }`}
         >
           {!isFullscreen && (
             <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
               <div className="flex h-full flex-col">
-                <div className="border-b border-white/8 px-4 py-4">
+                <div className="border-b border-white/8 px-4 py-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <div className="text-sm font-medium text-white">Editor</div>
+                    <div className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+                      Editor
+                    </div>
                     {(loading || improving || resolvingAssets) && (
-                      <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300">
+                      <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-300">
                         {loading
                           ? "Generuji"
                           : improving
@@ -2476,7 +2445,7 @@ export default function AiEditorPage() {
                       resolvingAssets ||
                       prompt.trim().length < 12
                     }
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{
                       background:
                         "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
@@ -2491,91 +2460,12 @@ export default function AiEditorPage() {
                       : resolvingAssets
                       ? "Doplňuji obrázky…"
                       : "Začít generovat"}
-                    <Icon icon="solar:arrow-up-linear" width={16} />
+                    <Icon icon="solar:arrow-up-linear" width={15} />
                   </button>
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                   <div className="space-y-3">
-                    <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="text-sm font-medium text-white">
-                          Logo projektu
-                        </div>
-
-                        {uploadedLogo && (
-                          <button
-                            type="button"
-                            onClick={removeUploadedLogo}
-                            className="text-xs text-zinc-500 transition hover:text-white"
-                          >
-                            Odebrat
-                          </button>
-                        )}
-                      </div>
-
-                      {uploadedLogo ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white">
-                              <img
-                                src={uploadedLogo.dataUrl}
-                                alt={uploadedLogo.name}
-                                className="max-h-full max-w-full object-contain"
-                              />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="truncate text-sm text-white">
-                                {uploadedLogo.name}
-                              </div>
-                              <div className="mt-1 text-xs text-zinc-500">
-                                PNG / JPG / SVG / WEBP
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => logoInputRef.current?.click()}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
-                          >
-                            <Icon icon="solar:refresh-linear" width={16} />
-                            Nahrát jiné logo
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="text-xs leading-6 text-zinc-500">
-                            Nahrajte logo před generováním a pošlu ho spolu se
-                            zadáním do backendu.
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => logoInputRef.current?.click()}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                          >
-                            <Icon icon="solar:upload-linear" width={16} />
-                            Nahrát logo
-                          </button>
-                        </div>
-                      )}
-
-                      <input
-                        ref={logoInputRef}
-                        type="file"
-                        accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp"
-                        className="hidden"
-                        onChange={handleLogoUpload}
-                      />
-
-                      {logoUploadError && (
-                        <div className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">
-                          {logoUploadError}
-                        </div>
-                      )}
-                    </div>
-
                     {messages.map((message) => {
                       const isUser = message.role === "user";
                       const isSystem = message.role === "system";
@@ -2583,7 +2473,7 @@ export default function AiEditorPage() {
                       return (
                         <div
                           key={message.id}
-                          className={`max-w-[92%] rounded-2xl px-3 py-2.5 text-sm leading-6 ${
+                          className={`max-w-[94%] rounded-2xl px-3 py-2 text-[13px] leading-5 ${
                             isUser
                               ? "ml-auto border border-cyan-500/15 bg-cyan-500/10 text-cyan-50"
                               : isSystem
@@ -2597,7 +2487,7 @@ export default function AiEditorPage() {
                     })}
 
                     <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
-                      <div className="mb-2 flex items-center justify-between text-sm text-zinc-400">
+                      <div className="mb-2 flex items-center justify-between text-[13px] text-zinc-400">
                         <span>{status}</span>
                         <span>{Math.round(progress)}%</span>
                       </div>
@@ -2613,25 +2503,78 @@ export default function AiEditorPage() {
                         />
                       </div>
 
-                      <div className="mt-3 text-xs leading-6 text-zinc-500">
+                      <div className="mt-3 text-[11px] leading-5 text-zinc-500">
                         {loading
-                          ? "Probíhá generování layoutu podle oboru, loga a vašich odpovědí v chatu."
+                          ? "Probíhá generování layoutu podle oboru, loga a vašich odpovědí."
                           : improving
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
-                          : "Nejdřív odpovězte na víc otázek v chatu, nahrajte případně logo a pak se web vygeneruje přesněji."}
+                          : "Odpovězte na otázky a případně přidejte logo přímo v otázkách."}
                       </div>
                     </div>
 
                     {otazky.length > 0 && !otazkyDokonceny && aktualniOtazka && (
                       <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="text-sm font-medium text-white">
+                            Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => logoInputRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                          >
+                            <Icon icon="solar:upload-linear" width={13} />
+                            {uploadedLogo ? "Změnit logo" : "Nahrát logo"}
+                          </button>
                         </div>
-                        <div className="mb-3 text-sm text-zinc-200">
+
+                        {uploadedLogo && (
+                          <div className="mb-3 flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white">
+                              <img
+                                src={uploadedLogo.dataUrl}
+                                alt={uploadedLogo.name}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm text-white">
+                                {uploadedLogo.name}
+                              </div>
+                              <div className="mt-1 text-[11px] text-zinc-500">
+                                Logo bude použito při generování
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={removeUploadedLogo}
+                              className="text-[11px] text-zinc-500 transition hover:text-white"
+                            >
+                              Odebrat
+                            </button>
+                          </div>
+                        )}
+
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                        />
+
+                        {logoUploadError && (
+                          <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-[11px] text-red-200">
+                            {logoUploadError}
+                          </div>
+                        )}
+
+                        <div className="mb-3 text-[13px] text-zinc-200">
                           {aktualniOtazka.text}
                         </div>
 
@@ -2639,14 +2582,14 @@ export default function AiEditorPage() {
                           value={odpovedInput}
                           onChange={(e) => setOdpovedInput(e.target.value)}
                           placeholder={aktualniOtazka.placeholder}
-                          className="h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                          className="h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
                         />
 
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <button
                             type="button"
                             onClick={preskocitOtazkyAGenerovat}
-                            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
                           >
                             Přeskočit a generovat
                           </button>
@@ -2654,7 +2597,7 @@ export default function AiEditorPage() {
                           <button
                             type="button"
                             onClick={ulozitOdpovedNaOtazku}
-                            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
+                            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
                           >
                             Uložit odpověď
                           </button>
@@ -2665,11 +2608,10 @@ export default function AiEditorPage() {
                     {html && postGenerateSuggestions.length > 0 && (
                       <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
                         <div className="mb-2 text-sm font-medium text-white">
-                          Co chcete dál vylepšit?
+                          Další rychlé úpravy
                         </div>
-                        <div className="mb-3 text-xs leading-6 text-zinc-300">
-                          Vyberte sekci v náhledu a pak si můžete jedním klikem
-                          předpřipravit další zadání.
+                        <div className="mb-3 text-[11px] leading-5 text-zinc-300">
+                          Vyberte sekci v náhledu a jedním klikem si připravte další zadání.
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {postGenerateSuggestions.map((item) => (
@@ -2677,39 +2619,9 @@ export default function AiEditorPage() {
                               key={item}
                               type="button"
                               onClick={() => applyFollowUpSuggestion(item)}
-                              className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-100 transition hover:bg-white/[0.10]"
+                              className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-100 transition hover:bg-white/[0.10]"
                             >
                               {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {availableSections.length > 0 && (
-                      <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Co chcete upravit?
-                        </div>
-                        <div className="mb-3 text-xs text-zinc-500">
-                          Vyberte sekci přímo zde, nebo klikněte do náhledu.
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {availableSections.map((section) => (
-                            <button
-                              key={section.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSectionId(section.id);
-                                setSelectedSectionType(section.type);
-                              }}
-                              className={`rounded-full border px-3 py-2 text-xs transition ${
-                                selectedSectionId === section.id
-                                  ? "border-cyan-400/30 bg-cyan-500/10 text-white"
-                                  : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                              }`}
-                            >
-                              {section.label}
                             </button>
                           ))}
                         </div>
@@ -2725,21 +2637,21 @@ export default function AiEditorPage() {
                           <button
                             type="button"
                             onClick={() => useSectionAction("text")}
-                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
                           >
-                            Upravit text
+                            Změnit text
                           </button>
                           <button
                             type="button"
                             onClick={() => useSectionAction("visual")}
-                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
                           >
-                            Vylepšit vzhled
+                            Změnit vzhled
                           </button>
                           <button
                             type="button"
                             onClick={() => useSectionAction("regenerate")}
-                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.10]"
+                            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
                           >
                             Přegenerovat
                           </button>
@@ -2777,8 +2689,8 @@ export default function AiEditorPage() {
                   </div>
                 </div>
 
-                <div className="border-t border-white/8 px-4 py-4">
-                  <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                <div className="border-t border-white/8 px-4 py-3">
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
                     Upravit návrh
                   </div>
 
@@ -2793,11 +2705,11 @@ export default function AiEditorPage() {
                           ? `Napište úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
                           : "Nejdřív klikněte v náhledu na konkrétní sekci, kterou chcete upravit."
                       }
-                      className="h-16 w-full resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                      className="h-14 w-full resize-none bg-transparent text-[13px] text-white outline-none placeholder:text-zinc-500"
                     />
 
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <div className="text-xs text-zinc-500">
+                      <div className="text-[11px] text-zinc-500">
                         Enter odešle úpravu
                       </div>
 
@@ -2811,9 +2723,9 @@ export default function AiEditorPage() {
                           resolvingAssets ||
                           chatInput.trim().length < 3
                         }
-                        className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
+                        className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
-                        <Icon icon="solar:pen-2-linear" width={16} />
+                        <Icon icon="solar:pen-2-linear" width={14} />
                         {improving ? "Upravuji…" : "Použít"}
                       </button>
                     </div>
@@ -2830,81 +2742,80 @@ export default function AiEditorPage() {
                   <button
                     type="button"
                     onClick={() => setIsFullscreen(false)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"
+                    className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"
                   >
-                    <Icon icon="solar:arrow-left-linear" width={16} />
+                    <Icon icon="solar:arrow-left-linear" width={14} />
                     Zpět do editoru
                   </button>
 
                   <div className="mx-1 h-6 w-px bg-white/10" />
 
-                  <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("desktop")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                        viewMode === "desktop"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Desktop"
-                    >
-                      <Icon icon="solar:monitor-linear" width={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("tablet")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                        viewMode === "tablet"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Tablet"
-                    >
-                      <Icon icon="solar:tablet-linear" width={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("mobile")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                        viewMode === "mobile"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Mobil"
-                    >
-                      <Icon icon="solar:smartphone-linear" width={18} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center rounded-full bg-white/[0.10] px-4 text-[13px] text-white"
+                  >
+                    Náhled
+                  </button>
+
+                  <div className="mx-1 h-6 w-px bg-white/10" />
+
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("desktop")}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                      viewMode === "desktop"
+                        ? "bg-white/[0.10] text-white"
+                        : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                    title="Desktop"
+                  >
+                    <Icon icon="solar:monitor-linear" width={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("tablet")}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                      viewMode === "tablet"
+                        ? "bg-white/[0.10] text-white"
+                        : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                    title="Tablet"
+                  >
+                    <Icon icon="solar:tablet-linear" width={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("mobile")}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                      viewMode === "mobile"
+                        ? "bg-white/[0.10] text-white"
+                        : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                    }`}
+                    title="Mobil"
+                  >
+                    <Icon icon="solar:smartphone-linear" width={16} />
+                  </button>
                 </div>
               </div>
             )}
 
             <div className="flex h-full min-h-0 flex-col">
               {!isFullscreen && (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-3 md:px-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5 md:px-5">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("preview")}
-                      className={`rounded-full px-4 py-2 text-sm transition ${
-                        activeTab === "preview"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
+                    <div className="rounded-full bg-white/[0.10] px-4 py-2 text-[13px] text-white">
                       Náhled
-                    </button>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setActiveTab("code")}
-                      className={`rounded-full px-4 py-2 text-sm transition ${
-                        activeTab === "code"
+                      onClick={() => setActiveTab("editor")}
+                      className={`rounded-full px-4 py-2 text-[13px] transition ${
+                        activeTab === "editor"
                           ? "bg-white/[0.10] text-white"
                           : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
-                      Kód
+                      Editor
                     </button>
                   </div>
 
@@ -2915,7 +2826,7 @@ export default function AiEditorPage() {
                         if (!isFullscreen) setActiveTab("preview");
                         setIsFullscreen((prev) => !prev);
                       }}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                      className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
                     >
                       <Icon
                         icon={
@@ -2923,51 +2834,49 @@ export default function AiEditorPage() {
                             ? "solar:minimize-square-3-linear"
                             : "solar:maximize-square-3-linear"
                         }
-                        width={16}
+                        width={14}
                       />
                       {isFullscreen
-                        ? "Ukončit celou obrazovku"
+                        ? "Ukončit"
                         : "Celá obrazovka"}
                     </button>
 
-                    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
-                      <button
-                        type="button"
-                        onClick={() => setViewMode("desktop")}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                          viewMode === "desktop"
-                            ? "bg-white/[0.10] text-white"
-                            : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                        }`}
-                        title="Desktop"
-                      >
-                        <Icon icon="solar:monitor-linear" width={18} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setViewMode("tablet")}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                          viewMode === "tablet"
-                            ? "bg-white/[0.10] text-white"
-                            : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                        }`}
-                        title="Tablet"
-                      >
-                        <Icon icon="solar:tablet-linear" width={18} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setViewMode("mobile")}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
-                          viewMode === "mobile"
-                            ? "bg-white/[0.10] text-white"
-                            : "text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                        }`}
-                        title="Mobil"
-                      >
-                        <Icon icon="solar:smartphone-linear" width={18} />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("desktop")}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                        viewMode === "desktop"
+                          ? "bg-white/[0.10] text-white"
+                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      title="Desktop"
+                    >
+                      <Icon icon="solar:monitor-linear" width={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("tablet")}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                        viewMode === "tablet"
+                          ? "bg-white/[0.10] text-white"
+                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      title="Tablet"
+                    >
+                      <Icon icon="solar:tablet-linear" width={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("mobile")}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 transition ${
+                        viewMode === "mobile"
+                          ? "bg-white/[0.10] text-white"
+                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      title="Mobil"
+                    >
+                      <Icon icon="solar:smartphone-linear" width={16} />
+                    </button>
                   </div>
                 </div>
               )}
@@ -3001,25 +2910,64 @@ export default function AiEditorPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="grid h-full min-h-0 gap-3 px-3 py-3 md:grid-cols-3">
-                    <textarea
-                      readOnly
-                      value={html}
-                      className="h-full min-h-[220px] resize-none rounded-xl border border-white/8 bg-[#0b0b10] p-4 font-mono text-xs leading-6 text-zinc-200 outline-none"
-                      placeholder="HTML výstup"
-                    />
-                    <textarea
-                      readOnly
-                      value={css}
-                      className="h-full min-h-[220px] resize-none rounded-xl border border-white/8 bg-[#0b0b10] p-4 font-mono text-xs leading-6 text-zinc-200 outline-none"
-                      placeholder="CSS výstup"
-                    />
-                    <textarea
-                      readOnly
-                      value={js}
-                      className="h-full min-h-[220px] resize-none rounded-xl border border-white/8 bg-[#0b0b10] p-4 font-mono text-xs leading-6 text-zinc-200 outline-none"
-                      placeholder="JS výstup"
-                    />
+                  <div className="h-full overflow-y-auto px-3 py-3">
+                    <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-3">
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("text")}
+                        disabled={!selectedSectionMeta}
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-white">
+                          <Icon icon="solar:text-bold-linear" width={16} />
+                          <span className="text-sm font-medium">Změnit text</span>
+                        </div>
+                        <div className="text-[12px] leading-5 text-zinc-500">
+                          Připraví prompt pro úpravu textů ve vybrané sekci.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("visual")}
+                        disabled={!selectedSectionMeta}
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-white">
+                          <Icon icon="solar:palette-linear" width={16} />
+                          <span className="text-sm font-medium">Změnit fotku / vzhled</span>
+                        </div>
+                        <div className="text-[12px] leading-5 text-zinc-500">
+                          Připraví prompt pro vizuální vylepšení vybrané sekce.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("regenerate")}
+                        disabled={!selectedSectionMeta}
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-white">
+                          <Icon icon="solar:restart-linear" width={16} />
+                          <span className="text-sm font-medium">Přegenerovat sekci</span>
+                        </div>
+                        <div className="text-[12px] leading-5 text-zinc-500">
+                          Udělá novou variantu layoutu jen pro aktuálně vybranou sekci.
+                        </div>
+                      </button>
+                    </div>
+
+                    <div className="mx-auto mt-3 max-w-5xl rounded-2xl border border-white/8 bg-[#0b0b10] p-4">
+                      <div className="mb-2 text-sm font-medium text-white">
+                        {selectedSectionMeta
+                          ? `Aktuálně vybraná sekce: ${selectedSectionMeta.label}`
+                          : "Nejdřív klikněte v náhledu na konkrétní sekci"}
+                      </div>
+                      <div className="text-[12px] leading-5 text-zinc-500">
+                        Tady jsou jen editovací akce. Náhled zůstává vedle a není potřeba přepínat na žádný kód.
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
