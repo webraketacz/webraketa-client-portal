@@ -1935,7 +1935,12 @@ export default function AiEditorPage() {
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
 
-        iframeRef.current.contentWindow.postMessage(
+    iframeRef.current.contentWindow.postMessage(
+      { type: "zyvia-set-selected-section", sectionId: selectedSectionId },
+      "*"
+    );
+
+    iframeRef.current.contentWindow.postMessage(
       { type: "zyvia-set-selected-image", slot: selectedImage?.slot || null },
       "*"
     );
@@ -2381,37 +2386,38 @@ export default function AiEditorPage() {
 
       <div className="relative z-10 flex h-full flex-col">
         {!isFullscreen && (
-        <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-2.5 backdrop-blur-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-        <img
-          src="/zyvia-logo.svg"
-          alt="Zyvia"
-          className="h-6 w-auto shrink-0"
-        />
-        <div className="text-xs text-zinc-500">AI Web Builder</div>
-        </div>
+          <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-2.5 backdrop-blur-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/zyvia-logo.svg"
+                  alt="Zyvia"
+                  className="h-6 w-auto shrink-0"
+                />
+                <div className="text-xs text-zinc-500">AI Web Builder</div>
+              </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-        <button
-                type="button"
-                onClick={() => downloadZipSite(html, css, js)}
-                disabled={!html}
-                className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-              >
-                <Icon icon="solar:download-linear" width={14} />
-                Export
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => downloadZipSite(html, css, js)}
+                  disabled={!html}
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                >
+                  <Icon icon="solar:download-linear" width={14} />
+                  Export
+                </button>
 
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={!html || publishing}
-                className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
-              >
-                <Icon icon="solar:upload-linear" width={14} />
-                {publishing ? "Publikuji…" : "Publikovat"}
-              </button>
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={!html || publishing}
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
+                >
+                  <Icon icon="solar:upload-linear" width={14} />
+                  {publishing ? "Publikuji…" : "Publikovat"}
+                </button>
+              </div>
             </div>
           </header>
         )}
