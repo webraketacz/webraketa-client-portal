@@ -545,9 +545,9 @@ export default function OnboardingPage() {
           <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(129,140,248,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(129,140,248,0.045)_1px,transparent_1px)] bg-[size:72px_72px]" />
 
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-            <div className="absolute left-[10%] top-[18%] h-40 w-40 rounded-full bg-violet-500/8 blur-3xl" />
-            <div className="absolute right-[12%] top-[20%] h-44 w-44 rounded-full bg-blue-500/8 blur-3xl" />
-            <div className="absolute bottom-[10%] left-[28%] h-36 w-36 rounded-full bg-fuchsia-500/8 blur-3xl" />
+            <div className="absolute left-[10%] top-[18%] h-40 w-40 rounded-[10px] bg-violet-500/8 blur-3xl" />
+            <div className="absolute right-[12%] top-[20%] h-44 w-44 rounded-[10px] bg-blue-500/8 blur-3xl" />
+            <div className="absolute bottom-[10%] left-[28%] h-36 w-36 rounded-[10px] bg-fuchsia-500/8 blur-3xl" />
           </div>
 
           <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/28 to-slate-950/90" />
@@ -560,14 +560,14 @@ export default function OnboardingPage() {
                   type="button"
                   onClick={goBackStep}
                   disabled={step === 1}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <ArrowLeftIcon className="h-4 w-4" />
                   Zpět
                 </button>
 
                 <Link href="/" className="group inline-flex items-center gap-2.5">
-                  <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
+                  <span className="relative flex h-10 w-10 items-center justify-center rounded-[10px] border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
                     <RocketLogoIcon className="h-[22px] w-[22px]" />
                   </span>
                   <span className="text-lg font-semibold tracking-tight text-white">
@@ -578,7 +578,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={goHome}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-xl transition hover:bg-white/[0.10]"
                 >
                   Zpátky na hlavní stránku
                 </button>
@@ -592,13 +592,13 @@ export default function OnboardingPage() {
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                     <div className="max-w-3xl">
                       <div className="mb-4 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                        <span className="rounded-[10px] border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
                           Přihlášen: {sessionEmail ?? "—"}
                         </span>
-                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                        <span className="rounded-[10px] border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
                           Balíček: {planLabel}
                         </span>
-                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                        <span className="rounded-[10px] border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
                           Typ: {billingLabel}
                         </span>
                       </div>
@@ -627,23 +627,23 @@ export default function OnboardingPage() {
                   </div>
 
                   <div className="mt-8">
-                    <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/10">
+                    <div className="relative h-3 w-full overflow-hidden rounded-[10px] bg-white/10">
                       <div
-                        className="h-3 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 transition-all duration-500"
+                        className="h-3 rounded-[10px] bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 transition-all duration-500"
                         style={{ width: `${progress}%` }}
                       />
                       <div
                         className="absolute top-1/2 z-10 -translate-y-1/2 transition-all duration-500"
                         style={{ left: `calc(${progress}% - 14px)` }}
                       >
-                        <div className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/15 blur-xl" />
+                        <div className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-[10px] bg-indigo-400/15 blur-xl" />
                         <MiniRocket className="relative h-7 w-7 rotate-[18deg] text-indigo-200 drop-shadow-[0_0_10px_rgba(129,140,248,0.45)]" />
                       </div>
                     </div>
                   </div>
 
                   {(error || info) && (
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm">
+                    <div className="mt-5 rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-sm">
                       {error ? (
                         <span className="text-red-300">{error}</span>
                       ) : (
@@ -661,10 +661,10 @@ export default function OnboardingPage() {
                           </div>
 
                           <div className="mt-4 flex flex-wrap items-center gap-3">
-                            <span className="rounded-full bg-white/[0.08] px-4 py-2 text-sm font-semibold text-white">
+                            <span className="rounded-[10px] bg-white/[0.08] px-4 py-2 text-sm font-semibold text-white">
                               {planLabel}
                             </span>
-                            <span className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-300">
+                            <span className="rounded-[10px] border border-white/10 px-4 py-2 text-sm text-slate-300">
                               {billingLabel}
                             </span>
                           </div>
@@ -740,10 +740,10 @@ export default function OnboardingPage() {
                               onChange={(e) => setDomain(e.target.value)}
                               placeholder="např. garagelabs.cz"
                               style={inputBaseStyle}
-                              className="mt-4 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                              className="mt-4 w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                             />
 
-                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                            <div className="mt-4 rounded-[10px] border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
                               Instrukce pro přidání domény zobrazíme až v klientské zóně po hotovém návrhu.
                             </div>
                           </div>
@@ -757,21 +757,21 @@ export default function OnboardingPage() {
                               onChange={(e) => setDomain(e.target.value)}
                               placeholder="např. garagelabs.cz"
                               style={inputBaseStyle}
-                              className="mt-4 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                              className="mt-4 w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                             />
 
                             <div className="mt-4 flex flex-wrap gap-3">
                               <button
                                 type="button"
                                 onClick={simulateDomainCheck}
-                                className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.10]"
+                                className="rounded-[10px] border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.10]"
                               >
                                 Ověřit dostupnost
                               </button>
                             </div>
 
                             {domainCheckMessage && (
-                              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                              <div className="mt-4 rounded-[10px] border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
                                 {domainCheckMessage}
                               </div>
                             )}
@@ -798,7 +798,7 @@ export default function OnboardingPage() {
                             onChange={(e) => setBusiness(e.target.value)}
                             placeholder="Jednou větou popište, co děláte. Např. Svatební salon zaměřený na moderní šaty a doplňky..."
                             style={inputBaseStyle}
-                            className="mt-3 min-h-[160px] w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            className="mt-3 min-h-[160px] w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                           />
                         </div>
 
@@ -810,7 +810,7 @@ export default function OnboardingPage() {
                               onChange={(e) => setBusinessType(e.target.value)}
                               placeholder="Např. Svatební salon, realitní kancelář, kosmetika..."
                               style={inputBaseStyle}
-                              className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                              className="mt-3 w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                             />
                           </div>
 
@@ -824,7 +824,7 @@ export default function OnboardingPage() {
                                     key={style}
                                     type="button"
                                     onClick={() => setPreferredStyle(style)}
-                                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                                    className={`rounded-[10px] border px-4 py-2 text-sm transition ${
                                       active
                                         ? "border-violet-400/40 bg-white/[0.10] text-white"
                                         : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08]"
@@ -847,7 +847,7 @@ export default function OnboardingPage() {
                             onChange={(e) => setBrandColors(e.target.value)}
                             placeholder="Např. černá, bílá, fialová / #111111 #ffffff #7c3aed"
                             style={inputBaseStyle}
-                            className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            className="mt-3 w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                           />
                         </div>
 
@@ -859,15 +859,15 @@ export default function OnboardingPage() {
                               accept="image/*,.svg,.pdf"
                               multiple
                               onChange={(e) => handleLogoFiles(e.target.files)}
-                              className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
+                              className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded-[10px] file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
                             />
 
                             {logoFiles.length > 0 ? (
-                              <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
+                              <div className="mt-3 rounded-[10px] border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
                                 {logoFiles.map((file) => file.name).join(", ")}
                               </div>
                             ) : (
-                              <div className="mt-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
+                              <div className="mt-3 rounded-[10px] border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">
                                 Pokud logo nemáte, doplníme později i AI variantu.
                               </div>
                             )}
@@ -882,14 +882,14 @@ export default function OnboardingPage() {
                               onChange={(e) => setWebsiteDesc(e.target.value)}
                               placeholder="Jaké sekce má web mít, jak má působit, co má obsahovat, jaký je cíl webu..."
                               style={inputBaseStyle}
-                              className="mt-3 min-h-[220px] w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                              className="mt-3 min-h-[220px] w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                             />
 
                             <button
                               type="button"
                               onClick={improveDescriptionDemo}
                               disabled={improvingText}
-                              className="mt-4 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="mt-4 rounded-[10px] bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {improvingText ? "AI vylepšuje..." : "Vylepšit s AI"}
                             </button>
@@ -902,11 +902,11 @@ export default function OnboardingPage() {
                             type="file"
                             multiple
                             onChange={(e) => handleMaterialFiles(e.target.files)}
-                            className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
+                            className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded-[10px] file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
                           />
 
                           {materialFiles.length > 0 && (
-                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
+                            <div className="mt-4 rounded-[10px] border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
                               {materialFiles.map((file) => file.name).join(", ")}
                             </div>
                           )}
@@ -919,7 +919,7 @@ export default function OnboardingPage() {
                             onChange={(e) => setMaterialsNote(e.target.value)}
                             placeholder="Např. texty pošlu později, logo zatím nemám, fotky dodám do 2 dnů..."
                             style={inputBaseStyle}
-                            className="mt-3 min-h-[140px] w-full rounded-2xl border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
+                            className="mt-3 min-h-[140px] w-full rounded-[10px] border border-white/10 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-400/40 focus:ring-2 focus:ring-violet-500/20"
                           />
                         </div>
                       </div>
@@ -930,7 +930,7 @@ export default function OnboardingPage() {
                     <button
                       type="button"
                       onClick={logout}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10]"
+                      className="inline-flex items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10]"
                     >
                       Odhlásit
                     </button>
@@ -940,7 +940,7 @@ export default function OnboardingPage() {
                         type="button"
                         onClick={() => savePartial()}
                         disabled={saving}
-                        className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/[0.10] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {saving ? "Ukládám…" : "Uložit"}
                       </button>
@@ -950,7 +950,7 @@ export default function OnboardingPage() {
                           type="button"
                           onClick={() => savePartial(step + 1)}
                           disabled={saving || !canContinue()}
-                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center justify-center rounded-[10px] bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {saving ? "Ukládám…" : "Pokračovat"}
                           <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -964,7 +964,7 @@ export default function OnboardingPage() {
                             router.refresh();
                           }}
                           disabled={saving}
-                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center justify-center rounded-[10px] bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Dokončit a pokračovat
                           <ArrowRightIcon className="ml-2 h-4 w-4" />

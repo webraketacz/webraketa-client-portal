@@ -166,11 +166,11 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function WindowCardA() {
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+    <div className="w-full rounded-[10px] border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
       <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
       </div>
       <div className="mb-2 h-16 w-full rounded-lg bg-indigo-500/20" />
       <div className="grid grid-cols-2 gap-2">
@@ -185,11 +185,11 @@ function WindowCardA() {
 
 function WindowCardB() {
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+    <div className="w-full rounded-[10px] border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
       <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
       </div>
       <div className="flex gap-2">
         <div className="h-32 w-1/4 rounded bg-white/5" />
@@ -208,11 +208,11 @@ function WindowCardB() {
 
 function WindowCardC() {
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+    <div className="w-full rounded-[10px] border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
       <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
       </div>
       <div className="mb-3 h-4 w-1/3 rounded bg-white/10" />
       <div className="mb-2 flex h-20 items-end gap-1">
@@ -230,14 +230,14 @@ function WindowCardC() {
 
 function WindowCardD() {
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
+    <div className="w-full rounded-[10px] border border-white/10 bg-slate-900/90 p-3 shadow-2xl">
       <div className="mb-3 flex gap-1.5 border-b border-white/5 pb-2">
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
-        <div className="h-2 w-2 rounded-full bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
+        <div className="h-2 w-2 rounded-[10px] bg-slate-700" />
       </div>
       <div className="mb-3 flex items-center gap-2">
-        <div className="h-6 w-6 rounded-full bg-blue-500/20" />
+        <div className="h-6 w-6 rounded-[10px] bg-blue-500/20" />
         <div className="h-3 w-16 rounded bg-white/10" />
         <div className="ml-auto flex gap-1">
           <div className="h-2 w-6 rounded bg-white/5" />
@@ -443,7 +443,7 @@ export default function RegisterClient() {
                 <div className="mx-auto w-full max-w-md">
                   <div className="mb-8 flex justify-center">
                     <Link href="/" className="group inline-flex items-center gap-2.5">
-                      <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
+                      <span className="relative flex h-10 w-10 items-center justify-center rounded-[10px] border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
                         <RocketIcon className="h-[22px] w-[22px]" />
                       </span>
                       <span className="text-lg font-semibold tracking-tight text-white">
@@ -466,15 +466,15 @@ export default function RegisterClient() {
                         </p>
                       </div>
 
-                      <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                      <div className="mb-5 rounded-[10px] border border-white/10 bg-white/[0.03] p-3">
                         <div className="text-[0.625rem] font-semibold uppercase tracking-wider text-slate-500">
                           Vybraný balíček
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-white">
+                          <span className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-white">
                             {planLabels[plan]}
                           </span>
-                          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-slate-300">
+                          <span className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-slate-300">
                             {billingLabels[billing]}
                           </span>
                         </div>
@@ -502,7 +502,7 @@ export default function RegisterClient() {
                               onChange={(e) => setEmail(e.target.value)}
                               required
                               style={inputBaseStyle}
-                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                              className="relative z-[1] w-full rounded-[10px] border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                             />
                           </div>
                         </div>
@@ -528,7 +528,7 @@ export default function RegisterClient() {
                               onChange={(e) => setPassword(e.target.value)}
                               required
                               style={inputBaseStyle}
-                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                              className="relative z-[1] w-full rounded-[10px] border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
                             />
                           </div>
                           <p className="text-[0.625rem] text-slate-500">Minimálně 6 znaků.</p>
@@ -555,7 +555,7 @@ export default function RegisterClient() {
                               onChange={(e) => setPassword2(e.target.value)}
                               required
                               style={inputBaseStyle}
-                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                              className="relative z-[1] w-full rounded-[10px] border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
                             />
                           </div>
                         </div>
@@ -564,7 +564,7 @@ export default function RegisterClient() {
                           <button
                             type="submit"
                             disabled={loading}
-                            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-[10px] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500" />
                             <span
@@ -590,7 +590,7 @@ export default function RegisterClient() {
                           )}
 
                           {!error && (
-                            <div className="mt-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3 text-[0.625rem] text-slate-500">
+                            <div className="mt-3 rounded-[10px] border border-white/5 bg-white/[0.03] p-3 text-[0.625rem] text-slate-500">
                               <div className="flex items-start gap-2">
                                 <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                                 <p>
@@ -626,7 +626,7 @@ export default function RegisterClient() {
                           <button
                             type="button"
                             onClick={onGoogleRegister}
-                            className="group relative flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                            className="group relative flex w-full items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                           >
                             <GoogleIcon className="h-[18px] w-[18px]" />
                             Registrovat se pomocí Google
@@ -650,11 +650,11 @@ export default function RegisterClient() {
 
                         <div className="flex items-center justify-between text-[0.625rem] text-slate-600">
                           <span className="inline-flex items-center gap-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                            <span className="h-1.5 w-1.5 rounded-[10px] bg-slate-700" />
                             Zabezpečeno
                           </span>
                           <span className="inline-flex items-center gap-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                            <span className="h-1.5 w-1.5 rounded-[10px] bg-slate-700" />
                             Klientská zóna Webraketa
                           </span>
                         </div>
@@ -665,7 +665,7 @@ export default function RegisterClient() {
                   <div className="mt-8 flex justify-center">
                     <Link
                       href="/"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
+                      className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
                     >
                       <ArrowLeftIcon className="h-4 w-4 text-slate-300" />
                       Zpět na homepage

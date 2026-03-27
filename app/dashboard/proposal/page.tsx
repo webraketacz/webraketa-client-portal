@@ -16,13 +16,13 @@ export default function ProposalPage() {
             </p>
           </div>
 
-          <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300">
+          <div className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300">
             Stav: <span className="font-semibold text-white">Čeká na zveřejnění návrhu</span>
           </div>
         </div>
 
         <div className="rounded-[2rem] border border-dashed border-white/10 bg-zinc-950/30 p-10 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-500">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-zinc-500">
             <Icon icon="solar:laptop-minimalistic-linear" width={34} />
           </div>
 
@@ -34,7 +34,7 @@ export default function ProposalPage() {
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-xl mx-auto">
             <button
               disabled
-              className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-5 py-3 text-sm font-medium text-zinc-500"
+              className="flex items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-zinc-900 px-5 py-3 text-sm font-medium text-zinc-500"
             >
               <Icon icon="solar:check-circle-linear" width={18} />
               Schválit návrh
@@ -42,7 +42,7 @@ export default function ProposalPage() {
 
             <button
               disabled
-              className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-5 py-3 text-sm font-medium text-zinc-500"
+              className="flex items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-zinc-900 px-5 py-3 text-sm font-medium text-zinc-500"
             >
               <Icon icon="solar:pen-linear" width={18} />
               Požádat o úpravy
@@ -60,7 +60,7 @@ export default function ProposalPage() {
             <h3 className="mt-2 text-2xl font-semibold text-white">Přehled všech kroků</h3>
           </div>
 
-          <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-zinc-300">
+          <div className="rounded-[10px] border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-zinc-300">
             Fáze 2 z 6
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function ProposalPage() {
                 }`}
               >
                 <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border ${
                     active
                       ? "border-blue-500/30 bg-blue-500/10 text-blue-300"
                       : done

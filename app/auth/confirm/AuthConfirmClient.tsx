@@ -49,7 +49,7 @@ export default function AuthConfirmClient() {
         {status === "error" && (
           <button
             onClick={() => router.replace("/login")}
-            className="mt-6 w-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 py-3 font-semibold text-white"
+            className="mt-6 w-full rounded-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 py-3 font-semibold text-white"
           >
             Přejít na přihlášení
           </button>

@@ -190,10 +190,10 @@ function FlyingRocket({
         style={{ animationDelay: delay, animationDuration: duration }}
       >
         <div
-          className="absolute left-1/2 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-cyan-400/0 via-indigo-400/30 to-fuchsia-400/0 blur-[1px]"
+          className="absolute left-1/2 top-1/2 h-[2px] -translate-y-1/2 rounded-[10px] bg-gradient-to-r from-cyan-400/0 via-indigo-400/30 to-fuchsia-400/0 blur-[1px]"
           style={{ width: trailWidth, transform: "translate(-95%, -50%)" }}
         />
-        <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/8 blur-xl" />
+        <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-[10px] bg-indigo-400/8 blur-xl" />
         <MiniRocket className="relative h-7 w-7 text-indigo-300/55 drop-shadow-[0_0_8px_rgba(129,140,248,0.18)]" />
       </div>
     </div>
@@ -314,16 +314,16 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="absolute left-[10%] top-[16%] h-1.5 w-1.5 rounded-full bg-fuchsia-400/20" />
-            <div className="absolute left-[24%] top-[28%] h-1.5 w-1.5 rounded-full bg-indigo-400/20" />
-            <div className="absolute left-[76%] top-[18%] h-1.5 w-1.5 rounded-full bg-cyan-400/20" />
-            <div className="absolute left-[82%] top-[74%] h-1.5 w-1.5 rounded-full bg-fuchsia-400/20" />
-            <div className="absolute left-[16%] top-[80%] h-1.5 w-1.5 rounded-full bg-indigo-400/20" />
-            <div className="absolute left-[62%] top-[86%] h-1.5 w-1.5 rounded-full bg-cyan-400/20" />
+            <div className="absolute left-[10%] top-[16%] h-1.5 w-1.5 rounded-[10px] bg-fuchsia-400/20" />
+            <div className="absolute left-[24%] top-[28%] h-1.5 w-1.5 rounded-[10px] bg-indigo-400/20" />
+            <div className="absolute left-[76%] top-[18%] h-1.5 w-1.5 rounded-[10px] bg-cyan-400/20" />
+            <div className="absolute left-[82%] top-[74%] h-1.5 w-1.5 rounded-[10px] bg-fuchsia-400/20" />
+            <div className="absolute left-[16%] top-[80%] h-1.5 w-1.5 rounded-[10px] bg-indigo-400/20" />
+            <div className="absolute left-[62%] top-[86%] h-1.5 w-1.5 rounded-[10px] bg-cyan-400/20" />
 
-            <div className="absolute left-[14%] top-[18%] h-28 w-28 rounded-full bg-indigo-500/4 blur-3xl" />
-            <div className="absolute right-[12%] top-[22%] h-32 w-32 rounded-full bg-fuchsia-500/4 blur-3xl" />
-            <div className="absolute bottom-[12%] left-[30%] h-32 w-32 rounded-full bg-cyan-500/4 blur-3xl" />
+            <div className="absolute left-[14%] top-[18%] h-28 w-28 rounded-[10px] bg-indigo-500/4 blur-3xl" />
+            <div className="absolute right-[12%] top-[22%] h-32 w-32 rounded-[10px] bg-fuchsia-500/4 blur-3xl" />
+            <div className="absolute bottom-[12%] left-[30%] h-32 w-32 rounded-[10px] bg-cyan-500/4 blur-3xl" />
           </div>
 
           <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-slate-950/28 to-slate-950/90" />
@@ -335,7 +335,7 @@ export default function LoginPage() {
                 <div className="mx-auto w-full max-w-md">
                   <div className="mb-8 flex justify-center">
                     <Link href="/" className="group inline-flex items-center gap-2.5">
-                      <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
+                      <span className="relative flex h-10 w-10 items-center justify-center rounded-[10px] border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 shadow-[0_0_18px_rgba(99,102,241,0.2)] transition-colors duration-300 group-hover:bg-indigo-500/20">
                         <RocketLogoIcon className="h-[22px] w-[22px]" />
                       </span>
                       <span className="text-lg font-semibold tracking-tight text-white">
@@ -380,7 +380,7 @@ export default function LoginPage() {
                               onChange={(e) => setEmail(e.target.value)}
                               required
                               style={inputBaseStyle}
-                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                              className="relative z-[1] w-full rounded-[10px] border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                             />
                           </div>
                         </div>
@@ -406,7 +406,7 @@ export default function LoginPage() {
                               onChange={(e) => setPassword(e.target.value)}
                               required
                               style={inputBaseStyle}
-                              className="relative z-[1] w-full rounded-2xl border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                              className="relative z-[1] w-full rounded-[10px] border border-white/10 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
                             />
                           </div>
                         </div>
@@ -415,7 +415,7 @@ export default function LoginPage() {
                           <button
                             type="submit"
                             disabled={loading}
-                            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-[10px] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500" />
                             <span
@@ -441,7 +441,7 @@ export default function LoginPage() {
                           )}
 
                           {!error && (
-                            <div className="mt-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3 text-[0.625rem] text-slate-500">
+                            <div className="mt-3 rounded-[10px] border border-white/5 bg-white/[0.03] p-3 text-[0.625rem] text-slate-500">
                               <div className="flex items-start gap-2">
                                 <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                                 <p>
@@ -465,7 +465,7 @@ export default function LoginPage() {
                           <button
                             type="button"
                             onClick={onGoogleSignIn}
-                            className="group relative flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                            className="group relative flex w-full items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                           >
                             <GoogleIcon className="h-[18px] w-[18px]" />
                             Přihlásit se pomocí Google
@@ -495,11 +495,11 @@ export default function LoginPage() {
 
                         <div className="flex items-center justify-between text-[0.625rem] text-slate-600">
                           <span className="inline-flex items-center gap-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                            <span className="h-1.5 w-1.5 rounded-[10px] bg-slate-700" />
                             Zabezpečeno
                           </span>
                           <span className="inline-flex items-center gap-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                            <span className="h-1.5 w-1.5 rounded-[10px] bg-slate-700" />
                             Klientská zóna Webraketa
                           </span>
                         </div>
@@ -510,7 +510,7 @@ export default function LoginPage() {
                   <div className="mt-8 flex justify-center">
                     <Link
                       href="/"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
+                      className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
                     >
                       <ArrowLeftIcon className="h-4 w-4 text-slate-300" />
                       Zpět na homepage

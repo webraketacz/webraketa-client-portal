@@ -8,10 +8,10 @@ export default function DashboardPage() {
           <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.15fr)_380px]">
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-blue-300">
+                <span className="rounded-[10px] border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-blue-300">
                   Aktuální projekt
                 </span>
-                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                <span className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                   Aktivní
                 </span>
               </div>
@@ -44,7 +44,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-blue-500/10 to-violet-500/10 p-6">
+            <div className="rounded-[10px] border border-white/10 bg-gradient-to-br from-blue-500/10 to-violet-500/10 p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs uppercase tracking-[0.16em] text-zinc-500">
@@ -56,8 +56,8 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="relative flex h-12 w-12 items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-violet-500/20 blur-md animate-pulse" />
-                  <div className="h-9 w-9 rounded-full border-2 border-violet-400/40 border-t-violet-300 animate-spin" />
+                  <div className="absolute inset-0 rounded-[10px] bg-violet-500/20 blur-md animate-pulse" />
+                  <div className="h-9 w-9 rounded-[10px] border-2 border-violet-400/40 border-t-violet-300 animate-spin" />
                 </div>
               </div>
 
@@ -67,9 +67,9 @@ export default function DashboardPage() {
                   <span>24%</span>
                 </div>
 
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                <div className="h-2.5 w-full overflow-hidden rounded-[10px] bg-zinc-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
+                    className="h-full rounded-[10px] bg-gradient-to-r from-violet-500 to-blue-500"
                     style={{ width: "24%" }}
                   />
                 </div>
@@ -84,8 +84,8 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-4">
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-violet-300">
+          <div className="rounded-[10px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-violet-300">
               <Icon icon="solar:laptop-minimalistic-linear" width={22} />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-white">Návrh webu</h3>
@@ -94,32 +94,32 @@ export default function DashboardPage() {
             </p>
             <button
               disabled
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-500"
+              className="mt-5 inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-500"
             >
               Zatím se připravuje
             </button>
           </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-blue-300">
+          <div className="rounded-[10px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-blue-300">
               <Icon icon="solar:folder-with-files-linear" width={22} />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-white">Podklady</h3>
             <p className="mt-2 text-sm leading-7 text-zinc-400">
               Nahrajte texty, logo, fotky i další soubory pro co nejrychlejší realizaci.
             </p>
-            <button className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white">
+            <button className="mt-5 inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white">
               Otevřít podklady
             </button>
           </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-emerald-300">
+          <div className="rounded-[10px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-emerald-300">
               <Icon icon="solar:pen-new-square-linear" width={22} />
             </div>
             <div className="mt-4 flex items-center gap-2">
               <h3 className="text-lg font-semibold text-white">Upravit web pomocí CMS</h3>
-              <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+              <span className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
                 Od PRO
               </span>
             </div>
@@ -128,19 +128,19 @@ export default function DashboardPage() {
             </p>
             <button
               disabled
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-500 cursor-not-allowed"
+              className="mt-5 inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-500 cursor-not-allowed"
             >
               Dostupné od balíčku PRO
             </button>
           </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-pink-300">
+          <div className="rounded-[10px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-pink-300">
               <Icon icon="solar:chat-round-dots-linear" width={22} />
             </div>
             <div className="mt-4 flex items-center gap-2">
               <h3 className="text-lg font-semibold text-white">Soukromý chat</h3>
-              <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+              <span className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
                 Od PREMIUM
               </span>
             </div>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
             </p>
             <button
               disabled
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-500 cursor-not-allowed"
+              className="mt-5 inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-500 cursor-not-allowed"
             >
               Dostupné od balíčku PREMIUM
             </button>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
 
           <div className="mt-5 rounded-3xl border border-white/10 bg-zinc-950/30 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-violet-500/10 text-violet-300">
                 <Icon icon="solar:card-linear" width={18} />
               </div>
               <div>

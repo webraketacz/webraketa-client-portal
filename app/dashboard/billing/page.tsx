@@ -15,7 +15,7 @@ export default function BillingPage() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-zinc-950/30 p-6">
+          <div className="rounded-[10px] border border-white/10 bg-zinc-950/30 p-6">
             <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Aktivní předplatné</div>
             <h3 className="mt-2 text-2xl font-semibold text-white">START</h3>
             <p className="mt-3 text-sm leading-7 text-zinc-400">
@@ -35,17 +35,17 @@ export default function BillingPage() {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button className="rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95">
+              <button className="rounded-[10px] bg-gradient-to-r from-violet-500 to-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95">
                 Upgradovat balíček
               </button>
 
-              <button className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-medium text-red-300 transition hover:bg-red-500/15">
+              <button className="rounded-[10px] border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-medium text-red-300 transition hover:bg-red-500/15">
                 Zrušit předplatné
               </button>
             </div>
           </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-zinc-950/30 p-6">
+          <div className="rounded-[10px] border border-white/10 bg-zinc-950/30 p-6">
             <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Možnosti upgradu</div>
 
             <div className="mt-5 space-y-3">

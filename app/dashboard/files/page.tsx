@@ -16,13 +16,13 @@ export default function FilesPage() {
             </p>
           </div>
 
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300">
+          <span className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300">
             Max 50MB na soubor
           </span>
         </div>
 
         <div className="rounded-[2rem] border border-dashed border-zinc-700 bg-zinc-900/30 p-10 text-center transition-all hover:border-violet-500/30 hover:bg-zinc-800/30">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-zinc-400">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[10px] bg-zinc-800 text-zinc-400">
             <Icon icon="solar:add-folder-linear" width={28} />
           </div>
           <p className="text-base font-medium text-zinc-200">
@@ -43,9 +43,9 @@ export default function FilesPage() {
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/30 p-4">
+          <div className="flex items-center justify-between rounded-[10px] border border-white/10 bg-zinc-950/30 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-300">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-indigo-500/10 text-indigo-300">
                 <Icon icon="solar:file-text-linear" width={20} />
               </div>
               <div>
@@ -59,9 +59,9 @@ export default function FilesPage() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/30 p-4">
+          <div className="flex items-center justify-between rounded-[10px] border border-white/10 bg-zinc-950/30 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-orange-500/10 text-orange-300">
                 <Icon icon="solar:gallery-linear" width={20} />
               </div>
               <div>

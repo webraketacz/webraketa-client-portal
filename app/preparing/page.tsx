@@ -20,23 +20,23 @@ export default function PreparingPage() {
   return (
     <div className="min-h-dvh bg-zinc-950 text-zinc-100 antialiased">
       <div className="relative min-h-dvh overflow-hidden">
-        <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/20 blur-[6rem]" />
-        <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-full bg-blue-600/15 blur-[7rem]" />
+        <div className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-[10px] bg-violet-600/20 blur-[6rem]" />
+        <div className="pointer-events-none absolute top-10 right-[-10rem] h-[34rem] w-[34rem] rounded-[10px] bg-blue-600/15 blur-[7rem]" />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]" />
 
         <div className="relative z-10 mx-auto flex min-h-dvh max-w-7xl items-center px-6 py-12">
           <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             {/* Left */}
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 backdrop-blur-xl md:p-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
+              <div className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/80">
+                <span className="inline-block h-1.5 w-1.5 rounded-[10px] bg-violet-400" />
                 PŘÍPRAVA NÁVRHU WEBU
               </div>
 
               <div className="mt-8 flex items-center gap-4">
                 <div className="relative flex h-14 w-14 items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-violet-500/20 blur-md animate-pulse" />
-                  <div className="h-10 w-10 rounded-full border-2 border-violet-400/40 border-t-violet-400 animate-spin" />
+                  <div className="absolute inset-0 rounded-[10px] bg-violet-500/20 blur-md animate-pulse" />
+                  <div className="h-10 w-10 rounded-[10px] border-2 border-violet-400/40 border-t-violet-400 animate-spin" />
                 </div>
 
                 <div>
@@ -112,14 +112,14 @@ export default function PreparingPage() {
                     router.push("/dashboard");
                     router.refresh();
                   }}
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95"
+                  className="inline-flex items-center justify-center rounded-[10px] bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_40px_-18px_rgba(139,92,246,0.7)] transition hover:opacity-95"
                 >
                   Pokračovat do klientské zóny
                 </button>
 
                 <a
                   href="mailto:podpora@webraketa.cz"
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-6 py-3 text-sm font-medium text-white/90 transition hover:bg-white/[0.10]"
+                  className="inline-flex items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.06] px-6 py-3 text-sm font-medium text-white/90 transition hover:bg-white/[0.10]"
                 >
                   Kontaktovat podporu
                 </a>
@@ -139,7 +139,7 @@ export default function PreparingPage() {
 
                 <div className="mt-6 space-y-5">
                   <div className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
+                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-[10px] border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
                       1
                     </div>
                     <div>
@@ -153,7 +153,7 @@ export default function PreparingPage() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
+                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-[10px] border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
                       2
                     </div>
                     <div>
@@ -167,7 +167,7 @@ export default function PreparingPage() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
+                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-[10px] border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
                       3
                     </div>
                     <div>
@@ -181,7 +181,7 @@ export default function PreparingPage() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
+                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-[10px] border border-violet-400/30 bg-violet-500/10 text-sm font-semibold text-violet-300">
                       4
                     </div>
                     <div>

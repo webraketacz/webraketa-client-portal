@@ -15,7 +15,7 @@ export default function SupportPage() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-zinc-950/30 p-6">
+          <div className="rounded-[10px] border border-white/10 bg-zinc-950/30 p-6">
             <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Formulář podpory</div>
 
             <div className="mt-5 space-y-5">
@@ -23,7 +23,7 @@ export default function SupportPage() {
                 <label className="text-sm font-medium text-white">Předmět</label>
                 <input
                   placeholder="Např. Potřebuji doplnit informace k návrhu"
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
+                  className="mt-2 w-full rounded-[10px] border border-white/10 bg-black/20 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
                 />
               </div>
 
@@ -31,18 +31,18 @@ export default function SupportPage() {
                 <label className="text-sm font-medium text-white">Zpráva</label>
                 <textarea
                   placeholder="Sem napište svůj požadavek..."
-                  className="mt-2 min-h-[220px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
+                  className="mt-2 min-h-[220px] w-full rounded-[10px] border border-white/10 bg-black/20 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
                 />
               </div>
 
-              <button className="rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95">
+              <button className="rounded-[10px] bg-gradient-to-r from-violet-500 to-blue-500 px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95">
                 Odeslat zprávu
               </button>
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-[1.75rem] border border-white/10 bg-zinc-950/30 p-6">
+            <div className="rounded-[10px] border border-white/10 bg-zinc-950/30 p-6">
               <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Kontakt</div>
               <div className="mt-5 space-y-3 text-sm text-zinc-300">
                 <div>Email: podpora@webraketa.cz</div>
@@ -50,7 +50,7 @@ export default function SupportPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-zinc-950/30 p-6">
+            <div className="rounded-[10px] border border-white/10 bg-zinc-950/30 p-6">
               <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Soukromý chat</div>
 
               {premium ? (
@@ -64,7 +64,7 @@ export default function SupportPage() {
               )}
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-zinc-950/30 p-6">
+            <div className="rounded-[10px] border border-white/10 bg-zinc-950/30 p-6">
               <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Prémiová podpora</div>
               <p className="mt-3 text-sm leading-7 text-zinc-400">
                 Pro vyšší balíčky zde zobrazíme přímý chat, prioritu zpracování a speciální kontaktní linku.

@@ -1,5 +1,5 @@
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 type AssetPlanItem = {
   slot: string;
@@ -24,7 +24,7 @@ type IndustryImageRules = {
   fallbackQueries: string[];
 };
 
-const IMAGE_FETCH_TIMEOUT_MS = 3500;
+const IMAGE_FETCH_TIMEOUT_MS = 8000;
 
 function nowMs() {
   return Date.now();

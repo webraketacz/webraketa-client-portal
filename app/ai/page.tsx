@@ -167,7 +167,7 @@ export default function AiLandingPage() {
         />
 
         <div
-          className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-full blur-[140px]"
+          className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-[10px] blur-[140px]"
           style={{
             background:
               "radial-gradient(circle, rgba(98,70,255,0.30) 0%, rgba(98,70,255,0.10) 36%, transparent 74%)",
@@ -176,7 +176,7 @@ export default function AiLandingPage() {
         />
 
         <div
-          className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-full blur-[150px]"
+          className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-[10px] blur-[150px]"
           style={{
             background:
               "radial-gradient(circle, rgba(42,169,255,0.22) 0%, rgba(42,169,255,0.09) 36%, transparent 76%)",
@@ -185,7 +185,7 @@ export default function AiLandingPage() {
         />
 
         <div
-          className="absolute left-[35%] top-[18%] h-[24rem] w-[24rem] rounded-full blur-[120px]"
+          className="absolute left-[35%] top-[18%] h-[24rem] w-[24rem] rounded-[10px] blur-[120px]"
           style={{
             background:
               "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(124,92,255,0.04) 30%, transparent 72%)",
@@ -205,9 +205,9 @@ export default function AiLandingPage() {
           />
 
           <div className="absolute right-0 hidden sm:flex">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 backdrop-blur-xl">
+            <div className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 backdrop-blur-xl">
               <span
-                className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400"
+                className="inline-block h-2.5 w-2.5 rounded-[10px] bg-emerald-400"
                 style={{ animation: "zyviaGlowPulse 1.8s ease-in-out infinite" }}
               />
               Začít zdarma
@@ -218,9 +218,9 @@ export default function AiLandingPage() {
         <main className="flex flex-1 items-center justify-center py-10 md:py-14">
           <div className="w-full max-w-5xl">
             <div className="mb-6 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
+              <div className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
                 <span
-                  className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300"
+                  className="inline-block h-2.5 w-2.5 rounded-[10px] bg-cyan-300"
                   style={{ animation: "zyviaGlowPulse 1.8s ease-in-out infinite" }}
                 />
                 50 kreditů zdarma
@@ -250,7 +250,7 @@ export default function AiLandingPage() {
                         key={`${item}-${index}`}
                         className="inline-flex items-center gap-3 whitespace-nowrap"
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/90" />
+                        <span className="h-1.5 w-1.5 rounded-[10px] bg-cyan-300/90" />
                         {item}
                       </span>
                     ))}
@@ -284,7 +284,7 @@ export default function AiLandingPage() {
                   {attachments.map((item) => (
                     <div
                       key={item.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-zinc-300"
+                      className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-zinc-300"
                     >
                       <Icon
                         icon={
@@ -313,7 +313,7 @@ export default function AiLandingPage() {
                   <button
                     type="button"
                     onClick={() => screenshotInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
                   >
                     <Icon icon="solar:gallery-wide-linear" width={18} />
                     Printscreen
@@ -322,7 +322,7 @@ export default function AiLandingPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
                   >
                     <Icon icon="solar:file-text-linear" width={18} />
                     Soubor
@@ -348,7 +348,7 @@ export default function AiLandingPage() {
                   type="button"
                   onClick={() => startGenerating()}
                   disabled={!canContinue}
-                  className="inline-flex min-w-[210px] items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-w-[210px] items-center justify-center gap-2 rounded-[10px] px-6 py-3.5 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                   style={{
                     background:
                       "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
@@ -378,7 +378,7 @@ export default function AiLandingPage() {
                         <div className="text-sm leading-6 text-zinc-200 transition group-hover:text-white">
                           {item}
                         </div>
-                        <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-400 transition group-hover:text-white">
+                        <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.05] text-zinc-400 transition group-hover:text-white">
                           <Icon
                             icon={
                               index % 4 === 0
