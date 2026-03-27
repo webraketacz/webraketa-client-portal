@@ -1361,7 +1361,7 @@ function BuilderPlaceholder({ status }: { status: string }) {
           <div className="mx-auto w-full max-w-5xl flex-1">
             <div className="mb-4 flex items-center justify-between rounded-[1.3rem] border border-white/10 bg-white/[0.03] px-4 py-3 animate-[zyviaPulse_2.2s_ease-in-out_infinite]">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-2xl border border-cyan-400/20 bg-cyan-400/10" />
+                <div className="h-9 w-9 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10" />
                 <div className="space-y-2">
                   <div className="h-3 w-36 rounded-[10px] bg-white/10" />
                   <div className="h-3 w-20 rounded-[10px] bg-white/5" />
@@ -2475,7 +2475,7 @@ export default function AiEditorPage() {
                       return (
                         <div
                           key={message.id}
-                          className={`max-w-[94%] rounded-2xl px-3 py-2 text-[13px] leading-5 ${
+                          className={`max-w-[94%] rounded-[10px] px-3 py-2 text-[13px] leading-5 ${
                             isUser
                               ? "ml-auto border border-cyan-500/15 bg-cyan-500/10 text-cyan-50"
                               : isSystem
@@ -2488,7 +2488,7 @@ export default function AiEditorPage() {
                       );
                     })}
 
-                    <div className="rounded-2xl border border-white/8 bg-[#0b0b10] p-3">
+                    <div className="rounded-[10px] border border-white/8 bg-[#0b0b10] p-3">
                       <div className="mb-2 flex items-center justify-between text-[13px] text-zinc-400">
                         <span>{status}</span>
                         <span>{Math.round(progress)}%</span>
@@ -2519,7 +2519,7 @@ export default function AiEditorPage() {
                     </div>
 
                     {otazky.length > 0 && !otazkyDokonceny && aktualniOtazka && (
-                      <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-3">
+                      <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 p-3">
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <div className="text-sm font-medium text-white">
                             Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
@@ -2536,8 +2536,8 @@ export default function AiEditorPage() {
                         </div>
 
                         {uploadedLogo && (
-                          <div className="mb-3 flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white">
+                          <div className="mb-3 flex items-center gap-3 rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
+                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[10px] border border-white/10 bg-white">
                               <img
                                 src={uploadedLogo.dataUrl}
                                 alt={uploadedLogo.name}
@@ -2571,7 +2571,7 @@ export default function AiEditorPage() {
                         />
 
                         {logoUploadError && (
-                          <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-[11px] text-red-200">
+                          <div className="mb-3 rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-[11px] text-red-200">
                             {logoUploadError}
                           </div>
                         )}
@@ -2584,7 +2584,7 @@ export default function AiEditorPage() {
                           value={odpovedInput}
                           onChange={(e) => setOdpovedInput(e.target.value)}
                           placeholder={aktualniOtazka.placeholder}
-                          className="h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
+                          className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/25 p-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
                         />
 
                         <div className="mt-3 flex items-center justify-between gap-3">
@@ -2608,7 +2608,7 @@ export default function AiEditorPage() {
                     )}
 
                     {html && postGenerateSuggestions.length > 0 && (
-                      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
+                      <div className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 p-3">
                         <div className="mb-2 text-sm font-medium text-white">
                           Další rychlé úpravy
                         </div>
@@ -2631,7 +2631,7 @@ export default function AiEditorPage() {
                     )}
 
                     {selectedSectionMeta && (
-                      <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3">
+                      <div className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 p-3">
                         <div className="mb-2 text-sm font-medium text-white">
                           Vybraná sekce: {selectedSectionMeta.label}
                         </div>
@@ -2662,7 +2662,7 @@ export default function AiEditorPage() {
                     )}
 
                     {publishedUrl && (
-                      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+                      <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
                         <div className="mb-1 font-medium">Web publikován</div>
                         <a
                           href={publishedUrl}
@@ -2676,13 +2676,13 @@ export default function AiEditorPage() {
                     )}
 
                     {publishError && (
-                      <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                      <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
                         {publishError}
                       </div>
                     )}
 
                     {error && (
-                      <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                      <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
                         {error}
                       </div>
                     )}
@@ -2696,7 +2696,7 @@ export default function AiEditorPage() {
                     Upravit návrh
                   </div>
 
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                  <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
                     <textarea
                       ref={chatInputRef}
                       value={chatInput}
@@ -2918,7 +2918,7 @@ export default function AiEditorPage() {
                         type="button"
                         onClick={() => useSectionAction("text")}
                         disabled={!selectedSectionMeta}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
                       >
                         <div className="mb-2 flex items-center gap-2 text-white">
                           <Icon icon="solar:text-bold-linear" width={16} />
@@ -2933,7 +2933,7 @@ export default function AiEditorPage() {
                         type="button"
                         onClick={() => useSectionAction("visual")}
                         disabled={!selectedSectionMeta}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
                       >
                         <div className="mb-2 flex items-center gap-2 text-white">
                           <Icon icon="solar:palette-linear" width={16} />
@@ -2948,7 +2948,7 @@ export default function AiEditorPage() {
                         type="button"
                         onClick={() => useSectionAction("regenerate")}
                         disabled={!selectedSectionMeta}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
                       >
                         <div className="mb-2 flex items-center gap-2 text-white">
                           <Icon icon="solar:restart-linear" width={16} />
@@ -2960,7 +2960,7 @@ export default function AiEditorPage() {
                       </button>
                     </div>
 
-                    <div className="mx-auto mt-3 max-w-5xl rounded-2xl border border-white/8 bg-[#0b0b10] p-4">
+                    <div className="mx-auto mt-3 max-w-5xl rounded-[10px] border border-white/8 bg-[#0b0b10] p-4">
                       <div className="mb-2 text-sm font-medium text-white">
                         {selectedSectionMeta
                           ? `Aktuálně vybraná sekce: ${selectedSectionMeta.label}`
@@ -2980,7 +2980,7 @@ export default function AiEditorPage() {
 
       {textModalOpen && selectedText && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-full max-w-xl rounded-[1.75rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
+          <div className="relative w-full max-w-xl rounded-[10px] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-white">Upravit text</div>
@@ -3009,7 +3009,7 @@ export default function AiEditorPage() {
             <textarea
               value={editedTextValue}
               onChange={(e) => setEditedTextValue(e.target.value)}
-              className="h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
+              className="h-32 w-full resize-none rounded-[10px] border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
               placeholder="Upravte text…"
             />
 
@@ -3021,7 +3021,7 @@ export default function AiEditorPage() {
                 <input
                   value={editedHrefValue}
                   onChange={(e) => setEditedHrefValue(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
+                  className="w-full rounded-[10px] border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
                   placeholder="Např. /kontakt nebo https://example.com"
                 />
               </div>
@@ -3055,7 +3055,7 @@ export default function AiEditorPage() {
 
       {imageModalOpen && selectedImage && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4">
-          <div className="relative w-full max-w-5xl rounded-[1.75rem] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
+          <div className="relative w-full max-w-5xl rounded-[10px] border border-white/10 bg-[#0a0b10] p-5 shadow-2xl">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium text-white">Upravit obrázek</div>
@@ -3078,12 +3078,12 @@ export default function AiEditorPage() {
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
-              <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+              <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
                 <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
                   Aktuální obrázek
                 </div>
 
-                <div className="overflow-hidden rounded-2xl border border-white/8 bg-black/30">
+                <div className="overflow-hidden rounded-[10px] border border-white/8 bg-black/30">
                   {selectedImage.currentUrl ? (
                     <img
                       src={selectedImage.currentUrl}
@@ -3123,7 +3123,7 @@ export default function AiEditorPage() {
                 </div>
 
                 {imagePickerTab === "upload" && (
-                  <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4">
+                  <div className="mt-4 rounded-[10px] border border-white/8 bg-black/20 p-4">
                     <div className="mb-2 text-sm font-medium text-white">
                       Nahrát vlastní obrázek
                     </div>
@@ -3131,7 +3131,7 @@ export default function AiEditorPage() {
                       Vyberte obrázek z počítače a hned se vloží do náhledu.
                     </div>
 
-                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-8 text-center transition hover:bg-white/[0.06]">
+                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed border-white/15 bg-white/[0.03] px-4 py-8 text-center transition hover:bg-white/[0.06]">
                       <Icon icon="solar:upload-linear" width={24} />
                       <span className="mt-3 text-sm text-white">
                         Klikněte pro nahrání obrázku
@@ -3150,7 +3150,7 @@ export default function AiEditorPage() {
                 )}
               </div>
 
-              <div className="min-w-0 rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+              <div className="min-w-0 rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
                 {imagePickerTab === "search" ? (
                   <>
                     <div className="mb-3 text-sm font-medium text-white">
@@ -3167,7 +3167,7 @@ export default function AiEditorPage() {
                             void searchEditorImages();
                           }
                         }}
-                        className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
+                        className="min-w-0 flex-1 rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
                         placeholder="Např. luxury resort pool, barber portrait, modern office…"
                       />
 
@@ -3178,7 +3178,7 @@ export default function AiEditorPage() {
                           imageSearchLoading ||
                           imageSearchQuery.trim().length < 2
                         }
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
+                        className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:magnifer-linear" width={16} />
                         {imageSearchLoading ? "Hledám…" : "Hledat"}
@@ -3196,7 +3196,7 @@ export default function AiEditorPage() {
                           {Array.from({ length: 6 }).map((_, index) => (
                             <div
                               key={index}
-                              className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]"
+                              className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]"
                             >
                               <div className="h-40 animate-pulse bg-white/[0.06]" />
                               <div className="space-y-2 p-3">
@@ -3211,7 +3211,7 @@ export default function AiEditorPage() {
                           {imageSearchResults.map((image, index) => (
                             <div
                               key={`${image.url}-${index}`}
-                              className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]"
+                              className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]"
                             >
                               <img
                                 src={image.url}
@@ -3246,14 +3246,14 @@ export default function AiEditorPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="flex min-h-[16rem] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
+                        <div className="flex min-h-[16rem] items-center justify-center rounded-[10px] border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
                           Zatím nejsou žádné výsledky.
                         </div>
                       )}
                     </div>
                   </>
                 ) : (
-                  <div className="flex h-full min-h-[18rem] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
+                  <div className="flex h-full min-h-[18rem] items-center justify-center rounded-[10px] border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
                     Vlevo nahrajte vlastní obrázek.
                   </div>
                 )}
@@ -3261,7 +3261,7 @@ export default function AiEditorPage() {
             </div>
 
             {imageUploadError && (
-              <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+              <div className="mt-4 rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
                 {imageUploadError}
               </div>
             )}
