@@ -123,7 +123,15 @@ type AssetSearchResponse = {
 
 type PublishResponse = {
   url?: string;
+  inspectUrl?: string;
+  deploymentId?: string;
   error?: string;
+};
+
+type PublishFormState = {
+  siteName: string;
+  slug: string;
+  description: string;
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
@@ -1444,6 +1452,13 @@ export default function AiEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState("");
+  const [publishedInspectUrl, setPublishedInspectUrl] = useState("");
+  const [publishPanelOpen, setPublishPanelOpen] = useState(false);
+  const [publishForm, setPublishForm] = useState<PublishFormState>({
+    siteName: "Můj web",
+    slug: "",
+    description: "",
+  });
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Připraveno");
@@ -1554,6 +1569,31 @@ export default function AiEditorPage() {
       behavior: smooth ? "smooth" : "auto",
       block: "end",
     });
+  }
+
+  function slugifyProjectName(value: string) {
+    return value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48);
+  }
+
+  function openPublishPanel() {
+    const fallbackName =
+      prompt.trim().split(/[\n\.]/)[0]?.trim().slice(0, 60) || "Můj web";
+    const nextSlug =
+      publishForm.slug.trim() || slugifyProjectName(fallbackName) || "zyvia-web";
+
+    setPublishForm((prev) => ({
+      siteName: prev.siteName.trim() ? prev.siteName : fallbackName,
+      slug: nextSlug,
+      description: prev.description,
+    }));
+    setPublishError(null);
+    setPublishPanelOpen(true);
   }
 
   function startQuestionFlow(currentPrompt: string) {
@@ -2153,14 +2193,27 @@ export default function AiEditorPage() {
   async function handlePublish() {
     if (!html || !css) return;
 
+    const finalSiteName = publishForm.siteName.trim() || "Můj web";
+    const finalSlug = slugifyProjectName(publishForm.slug) || "zyvia-web";
+
     setPublishing(true);
     setPublishError(null);
+    setPublishedUrl("");
+    setPublishedInspectUrl("");
 
     try {
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, html, css, js }),
+        body: JSON.stringify({
+          prompt,
+          html,
+          css,
+          js,
+          siteName: finalSiteName,
+          slug: finalSlug,
+          description: publishForm.description.trim(),
+        }),
       });
 
       const data = await parseApiResponse<PublishResponse>(res);
@@ -2169,6 +2222,17 @@ export default function AiEditorPage() {
       }
 
       setPublishedUrl(data.url);
+      setPublishedInspectUrl(data.inspectUrl || "");
+      setPublishPanelOpen(false);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `publish-success-${Date.now()}`,
+          role: "assistant",
+          text: `Web byl publikován na ${data.url}`,
+        },
+      ]);
     } catch (e: any) {
       setPublishError(e?.message ?? "Publikace selhala");
     } finally {
@@ -2410,12 +2474,12 @@ export default function AiEditorPage() {
 
                 <button
                   type="button"
-                  onClick={handlePublish}
-                  disabled={!html || publishing}
+                  onClick={openPublishPanel}
+                  disabled={!html}
                   className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
                 >
                   <Icon icon="solar:upload-linear" width={14} />
-                  {publishing ? "Publikuji…" : "Publikovat"}
+                  Publikovat
                 </button>
               </div>
             </div>
@@ -2688,6 +2752,16 @@ export default function AiEditorPage() {
                         >
                           {publishedUrl}
                         </a>
+                        {publishedInspectUrl && (
+                          <a
+                            href={publishedInspectUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 block break-all text-xs text-emerald-200/80 underline underline-offset-4"
+                          >
+                            Otevřít detail deploymentu
+                          </a>
+                        )}
                       </div>
                     )}
 
@@ -2993,6 +3067,182 @@ export default function AiEditorPage() {
           </main>
         </div>
       </div>
+
+      {publishPanelOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-[2px]"
+            onClick={() => {
+              if (!publishing) setPublishPanelOpen(false);
+            }}
+          />
+          <div className="fixed inset-y-0 right-0 z-[95] w-full max-w-md border-l border-white/10 bg-[#0a0b10] shadow-2xl">
+            <div className="flex h-full flex-col">
+              <div className="border-b border-white/8 px-5 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-base font-medium text-white">
+                      Publikovat na doménu
+                    </div>
+                    <div className="mt-1 text-sm text-zinc-500">
+                      Pro test nasadíme web zdarma na Vercel URL. Vlastní doména bude v placeném balíčku.
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!publishing) setPublishPanelOpen(false);
+                    }}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                  >
+                    <Icon icon="solar:close-circle-linear" width={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+                <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <div className="text-sm font-medium text-white">Publikace zdarma</div>
+                  <div className="mt-1 text-sm text-zinc-300">
+                    Web dostane veřejnou URL na Vercelu, kterou můžeš hned otevřít a poslat klientovi.
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                    Název projektu
+                  </label>
+                  <input
+                    value={publishForm.siteName}
+                    onChange={(e) =>
+                      setPublishForm((prev) => ({
+                        ...prev,
+                        siteName: e.target.value,
+                        slug:
+                          prev.slug.trim() && prev.slug !== slugifyProjectName(prev.siteName)
+                            ? prev.slug
+                            : slugifyProjectName(e.target.value),
+                      }))
+                    }
+                    className="w-full rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                    placeholder="Např. Klinika Praha"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                    URL slug
+                  </label>
+                  <input
+                    value={publishForm.slug}
+                    onChange={(e) =>
+                      setPublishForm((prev) => ({
+                        ...prev,
+                        slug: slugifyProjectName(e.target.value),
+                      }))
+                    }
+                    className="w-full rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                    placeholder="napr-klinika-praha"
+                  />
+                  <div className="mt-2 text-xs text-zinc-500">
+                    Použije se pro název deploymentu. Vlastní doména přijde později v placeném balíčku.
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                    Poznámka k publikaci
+                  </label>
+                  <textarea
+                    value={publishForm.description}
+                    onChange={(e) =>
+                      setPublishForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                    placeholder="Např. první testovací verze pro klienta"
+                  />
+                </div>
+
+                <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-white">Vlastní doména</div>
+                      <div className="mt-1 text-sm text-zinc-500">
+                        Bude dostupná v placeném balíčku.
+                      </div>
+                    </div>
+                    <div className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
+                      PRO
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-[10px] border border-dashed border-white/10 bg-black/20 p-4 text-sm text-zinc-500">
+                    Připojení vlastní domény, DNS instrukce a produkční publish flow doplníme v další fázi.
+                  </div>
+                </div>
+
+                {publishedUrl && (
+                  <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-4">
+                    <div className="text-sm font-medium text-white">Poslední publikace</div>
+                    <a
+                      href={publishedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 block break-all text-sm text-emerald-100 underline underline-offset-4"
+                    >
+                      {publishedUrl}
+                    </a>
+                    {publishedInspectUrl && (
+                      <a
+                        href={publishedInspectUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 block break-all text-xs text-emerald-200/80 underline underline-offset-4"
+                      >
+                        Otevřít detail deploymentu
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {publishError && (
+                  <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                    {publishError}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-white/8 px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!publishing) setPublishPanelOpen(false);
+                    }}
+                    className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                  >
+                    Zavřít
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={!html || !css || publishing}
+                    className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-100 transition hover:bg-emerald-500/15 disabled:opacity-40"
+                  >
+                    <Icon icon="solar:upload-linear" width={16} />
+                    {publishing ? "Publikuji…" : "Publikovat zdarma"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {textModalOpen && selectedText && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
