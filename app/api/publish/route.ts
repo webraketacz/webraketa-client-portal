@@ -62,7 +62,9 @@ export async function POST(request: Request) {
     const css = body.css?.trim() || "";
     const js = body.js || "";
     const siteName = body.siteName?.trim() || "Můj web";
-    const slug = slugify(body.slug?.trim() || body.siteName?.trim() || "zyvia-web");
+    const slug = slugify(
+      body.slug?.trim() || body.siteName?.trim() || "zyvia-web"
+    );
 
     if (!html || !css) {
       return NextResponse.json(
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Chybí VERCEL_TOKEN v .env.local. Nejprve ho doplňte a zkuste publikaci znovu.",
+            "Chybí VERCEL_TOKEN v prostředí projektu. Nejprve ho doplňte a zkuste publikaci znovu.",
         },
         { status: 500 }
       );
@@ -95,6 +97,28 @@ export async function POST(request: Request) {
     if (vercelTeamId) {
       endpoint.searchParams.set("teamId", vercelTeamId);
     }
+
+    const trimmedDescription =
+      typeof body.description === "string" && body.description.trim().length > 0
+        ? body.description.trim()
+        : null;
+
+    const trimmedPrompt =
+      typeof body.prompt === "string" && body.prompt.trim().length > 0
+        ? body.prompt.trim().slice(0, 140)
+        : null;
+
+    const trimmedProjectName =
+      typeof siteName === "string" && siteName.trim().length > 0
+        ? siteName.trim()
+        : null;
+
+    const meta = {
+      source: "zyvia-ai-editor",
+      ...(trimmedProjectName ? { projectName: trimmedProjectName } : {}),
+      ...(trimmedDescription ? { note: trimmedDescription } : {}),
+      ...(trimmedPrompt ? { prompt: trimmedPrompt } : {}),
+    };
 
     const payload = {
       name: slug,
@@ -115,12 +139,7 @@ export async function POST(request: Request) {
           }),
         },
       ],
-      meta: {
-        source: "zyvia-ai-editor",
-        projectName: siteName,
-        note: body.description?.trim() || "",
-        prompt: body.prompt?.trim()?.slice(0, 140) || "",
-      },
+      meta,
     };
 
     const res = await fetch(endpoint.toString(), {
