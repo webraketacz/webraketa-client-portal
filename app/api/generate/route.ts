@@ -1181,6 +1181,62 @@ ${getIndustrySpecificRules(
     params.preferences.imageMode
   )}
 
+HARD TECHNICAL LAYOUT CONSTRAINTS:
+- the page must be built with stable wrappers and predictable layout primitives
+- use a main site container system consistently
+- all important sections must use one of these approaches:
+  - max-width container + centered margin auto
+  - disciplined CSS grid
+  - disciplined flexbox with explicit gap and alignment
+- avoid random absolute positioning unless it is clearly decorative
+- never use absolute positioning for primary readable copy unless wrapped in a safe bounded content shell
+- every section must remain visually stable at desktop, tablet and mobile
+- do not create sections that depend on fragile pixel offsets to look correct
+- if a design uses overlays, use explicit max-width, safe padding and z-index layering
+- no section may look unfinished when content length changes moderately
+
+NAV HEIGHT RULES:
+- header / navigation must have a controlled height
+- navigation should usually stay within min-height: 72px to max-height: 112px on desktop
+- if the design family needs a taller premium shell, absolute hard limit is 124px
+- do not stack random extra text inside navigation if it causes height growth
+- navigation content must fit within the nav shell without overflow
+- if extra brand text is used, keep it compact and aligned, never let it increase nav height excessively
+- nav row must usually use:
+  - display: flex
+  - align-items: center
+  - justify-content: space-between
+  - gap: 16px to 32px
+- keep nav inner padding controlled and symmetrical
+- prevent giant vertical padding in navigation
+- menu links must align to the visual center of the nav row
+
+LOGO FIT RULES:
+- uploaded logos must NEVER render at natural uncontrolled size
+- the logo must always live inside a dedicated wrapper with explicit sizing constraints
+- always create a logo wrapper such as .brand-logo-shell and constrain it
+- preferred desktop constraints:
+  - max-width: 180px to 240px depending on design
+  - height: 40px to 64px
+- preferred tablet constraints:
+  - max-width: 150px to 200px
+  - height: 36px to 56px
+- preferred mobile constraints:
+  - max-width: 120px to 170px
+  - height: 34px to 52px
+- the actual img.brand-logo-image must use:
+  - display: block
+  - max-width: 100%
+  - max-height: 100%
+  - width: auto
+  - height: auto
+  - object-fit: contain
+  - object-position: left center
+- never allow the uploaded logo to stretch the nav row height
+- never allow the uploaded logo to overflow outside the logo shell
+- if the logo is unusually wide, preserve it by shrinking inside the shell, not by increasing shell height
+- if the logo is unusually tall, preserve it by shrinking inside the shell, not by increasing nav height
+
 SPACING AND COMPOSITION RULES:
 - spacing must feel deliberate and premium, not compressed
 - section top/bottom spacing on desktop should usually land between 88px and 144px depending on density
@@ -1201,6 +1257,39 @@ SPACING AND COMPOSITION RULES:
 - icons, micro badges and card headers must never feel glued to edges
 - icons inside cards need their own safe zone and visible breathing room
 - content inside cards must never be vertically cramped
+
+OPTICAL ALIGNMENT RULES:
+- text may not be only mathematically centered; it must also feel optically centered
+- if a centered hero is used, the text block itself must have a bounded max-width and margin-inline auto
+- avoid centered sections where text appears shifted left because the wrapper is too wide or one side contains a hidden visual offset
+- headlines and paragraphs inside centered blocks must usually use:
+  - text-align: center
+  - max-width on the text block
+  - margin-inline: auto
+- if a section uses left-aligned copy, use a clear column width instead of a loose floating text block
+- never let a headline look visually detached from its supporting paragraph
+- avoid awkward half-centered layouts where CTA row or paragraph is visually offset from the heading
+
+HERO STABILITY RULES:
+- hero sections must feel intentional and structurally stable
+- hero content must never collide with the navigation
+- hero must always have a predictable content wrapper
+- do not create a hero where copy floats in a huge empty canvas without a deliberate reason
+- do not create a hero where image, text and CTA have mismatched rhythm
+- hero headline block must have a maximum readable width
+- if using split hero:
+  - use clear left/right or top/bottom regions
+  - align items consistently
+  - preserve equal visual weight
+- if using centered hero:
+  - center the whole content stack
+  - enforce max-width for text block
+  - keep CTA row centered too
+- if using photo-led hero:
+  - copy must live in a safe panel or safe padded zone
+  - ensure contrast is strong enough
+- if using KPI or floating cards, those cards must support the hero, not break it
+- hero section must not feel broken at first glance
 
 TYPOGRAPHY HIERARCHY RULES:
 - enforce a clear H1 / H2 / H3 / H4 hierarchy
@@ -1281,6 +1370,29 @@ BENTO / CARD SYSTEM RULES:
 - match border color, padding logic, heading scale, icon size and internal spacing
 - avoid one visually weak card next to one very dense card unless it is part of the intended layout rhythm
 
+BENTO COMPLETENESS RULES:
+- if a bento grid is used, it must feel complete and balanced
+- never leave the impression that one expected card is missing
+- do not create ragged empty holes unless they are clearly intentional and compositionally strong
+- use disciplined CSS grid areas or a very clear column/row system
+- if the layout suggests 4 cards, provide 4 cards
+- if the layout suggests 3 cards, balance them intentionally
+- avoid accidental asymmetry caused by content omission
+- cards in the same family should have similar baseline height logic
+- card headings, icon placements and body copy spacing must align across sibling cards
+- do not generate one lonely tiny card next to two large panels unless clearly premium and intentional
+
+CARD CONTENT RULES:
+- no card may feel unfinished
+- every feature / benefit / stat card needs:
+  - a visible internal padding system
+  - a clear heading
+  - readable body copy
+  - stable alignment
+- if icons are used, place them inside a bounded icon holder
+- card content must not stick to top-left corners without breathing room
+- cards must visually feel designed, not dumped
+
 LAYOUT SYSTEM RULES:
 - use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
 - the layout seed is not decorative text; it is a hard directional clue for hero composition and section rhythm
@@ -1357,6 +1469,19 @@ CONTACT RULES:
 - if contact items were requested, reflect them in the contact section and footer
 - make the contact section useful, not placeholder-like
 
+MANDATORY CSS IMPLEMENTATION DETAILS:
+- define a global container utility in the CSS for the generated page, for example:
+  - width: min(1200px, calc(100% - clamp(32px, 6vw, 80px)))
+  - margin-inline: auto
+- define a logo shell class and use it anywhere the brand logo appears
+- define a nav shell that uses flex alignment and controlled min/max height
+- define a stable hero inner wrapper with explicit max-widths
+- define card classes with repeatable padding, radius and border logic
+- define responsive breakpoints for desktop, tablet and mobile
+- make sure typography scales down cleanly on mobile
+- prevent horizontal overflow globally
+- use box-sizing: border-box everywhere
+
 PROJECT CONTEXT:
 - Original prompt: ${params.prompt}
 - Build type: ${params.buildType || "neuvedeno"}
@@ -1387,6 +1512,11 @@ FINAL QA:
 - more varied font stacks and more refined font-weight usage
 - mobile nav toggle fully right-aligned on small screens
 - hamburger animates into X and back cleanly
+- navigation stays within controlled height
+- uploaded logo is always constrained by a logo shell
+- hero remains structurally stable
+- centered text must also feel optically centered
+- bento grids must feel complete with no accidental missing card impression
 `;
 }
 
@@ -1452,7 +1582,7 @@ export async function POST(req: Request) {
         preferences: resolvedPreferences,
         brandLogo,
       }),
-      schemaName: "website_bundle_mobile_nav_alignment_v9",
+      schemaName: "website_bundle_layout_guardrails_v10",
       schema: generatedWebsiteSchema,
       requestId,
     });
