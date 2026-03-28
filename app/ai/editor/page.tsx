@@ -123,15 +123,7 @@ type AssetSearchResponse = {
 
 type PublishResponse = {
   url?: string;
-  inspectUrl?: string;
-  deploymentId?: string;
   error?: string;
-};
-
-type PublishFormState = {
-  siteName: string;
-  slug: string;
-  description: string;
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
@@ -1017,15 +1009,8 @@ function updateTextInHtml(
   }
 }
 
-function buildPreviewDocument(
-  html: string,
-  css: string,
-  js: string,
-  interactive = true
-) {
-  const htmlWithEditableMarkers = interactive
-    ? injectEditableTextAttributes(html)
-    : html;
+function buildPreviewDocument(html: string, css: string, js: string) {
+  const htmlWithEditableMarkers = injectEditableTextAttributes(html);
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -1036,16 +1021,8 @@ function buildPreviewDocument(
   <style>
 ${css}
 
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
 html { scroll-behavior: smooth; }
 body { position: relative; }
-
-${
-  interactive
-    ? `
 [data-section-id] { transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease; }
 [data-section-id].zyvia-section-hover {
   outline: 2px solid rgba(90,209,255,.45);
@@ -1089,20 +1066,6 @@ ${
   transform: translateY(-10px);
   white-space: nowrap;
 }
-`
-    : `
-a,
-button,
-[role="button"],
-input,
-textarea,
-select,
-label {
-  pointer-events: none !important;
-  cursor: default !important;
-}
-`
-}
   </style>
 </head>
 <body>
@@ -1110,9 +1073,7 @@ ${htmlWithEditableMarkers}
 <script>
 ${js}
 </script>
-${
-  interactive
-    ? `<script>
+<script>
 (function () {
   let selectedSectionId = null;
   let selectedImageSlot = null;
@@ -1207,7 +1168,7 @@ ${
 
   function extractBackgroundImageUrl(el) {
     const backgroundImage = window.getComputedStyle(el).backgroundImage || "";
-    const match = backgroundImage.match(/url\((["']?)(.*?)\1\)/i);
+    const match = backgroundImage.match(/url\\((["']?)(.*?)\\1\\)/i);
     return match ? match[2] : "";
   }
 
@@ -1351,9 +1312,7 @@ ${
 
   applySelectedState();
 })();
-</script>`
-    : ""
-}
+</script>
 </body>
 </html>`;
 }
@@ -1394,9 +1353,9 @@ function BuilderPlaceholder({ status }: { status: string }) {
   return (
     <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-5">
       <div className="relative h-full min-h-[680px] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06070b]">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
-        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/6 blur-[90px]" />
-        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/6 blur-[100px]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
+        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/10 blur-[80px]" />
+        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/10 blur-[90px]" />
 
         <div className="relative z-10 flex h-full flex-col p-5 md:p-7">
           <div className="mx-auto w-full max-w-5xl flex-1">
@@ -1448,19 +1407,19 @@ function BuilderPlaceholder({ status }: { status: string }) {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
-            <div className="w-full max-w-2xl rounded-[18px] border border-white/10 bg-[#07070b]/70 px-6 py-6 text-center backdrop-blur-xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/8 px-4 py-2 text-[13px] text-cyan-100">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300 animate-pulse" />
-                Zyvia generuje sekce
+          <div className="relative z-10 mt-5 border-t border-white/8 px-2 pt-5">
+            <div className="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-100">
+                <span className="inline-block h-2.5 w-2.5 rounded-[10px] bg-cyan-300 animate-pulse" />
+                Builder právě skládá jednotlivé sekce
               </div>
 
-              <div className="text-lg font-medium text-white md:text-xl">
+              <div className="text-base font-medium text-white md:text-lg">
                 {status || "Sestavuji strukturu webu…"}
               </div>
 
-              <div className="mt-2 text-[13px] leading-6 text-zinc-400">
-                Vytvářím layout, vizuální směr, hierarchii obsahu a CTA prvky.
+              <div className="mt-2 text-sm text-zinc-500">
+                Vytvářím layout, hierarchii obsahu, CTA prvky a vizuální směr.
               </div>
             </div>
           </div>
@@ -1485,13 +1444,6 @@ export default function AiEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState("");
-  const [publishedInspectUrl, setPublishedInspectUrl] = useState("");
-  const [publishPanelOpen, setPublishPanelOpen] = useState(false);
-  const [publishForm, setPublishForm] = useState<PublishFormState>({
-    siteName: "Můj web",
-    slug: "",
-    description: "",
-  });
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Připraveno");
@@ -1578,12 +1530,7 @@ export default function AiEditorPage() {
 
   const previewDocument = useMemo(() => {
     if (!html) return "";
-    return buildPreviewDocument(html, css, js, false);
-  }, [html, css, js]);
-
-  const editorDocument = useMemo(() => {
-    if (!html) return "";
-    return buildPreviewDocument(html, css, js, true);
+    return buildPreviewDocument(html, css, js);
   }, [html, css, js]);
 
   const aktualniOtazka = otazky[aktivniOtazkaIndex] || null;
@@ -1607,31 +1554,6 @@ export default function AiEditorPage() {
       behavior: smooth ? "smooth" : "auto",
       block: "end",
     });
-  }
-
-  function slugifyProjectName(value: string) {
-    return value
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 48);
-  }
-
-  function openPublishPanel() {
-    const fallbackName =
-      prompt.trim().split(/[\n\.]/)[0]?.trim().slice(0, 60) || "Můj web";
-    const nextSlug =
-      publishForm.slug.trim() || slugifyProjectName(fallbackName) || "zyvia-web";
-
-    setPublishForm((prev) => ({
-      siteName: prev.siteName.trim() ? prev.siteName : fallbackName,
-      slug: nextSlug,
-      description: prev.description,
-    }));
-    setPublishError(null);
-    setPublishPanelOpen(true);
   }
 
   function startQuestionFlow(currentPrompt: string) {
@@ -2022,7 +1944,7 @@ export default function AiEditorPage() {
       { type: "zyvia-set-selected-image", slot: selectedImage?.slot || null },
       "*"
     );
-  }, [selectedSectionId, selectedImage?.slot, editorDocument]);
+  }, [selectedSectionId, selectedImage?.slot, previewDocument]);
 
   useEffect(() => {
     if (!imageModalOpen || !selectedImage) return;
@@ -2231,27 +2153,14 @@ export default function AiEditorPage() {
   async function handlePublish() {
     if (!html || !css) return;
 
-    const finalSiteName = publishForm.siteName.trim() || "Můj web";
-    const finalSlug = slugifyProjectName(publishForm.slug) || "zyvia-web";
-
     setPublishing(true);
     setPublishError(null);
-    setPublishedUrl("");
-    setPublishedInspectUrl("");
 
     try {
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          html,
-          css,
-          js,
-          siteName: finalSiteName,
-          slug: finalSlug,
-          description: publishForm.description.trim(),
-        }),
+        body: JSON.stringify({ prompt, html, css, js }),
       });
 
       const data = await parseApiResponse<PublishResponse>(res);
@@ -2260,17 +2169,6 @@ export default function AiEditorPage() {
       }
 
       setPublishedUrl(data.url);
-      setPublishedInspectUrl(data.inspectUrl || "");
-      setPublishPanelOpen(false);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `publish-success-${Date.now()}`,
-          role: "assistant",
-          text: `Web byl publikován na ${data.url}`,
-        },
-      ]);
     } catch (e: any) {
       setPublishError(e?.message ?? "Publikace selhala");
     } finally {
@@ -2512,12 +2410,12 @@ export default function AiEditorPage() {
 
                 <button
                   type="button"
-                  onClick={openPublishPanel}
-                  disabled={!html}
+                  onClick={handlePublish}
+                  disabled={!html || publishing}
                   className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
                 >
                   <Icon icon="solar:upload-linear" width={14} />
-                  Publikovat
+                  {publishing ? "Publikuji…" : "Publikovat"}
                 </button>
               </div>
             </div>
@@ -2632,7 +2530,7 @@ export default function AiEditorPage() {
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
-                          : "V Editoru vybíráte sekce, texty i obrázky. Náhled slouží jen pro čisté zobrazení."}
+                          : "Odpovězte na otázky a případně přidejte logo přímo v otázkách."}
                       </div>
                     </div>
 
@@ -2733,13 +2631,13 @@ export default function AiEditorPage() {
                         <div className="mb-3 text-[11px] leading-5 text-zinc-300">
                           Vyberte sekci v náhledu a jedním klikem si připravte další zadání.
                         </div>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {postGenerateSuggestions.map((item) => (
                             <button
                               key={item}
                               type="button"
                               onClick={() => applyFollowUpSuggestion(item)}
-                              className="w-full rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-[13px] leading-5 text-zinc-100 transition hover:bg-white/[0.10]"
+                              className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-100 transition hover:bg-white/[0.10]"
                             >
                               {item}
                             </button>
@@ -2790,16 +2688,6 @@ export default function AiEditorPage() {
                         >
                           {publishedUrl}
                         </a>
-                        {publishedInspectUrl && (
-                          <a
-                            href={publishedInspectUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 block break-all text-xs text-emerald-200/80 underline underline-offset-4"
-                          >
-                            Otevřít detail deploymentu
-                          </a>
-                        )}
                       </div>
                     )}
 
@@ -2933,18 +2821,9 @@ export default function AiEditorPage() {
               {!isFullscreen && (
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5 md:px-5">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("preview")}
-                      className={`rounded-[10px] px-4 py-2 text-[13px] transition ${
-                        activeTab === "preview"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
+                    <div className="rounded-[10px] bg-white/[0.10] px-4 py-2 text-[13px] text-white">
                       Náhled
-                    </button>
-
+                    </div>
                     <button
                       type="button"
                       onClick={() => setActiveTab("editor")}
@@ -3021,20 +2900,21 @@ export default function AiEditorPage() {
               )}
 
               <div className="min-h-0 flex-1">
-                <div
-                  className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${
-                    isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"
-                  }`}
-                >
-                  {activeTab === "preview" ? (
-                    previewDocument ? (
+                {activeTab === "preview" ? (
+                  <div
+                    className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${
+                      isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"
+                    }`}
+                  >
+                    {previewDocument ? (
                       <div
                         className={`${previewWidthClass} ${
                           isFullscreen ? "h-full min-h-full pt-20" : "h-full"
                         }`}
                       >
                         <iframe
-                          key={`${iframeKey}-preview`}
+                          ref={iframeRef}
+                          key={iframeKey}
                           title="Zyvia preview"
                           className="h-full min-h-[720px] w-full bg-white"
                           srcDoc={previewDocument}
@@ -3045,208 +2925,74 @@ export default function AiEditorPage() {
                       <div className={`${previewWidthClass} h-full`}>
                         <BuilderPlaceholder status={status} />
                       </div>
-                    )
-                  ) : editorDocument ? (
-                    <div
-                      className={`${previewWidthClass} ${
-                        isFullscreen ? "h-full min-h-full pt-20" : "h-full"
-                      }`}
-                    >
-                      <iframe
-                        ref={iframeRef}
-                        key={`${iframeKey}-editor`}
-                        title="Zyvia editor preview"
-                        className="h-full min-h-[720px] w-full bg-white"
-                        srcDoc={editorDocument}
-                        sandbox="allow-scripts allow-same-origin"
-                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-full overflow-y-auto px-3 py-3">
+                    <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-3">
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("text")}
+                        disabled={!selectedSectionMeta}
+                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-white">
+                          <Icon icon="solar:text-bold-linear" width={16} />
+                          <span className="text-sm font-medium">Změnit text</span>
+                        </div>
+                        <div className="text-[12px] leading-5 text-zinc-500">
+                          Připraví prompt pro úpravu textů ve vybrané sekci.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("visual")}
+                        disabled={!selectedSectionMeta}
+                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-white">
+                          <Icon icon="solar:palette-linear" width={16} />
+                          <span className="text-sm font-medium">Změnit fotku / vzhled</span>
+                        </div>
+                        <div className="text-[12px] leading-5 text-zinc-500">
+                          Připraví prompt pro vizuální vylepšení vybrané sekce.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => useSectionAction("regenerate")}
+                        disabled={!selectedSectionMeta}
+                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-white">
+                          <Icon icon="solar:restart-linear" width={16} />
+                          <span className="text-sm font-medium">Přegenerovat sekci</span>
+                        </div>
+                        <div className="text-[12px] leading-5 text-zinc-500">
+                          Udělá novou variantu layoutu jen pro aktuálně vybranou sekci.
+                        </div>
+                      </button>
                     </div>
-                  ) : (
-                    <div className={`${previewWidthClass} h-full`}>
-                      <BuilderPlaceholder status={status} />
+
+                    <div className="mx-auto mt-3 max-w-5xl rounded-[10px] border border-white/8 bg-[#0b0b10] p-4">
+                      <div className="mb-2 text-sm font-medium text-white">
+                        {selectedSectionMeta
+                          ? `Aktuálně vybraná sekce: ${selectedSectionMeta.label}`
+                          : "Nejdřív klikněte v náhledu na konkrétní sekci"}
+                      </div>
+                      <div className="text-[12px] leading-5 text-zinc-500">
+                        Tady jsou jen editovací akce. Náhled zůstává vedle a není potřeba přepínat na žádný kód.
+                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
               </div>
             </div>
           </main>
         </div>
       </div>
-
-      {publishPanelOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-[2px]"
-            onClick={() => {
-              if (!publishing) setPublishPanelOpen(false);
-            }}
-          />
-          <div className="fixed inset-y-0 right-0 z-[95] w-full max-w-md border-l border-white/10 bg-[#0a0b10] shadow-2xl">
-            <div className="flex h-full flex-col">
-              <div className="border-b border-white/8 px-5 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-base font-medium text-white">
-                      Publikovat na doménu
-                    </div>
-                    <div className="mt-1 text-sm text-zinc-500">
-                      Pro test nasadíme web zdarma na Vercel URL. Vlastní doména bude v placeném balíčku.
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!publishing) setPublishPanelOpen(false);
-                    }}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <Icon icon="solar:close-circle-linear" width={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
-                <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-4">
-                  <div className="text-sm font-medium text-white">Publikace zdarma</div>
-                  <div className="mt-1 text-sm text-zinc-300">
-                    Web dostane veřejnou URL na Vercelu, kterou můžeš hned otevřít a poslat klientovi.
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
-                    Název projektu
-                  </label>
-                  <input
-                    value={publishForm.siteName}
-                    onChange={(e) =>
-                      setPublishForm((prev) => ({
-                        ...prev,
-                        siteName: e.target.value,
-                        slug:
-                          prev.slug.trim() && prev.slug !== slugifyProjectName(prev.siteName)
-                            ? prev.slug
-                            : slugifyProjectName(e.target.value),
-                      }))
-                    }
-                    className="w-full rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
-                    placeholder="Např. Klinika Praha"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
-                    URL slug
-                  </label>
-                  <input
-                    value={publishForm.slug}
-                    onChange={(e) =>
-                      setPublishForm((prev) => ({
-                        ...prev,
-                        slug: slugifyProjectName(e.target.value),
-                      }))
-                    }
-                    className="w-full rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
-                    placeholder="napr-klinika-praha"
-                  />
-                  <div className="mt-2 text-xs text-zinc-500">
-                    Použije se pro název deploymentu. Vlastní doména přijde později v placeném balíčku.
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
-                    Poznámka k publikaci
-                  </label>
-                  <textarea
-                    value={publishForm.description}
-                    onChange={(e) =>
-                      setPublishForm((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
-                    placeholder="Např. první testovací verze pro klienta"
-                  />
-                </div>
-
-                <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-medium text-white">Vlastní doména</div>
-                      <div className="mt-1 text-sm text-zinc-500">
-                        Bude dostupná v placeném balíčku.
-                      </div>
-                    </div>
-                    <div className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
-                      PRO
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-[10px] border border-dashed border-white/10 bg-black/20 p-4 text-sm text-zinc-500">
-                    Připojení vlastní domény, DNS instrukce a produkční publish flow doplníme v další fázi.
-                  </div>
-                </div>
-
-                {publishedUrl && (
-                  <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-4">
-                    <div className="text-sm font-medium text-white">Poslední publikace</div>
-                    <a
-                      href={publishedUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 block break-all text-sm text-emerald-100 underline underline-offset-4"
-                    >
-                      {publishedUrl}
-                    </a>
-                    {publishedInspectUrl && (
-                      <a
-                        href={publishedInspectUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 block break-all text-xs text-emerald-200/80 underline underline-offset-4"
-                      >
-                        Otevřít detail deploymentu
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {publishError && (
-                  <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
-                    {publishError}
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-white/8 px-5 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!publishing) setPublishPanelOpen(false);
-                    }}
-                    className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    Zavřít
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handlePublish}
-                    disabled={!html || !css || publishing}
-                    className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-100 transition hover:bg-emerald-500/15 disabled:opacity-40"
-                  >
-                    <Icon icon="solar:upload-linear" width={16} />
-                    {publishing ? "Publikuji…" : "Publikovat zdarma"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
 
       {textModalOpen && selectedText && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
