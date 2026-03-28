@@ -1017,8 +1017,15 @@ function updateTextInHtml(
   }
 }
 
-function buildPreviewDocument(html: string, css: string, js: string) {
-  const htmlWithEditableMarkers = injectEditableTextAttributes(html);
+function buildPreviewDocument(
+  html: string,
+  css: string,
+  js: string,
+  interactive = true
+) {
+  const htmlWithEditableMarkers = interactive
+    ? injectEditableTextAttributes(html)
+    : html;
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -1029,8 +1036,16 @@ function buildPreviewDocument(html: string, css: string, js: string) {
   <style>
 ${css}
 
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
 html { scroll-behavior: smooth; }
 body { position: relative; }
+
+${
+  interactive
+    ? `
 [data-section-id] { transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease; }
 [data-section-id].zyvia-section-hover {
   outline: 2px solid rgba(90,209,255,.45);
@@ -1074,6 +1089,20 @@ body { position: relative; }
   transform: translateY(-10px);
   white-space: nowrap;
 }
+`
+    : `
+a,
+button,
+[role="button"],
+input,
+textarea,
+select,
+label {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+`
+}
   </style>
 </head>
 <body>
@@ -1081,7 +1110,9 @@ ${htmlWithEditableMarkers}
 <script>
 ${js}
 </script>
-<script>
+${
+  interactive
+    ? `<script>
 (function () {
   let selectedSectionId = null;
   let selectedImageSlot = null;
@@ -1176,7 +1207,7 @@ ${js}
 
   function extractBackgroundImageUrl(el) {
     const backgroundImage = window.getComputedStyle(el).backgroundImage || "";
-    const match = backgroundImage.match(/url\\((["']?)(.*?)\\1\\)/i);
+    const match = backgroundImage.match(/url\((["']?)(.*?)\1\)/i);
     return match ? match[2] : "";
   }
 
@@ -1320,7 +1351,9 @@ ${js}
 
   applySelectedState();
 })();
-</script>
+</script>`
+    : ""
+}
 </body>
 </html>`;
 }
@@ -1361,9 +1394,9 @@ function BuilderPlaceholder({ status }: { status: string }) {
   return (
     <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-5">
       <div className="relative h-full min-h-[680px] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06070b]">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
-        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/10 blur-[80px]" />
-        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/10 blur-[90px]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
+        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/6 blur-[90px]" />
+        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/6 blur-[100px]" />
 
         <div className="relative z-10 flex h-full flex-col p-5 md:p-7">
           <div className="mx-auto w-full max-w-5xl flex-1">
@@ -1415,19 +1448,19 @@ function BuilderPlaceholder({ status }: { status: string }) {
             </div>
           </div>
 
-          <div className="relative z-10 mt-5 border-t border-white/8 px-2 pt-5">
-            <div className="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-100">
-                <span className="inline-block h-2.5 w-2.5 rounded-[10px] bg-cyan-300 animate-pulse" />
-                Builder právě skládá jednotlivé sekce
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
+            <div className="w-full max-w-2xl rounded-[18px] border border-white/10 bg-[#07070b]/70 px-6 py-6 text-center backdrop-blur-xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/8 px-4 py-2 text-[13px] text-cyan-100">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300 animate-pulse" />
+                Zyvia generuje sekce
               </div>
 
-              <div className="text-base font-medium text-white md:text-lg">
+              <div className="text-lg font-medium text-white md:text-xl">
                 {status || "Sestavuji strukturu webu…"}
               </div>
 
-              <div className="mt-2 text-sm text-zinc-500">
-                Vytvářím layout, hierarchii obsahu, CTA prvky a vizuální směr.
+              <div className="mt-2 text-[13px] leading-6 text-zinc-400">
+                Vytvářím layout, vizuální směr, hierarchii obsahu a CTA prvky.
               </div>
             </div>
           </div>
@@ -1545,7 +1578,12 @@ export default function AiEditorPage() {
 
   const previewDocument = useMemo(() => {
     if (!html) return "";
-    return buildPreviewDocument(html, css, js);
+    return buildPreviewDocument(html, css, js, false);
+  }, [html, css, js]);
+
+  const editorDocument = useMemo(() => {
+    if (!html) return "";
+    return buildPreviewDocument(html, css, js, true);
   }, [html, css, js]);
 
   const aktualniOtazka = otazky[aktivniOtazkaIndex] || null;
@@ -1984,7 +2022,7 @@ export default function AiEditorPage() {
       { type: "zyvia-set-selected-image", slot: selectedImage?.slot || null },
       "*"
     );
-  }, [selectedSectionId, selectedImage?.slot, previewDocument]);
+  }, [selectedSectionId, selectedImage?.slot, editorDocument]);
 
   useEffect(() => {
     if (!imageModalOpen || !selectedImage) return;
@@ -2594,7 +2632,7 @@ export default function AiEditorPage() {
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
                           ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
-                          : "Odpovězte na otázky a případně přidejte logo přímo v otázkách."}
+                          : "V Editoru vybíráte sekce, texty i obrázky. Náhled slouží jen pro čisté zobrazení."}
                       </div>
                     </div>
 
@@ -2695,13 +2733,13 @@ export default function AiEditorPage() {
                         <div className="mb-3 text-[11px] leading-5 text-zinc-300">
                           Vyberte sekci v náhledu a jedním klikem si připravte další zadání.
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-col gap-2">
                           {postGenerateSuggestions.map((item) => (
                             <button
                               key={item}
                               type="button"
                               onClick={() => applyFollowUpSuggestion(item)}
-                              className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-100 transition hover:bg-white/[0.10]"
+                              className="w-full rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-[13px] leading-5 text-zinc-100 transition hover:bg-white/[0.10]"
                             >
                               {item}
                             </button>
@@ -2895,9 +2933,18 @@ export default function AiEditorPage() {
               {!isFullscreen && (
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5 md:px-5">
                   <div className="flex items-center gap-2">
-                    <div className="rounded-[10px] bg-white/[0.10] px-4 py-2 text-[13px] text-white">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("preview")}
+                      className={`rounded-[10px] px-4 py-2 text-[13px] transition ${
+                        activeTab === "preview"
+                          ? "bg-white/[0.10] text-white"
+                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
                       Náhled
-                    </div>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => setActiveTab("editor")}
@@ -2974,21 +3021,20 @@ export default function AiEditorPage() {
               )}
 
               <div className="min-h-0 flex-1">
-                {activeTab === "preview" ? (
-                  <div
-                    className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${
-                      isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"
-                    }`}
-                  >
-                    {previewDocument ? (
+                <div
+                  className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${
+                    isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"
+                  }`}
+                >
+                  {activeTab === "preview" ? (
+                    previewDocument ? (
                       <div
                         className={`${previewWidthClass} ${
                           isFullscreen ? "h-full min-h-full pt-20" : "h-full"
                         }`}
                       >
                         <iframe
-                          ref={iframeRef}
-                          key={iframeKey}
+                          key={`${iframeKey}-preview`}
                           title="Zyvia preview"
                           className="h-full min-h-[720px] w-full bg-white"
                           srcDoc={previewDocument}
@@ -2999,69 +3045,27 @@ export default function AiEditorPage() {
                       <div className={`${previewWidthClass} h-full`}>
                         <BuilderPlaceholder status={status} />
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="h-full overflow-y-auto px-3 py-3">
-                    <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-3">
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("text")}
-                        disabled={!selectedSectionMeta}
-                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-white">
-                          <Icon icon="solar:text-bold-linear" width={16} />
-                          <span className="text-sm font-medium">Změnit text</span>
-                        </div>
-                        <div className="text-[12px] leading-5 text-zinc-500">
-                          Připraví prompt pro úpravu textů ve vybrané sekci.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("visual")}
-                        disabled={!selectedSectionMeta}
-                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-white">
-                          <Icon icon="solar:palette-linear" width={16} />
-                          <span className="text-sm font-medium">Změnit fotku / vzhled</span>
-                        </div>
-                        <div className="text-[12px] leading-5 text-zinc-500">
-                          Připraví prompt pro vizuální vylepšení vybrané sekce.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("regenerate")}
-                        disabled={!selectedSectionMeta}
-                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-white">
-                          <Icon icon="solar:restart-linear" width={16} />
-                          <span className="text-sm font-medium">Přegenerovat sekci</span>
-                        </div>
-                        <div className="text-[12px] leading-5 text-zinc-500">
-                          Udělá novou variantu layoutu jen pro aktuálně vybranou sekci.
-                        </div>
-                      </button>
+                    )
+                  ) : editorDocument ? (
+                    <div
+                      className={`${previewWidthClass} ${
+                        isFullscreen ? "h-full min-h-full pt-20" : "h-full"
+                      }`}
+                    >
+                      <iframe
+                        ref={iframeRef}
+                        key={`${iframeKey}-editor`}
+                        title="Zyvia editor preview"
+                        className="h-full min-h-[720px] w-full bg-white"
+                        srcDoc={editorDocument}
+                        sandbox="allow-scripts allow-same-origin"
+                      />
                     </div>
-
-                    <div className="mx-auto mt-3 max-w-5xl rounded-[10px] border border-white/8 bg-[#0b0b10] p-4">
-                      <div className="mb-2 text-sm font-medium text-white">
-                        {selectedSectionMeta
-                          ? `Aktuálně vybraná sekce: ${selectedSectionMeta.label}`
-                          : "Nejdřív klikněte v náhledu na konkrétní sekci"}
-                      </div>
-                      <div className="text-[12px] leading-5 text-zinc-500">
-                        Tady jsou jen editovací akce. Náhled zůstává vedle a není potřeba přepínat na žádný kód.
-                      </div>
+                  ) : (
+                    <div className={`${previewWidthClass} h-full`}>
+                      <BuilderPlaceholder status={status} />
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </main>
