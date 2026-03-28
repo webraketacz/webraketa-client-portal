@@ -320,6 +320,8 @@ function inferIndustryKind(prompt: string): IndustryKind {
   if (
     text.includes("restaurant") ||
     text.includes("restaurace") ||
+    text.includes("fine dining") ||
+    text.includes("degustac") ||
     text.includes("bistro") ||
     text.includes("cafe") ||
     text.includes("kavarna") ||
@@ -628,6 +630,8 @@ function resolveCreativeDirection(
       "floating-reservation-panel",
       "hero-top-right-copy-over-image",
       "stacked-gallery-cover-hero",
+      "centered-editorial-hero-with-photo-band",
+      "immersive-dining-cover",
     ],
     product: [
       "product-hero-with-packshot",
@@ -769,12 +773,7 @@ REFERENCE FAMILY: LUXURY EDITORIAL
 - refined serif or contrast typography
 - strong image-led sections
 - asymmetry, generous spacing, layered cards and elegant separators
-- for premium real estate or development projects, this may include:
-  - centered or split navigation with refined logo treatment
-  - huge elegant serif headlines
-  - airy white sections after the hero
-  - thin dividers, muted palette, restrained luxury
-  - full-bleed interiors or architectural photography
+- full-bleed interiors or architectural photography
 `;
     case "product-commerce":
       return `
@@ -790,6 +789,7 @@ REFERENCE FAMILY: RESTAURANT EDITORIAL
 - immersive food photography
 - elegant dining mood
 - refined editorial typography
+- premium hospitality composition
 - reservation CTA, menu highlights, atmosphere and story
 - can include subtle map and visit section
 `;
@@ -831,7 +831,20 @@ REFERENCE FAMILY: AUTO
   }
 }
 
-function getIndustrySpecificRules(industry: IndustryKind, imageMode: string) {
+function getIndustrySpecificRules(
+  industry: IndustryKind,
+  imageMode: string,
+  rawPrompt: string
+) {
+  const prompt = normalizeText(rawPrompt);
+  const wantsSaasStyleForRestaurant =
+    industry === "restaurant" &&
+    (prompt.includes("saas style") ||
+      prompt.includes("saas dashboard") ||
+      prompt.includes("dashboard styl") ||
+      prompt.includes("glass efekt") ||
+      prompt.includes("gradienty"));
+
   switch (industry) {
     case "food-product":
       return `
@@ -850,12 +863,31 @@ INDUSTRY RULES: FOOD PRODUCT / SUGAR / PACKAGED GOODS
   - contact or order CTA
 `;
     case "restaurant":
-      return `
+      return wantsSaasStyleForRestaurant
+        ? `
+INDUSTRY RULES: RESTAURANT WITH MODERN GLASS / DIGITAL LUXURY DIRECTION
+- this is STILL a premium restaurant website, not a startup SaaS landing page
+- hospitality and atmosphere remain primary
+- glass surfaces, gradients, glow and micro-interactions are allowed only as styling language
+- never turn the page into KPI cards, dashboards, fake analytics or fintech blocks
+- food / interior photography remains central
+- reservation CTA must be strong and obvious
+- required sections should feel relevant to fine dining:
+  - hero with strong atmosphere
+  - concept / story
+  - signature menu cards with prices
+  - gallery
+  - references or guest experience
+  - contact / reservation / footer
+- if using glass cards, they must frame hospitality content, not replace it
+`
+        : `
 INDUSTRY RULES: RESTAURANT
 - food photography is central
 - reservation CTA should be clear
 - menu highlights, atmosphere, story, visit section and map make sense
 - avoid product dashboard style
+- for fine dining, the result should feel elegant, atmospheric, editorial and hospitality-first
 `;
     case "catering":
       return `
@@ -915,7 +947,6 @@ INDUSTRY RULES: RESORT / HOSPITALITY
 INDUSTRY RULES: REAL ESTATE / DEVELOPMENT PROJECT
 - use architecture / interior / exterior imagery
 - premium editorial composition
-- for luxury real-estate or development sites, the design may resemble a refined editorial project microsite
 - large full-bleed property visuals are welcome
 - oversized elegant serif headlines are welcome
 - airy white sections with restrained palette are welcome
@@ -1178,7 +1209,8 @@ ${getDesignReferenceRecipe(params.preferences.designReference)}
 
 ${getIndustrySpecificRules(
     params.preferences.industry,
-    params.preferences.imageMode
+    params.preferences.imageMode,
+    params.prompt
   )}
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
@@ -1210,6 +1242,9 @@ NAV HEIGHT RULES:
 - keep nav inner padding controlled and symmetrical
 - prevent giant vertical padding in navigation
 - menu links must align to the visual center of the nav row
+- sticky navigation must not overlap following sections without compensation
+- if nav is sticky, add correct top spacing / structural flow so the next section never starts underneath it
+- do not leave a giant empty dead zone below sticky nav
 
 LOGO FIT RULES:
 - uploaded logos must NEVER render at natural uncontrolled size
@@ -1290,6 +1325,8 @@ HERO STABILITY RULES:
   - ensure contrast is strong enough
 - if using KPI or floating cards, those cards must support the hero, not break it
 - hero section must not feel broken at first glance
+- the first meaningful hero content should appear without an excessive empty gap beneath navigation
+- avoid giant blank bands before the headline or media
 
 TYPOGRAPHY HIERARCHY RULES:
 - enforce a clear H1 / H2 / H3 / H4 hierarchy
@@ -1462,6 +1499,10 @@ IMAGE RULES:
 - use image slots only where visually meaningful
 - queries must be concrete and in English
 - if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
+- if industry is restaurant or fine dining:
+  - at least one hero / atmosphere / interior / dish image must be used
+  - menu cards should not use irrelevant imagery like city skyline, snow road, random couple in boat, generic landscape, or unrelated lifestyle shot
+  - images must feel hospitality-relevant
 - if no image is needed, return an empty assetPlan array only for interface-led or text-led business types where that truly makes sense
 
 CONTACT RULES:
@@ -1520,6 +1561,103 @@ FINAL QA:
 `;
 }
 
+function refinePrompt(params: {
+  prompt: string;
+  chatHistory?: ChatHistoryItem[];
+  preferences: ReturnType<typeof resolveCreativeDirection>;
+  brandLogo?: BrandLogoAsset | null;
+  firstPass: GeneratedWebsiteBundle;
+}) {
+  return `
+You are a strict senior design QA engineer and frontend rescue specialist.
+
+Return ONLY a structured JSON object matching the schema.
+
+Your task:
+Repair and improve the generated website so it looks production-ready.
+Keep the same overall business, style direction and section intent, but fix structural and visual problems.
+
+IMPORTANT:
+- preserve the same site concept and same business type
+- improve layout quality, stability and relevance
+- you may rewrite html/css/js fully if needed
+- final output must still follow all original rules:
+  - html body markup only
+  - css complete
+  - js vanilla only
+  - semantic sections
+  - navigation section with data-section-id="navigation"
+  - footer section with data-section-id="footer"
+  - stable unique section ids
+  - working mobile nav
+  - valid assetPlan with max 4 items
+
+FOCUS ON FIXING THESE COMMON FAILURES:
+- giant empty blank space between navigation and hero
+- sticky nav overlapping following content
+- nav too tall
+- logo too large or unconstrained
+- hero text visually offset or not optically centered
+- unfinished hero with weak rhythm
+- layout that feels like content starts too low
+- random floating navigation visually detached from page flow
+- bento / card grid that looks incomplete or missing a card
+- irrelevant images for the industry
+- restaurant websites accidentally looking like SaaS dashboards instead of hospitality pages
+- menu cards using irrelevant photos
+- glass / gradient effects overpowering the actual business content
+- sections that feel broken on first scroll
+
+IMAGE RELEVANCE RULES:
+- restaurant / fine dining images must show dishes, interiors, dining atmosphere, service details or hospitality scenes
+- never use random landscape, city skyline, snowy road, generic lifestyle couple, or irrelevant stock image for menu or gallery cards
+- if a wrong image category was implied, fix the assetPlan queries too
+
+NAV / HERO CORRECTION RULES:
+- navigation must sit in a stable structural position
+- do not leave dead black space below nav
+- the first hero content should appear promptly after nav with intentional spacing
+- if sticky nav is used, ensure the next content is compensated properly
+- nav height must remain controlled
+- hero must feel like the real first section of the site, not pushed away
+
+RESTAURANT SANITY RULE:
+- if the project is a premium / fine dining restaurant, the final result must feel like hospitality luxury, atmosphere, cuisine and reservation
+- styling may be modern and glassy, but it must not read like fintech or startup software
+
+ORIGINAL PROMPT:
+${params.prompt}
+
+CREATIVE DIRECTION:
+- industry: ${params.preferences.industry}
+- layout preference: ${params.preferences.layoutPreference}
+- visual style: ${params.preferences.visualStyle}
+- animation level: ${params.preferences.animationLevel}
+- font mood: ${params.preferences.fontMood}
+- icon style: ${params.preferences.iconStyle}
+- design reference: ${params.preferences.designReference}
+- layout seed: ${params.preferences.layoutSeed}
+
+CHAT HISTORY:
+${formatChatHistory(params.chatHistory || [])}
+
+FIRST PASS HTML:
+${params.firstPass.html}
+
+FIRST PASS CSS:
+${params.firstPass.css}
+
+FIRST PASS JS:
+${params.firstPass.js}
+
+FIRST PASS ASSET PLAN:
+${JSON.stringify(params.firstPass.assetPlan, null, 2)}
+
+FINAL REQUIREMENT:
+Return a corrected, more stable, more relevant, more polished version.
+`;
+}
+
 export async function POST(req: Request) {
   const requestId = crypto.randomUUID();
   const routeStartedAt = nowMs();
@@ -1568,9 +1706,9 @@ export async function POST(req: Request) {
       })
     );
 
-    const renderStartedAt = nowMs();
+    const firstPassStartedAt = nowMs();
 
-    const renderedBundle = await createStructuredObject<GeneratedWebsiteBundle>({
+    const firstPassBundle = await createStructuredObject<GeneratedWebsiteBundle>({
       model: WEB_MODEL,
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
@@ -1582,20 +1720,47 @@ export async function POST(req: Request) {
         preferences: resolvedPreferences,
         brandLogo,
       }),
-      schemaName: "website_bundle_layout_guardrails_v10",
+      schemaName: "website_bundle_layout_guardrails_v11",
       schema: generatedWebsiteSchema,
       requestId,
     });
 
-    logStep(requestId, "render-finished", renderStartedAt, {
-      htmlLength: renderedBundle?.html?.length || 0,
-      cssLength: renderedBundle?.css?.length || 0,
-      jsLength: renderedBundle?.js?.length || 0,
-      assetPlanCount: renderedBundle?.assetPlan?.length || 0,
+    logStep(requestId, "first-pass-finished", firstPassStartedAt, {
+      htmlLength: firstPassBundle?.html?.length || 0,
+      cssLength: firstPassBundle?.css?.length || 0,
+      jsLength: firstPassBundle?.js?.length || 0,
+      assetPlanCount: firstPassBundle?.assetPlan?.length || 0,
+    });
+
+    const safeFirstPass = sanitizeBundle(firstPassBundle);
+
+    const refineStartedAt = nowMs();
+
+    const refinedBundle = await createStructuredObject<GeneratedWebsiteBundle>({
+      model: WEB_MODEL,
+      system:
+        "You are a strict design QA engineer and frontend fixer. Return only valid JSON.",
+      user: refinePrompt({
+        prompt,
+        chatHistory,
+        preferences: resolvedPreferences,
+        brandLogo,
+        firstPass: safeFirstPass,
+      }),
+      schemaName: "website_bundle_refined_layout_guardrails_v11",
+      schema: generatedWebsiteSchema,
+      requestId,
+    });
+
+    logStep(requestId, "refine-pass-finished", refineStartedAt, {
+      htmlLength: refinedBundle?.html?.length || 0,
+      cssLength: refinedBundle?.css?.length || 0,
+      jsLength: refinedBundle?.js?.length || 0,
+      assetPlanCount: refinedBundle?.assetPlan?.length || 0,
     });
 
     const sanitizeStartedAt = nowMs();
-    const safeRendered = sanitizeBundle(renderedBundle);
+    const safeRendered = sanitizeBundle(refinedBundle);
 
     const htmlWithBrandLogo = injectBrandLogoMarkup(
       safeRendered.html,
