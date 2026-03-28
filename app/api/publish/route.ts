@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       projectSettings: {
         framework: null,
       },
-      target: "preview",
+      target: "production",
       files: [
         {
           file: "index.html",
