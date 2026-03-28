@@ -1207,8 +1207,17 @@ ${
 
   function extractBackgroundImageUrl(el) {
     const backgroundImage = window.getComputedStyle(el).backgroundImage || "";
-    const match = backgroundImage.match(/url\((["']?)(.*?)\1\)/i);
-    return match ? match[2] : "";
+    if (!backgroundImage || backgroundImage === "none") return "";
+
+    const normalized = backgroundImage.trim();
+    if (!normalized.toLowerCase().startsWith("url(")) return "";
+
+    let value = normalized.slice(4, -1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+
+    return value;
   }
 
   document.addEventListener("mouseover", function (event) {
