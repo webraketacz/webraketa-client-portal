@@ -3075,6 +3075,7 @@ export default function AiEditorPage() {
                       <BuilderPlaceholder status={status} />
                     </div>
                   )}
+                </div>
               </div>
             </div>
           </main>
