@@ -124,6 +124,8 @@ type AssetSearchResponse = {
 type PublishResponse = {
   url?: string;
   error?: string;
+  inspectUrl?: string;
+  deploymentId?: string;
 };
 
 type ViewMode = "desktop" | "tablet" | "mobile";
@@ -551,181 +553,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
             "Např. lokalita, galerie, standardy, financování, další projekty, kontakt, dostupnost bytů…",
         },
       ];
-
-    case "healthcare":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby nebo specializace chcete nejvíc zdůraznit?",
-          placeholder:
-            "Např. praktický lékař, prevence, očkování, vstupní prohlídky, objednání…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Důvěra a obsah",
-          text: "Má být na webu něco navíc pro důvěryhodnost?",
-          placeholder:
-            "Např. tým lékařů, reference, ordinační hodiny, FAQ, mapa, pojišťovny…",
-        },
-      ];
-
-    case "restaurant":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Hlavní nabídka",
-          text: "Co chcete na webu restaurace nejvíc prodat?",
-          placeholder:
-            "Např. degustační menu, rezervace, brunch, rodinná atmosféra…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být něco navíc?",
-          placeholder:
-            "Např. denní menu, rezervace, mapa, galerie, eventy, dárkové poukazy…",
-        },
-      ];
-
-    case "catering":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Hlavní nabídka",
-          text: "Jaké služby cateringu chcete nejvíc prodat?",
-          placeholder:
-            "Např. svatby, firemní eventy, coffee breaky, rozvoz, fine dining catering…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Co ještě musí na webu být?",
-          placeholder:
-            "Např. poptávkový formulář, galerie realizací, balíčky, reference…",
-        },
-      ];
-
-    case "barber":
-    case "hair-salon":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby nebo styl salonu chcete vypíchnout?",
-          placeholder:
-            "Např. pánské střihy, vousy, blond specialistka, moderní salon…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Chcete zdůraznit rezervace, tým, ceník nebo galerii?",
-          placeholder:
-            "Např. online rezervace, galerie proměn, tým, ceník, kosmetika…",
-        },
-      ];
-
-    case "autoservis":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby autoservisu jsou nejdůležitější?",
-          placeholder:
-            "Např. diagnostika, pneuservis, detailing, klimatizace, servis vozů…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být ceník, objednání nebo něco dalšího?",
-          placeholder:
-            "Např. objednávkový formulář, reference, otevírací doba, FAQ, značky aut…",
-        },
-      ];
-
-    case "car-dealer":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Hlavní nabídka",
-          text: "Co chcete na prodeji aut zdůraznit?",
-          placeholder:
-            "Např. prověřené vozy, financování, dovoz, záruka, flotily…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má web obsahovat nabídku vozů, financování nebo reference?",
-          placeholder:
-            "Např. filtrování aut, reference, financování, kontakt, showroom…",
-        },
-      ];
-
-    case "zednik":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby nebo realizace chcete vypíchnout?",
-          placeholder:
-            "Např. rekonstrukce, fasády, obklady, rodinné domy…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být něco navíc?",
-          placeholder:
-            "Např. reference, fotky realizací, postup spolupráce, rychlá poptávka…",
-        },
-      ];
-
-    case "fintech":
-    case "saas":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Produkt",
-          text: "Jaký hlavní produkt nebo výhodu chcete zdůraznit?",
-          placeholder:
-            "Např. AI automatizace, reporting, API, platby, onboarding…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Chcete zdůraznit něco navíc?",
-          placeholder:
-            "Např. integrace, pricing, dashboard preview, case studies, bezpečnost…",
-        },
-      ];
-
-    case "food-product":
-    case "ecommerce-product":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Produkt",
-          text: "Jaký produkt nebo benefit chcete nejvíc prodat?",
-          placeholder:
-            "Např. přírodní složení, balení, chuť, kvalita surovin, edice…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být FAQ, balení, recepty nebo něco dalšího?",
-          placeholder:
-            "Např. FAQ, varianty balení, recepty, výhody produktu, objednávka…",
-        },
-      ];
-
     default:
       return [
         ...common,
@@ -782,29 +609,6 @@ function getPostGenerateSuggestions(industry: IndustryKind) {
         "Zjemni typografii a přidej víc vzduchu mezi bloky.",
         "Přidej důvěryhodnější sekci kontaktu a poptávky.",
       ];
-    case "healthcare":
-      return [
-        "Zpřehledni služby a ordinační hodiny.",
-        "Uprav web na důvěryhodnější a klidnější styl.",
-        "Posil sekci objednání a kontaktu.",
-        "Přidej víc lidského a profesionálního tónu do textů.",
-      ];
-    case "saas":
-    case "fintech":
-      return [
-        "Vylepši hero na výraznější wow produktovou sekci.",
-        "Uprav pricing a CTA pro vyšší konverzi.",
-        "Zpřehledni benefity a dashboard preview.",
-        "Přidej silnější social proof a reference.",
-      ];
-    case "restaurant":
-    case "catering":
-      return [
-        "Vylepši sekci nabídky a rezervace.",
-        "Přidej atmosféru a výraznější food vizuály.",
-        "Zpřehledni kontakt, mapu a otevírací dobu.",
-        "Uprav texty, aby působily víc prémiově a chutně.",
-      ];
     default:
       return [
         "Vylepši hero a první dojem webu.",
@@ -835,7 +639,6 @@ function extractSectionsFromHtml(html: string): SectionMeta[] {
         const id = node.getAttribute("data-section-id") || "";
         const type = node.getAttribute("data-section-type") || "";
         if (!id) return null;
-
         return { id, type, label: prettifySectionLabel(id, type) };
       })
       .filter(Boolean) as SectionMeta[];
@@ -909,31 +712,9 @@ function mergeAnswerValue(
 async function parseApiResponse<T>(res: Response): Promise<T> {
   const raw = await res.text();
   const contentType = res.headers.get("content-type") || "";
-
   if (!raw) throw new Error("Server vrátil prázdnou odpověď.");
-
-  if (contentType.includes("application/json")) {
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      throw new Error(`Server vrátil neplatný JSON: ${raw.slice(0, 220)}`);
-    }
-  }
-
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    const cleaned = raw
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 220);
-
-    throw new Error(
-      cleaned ||
-        "Server nevrátil JSON. Pravděpodobně došlo k chybě na backendu."
-    );
-  }
+  if (contentType.includes("application/json")) return JSON.parse(raw) as T;
+  return JSON.parse(raw) as T;
 }
 
 function replaceImageAssetsInHtml(html: string, assets: ResolvedAsset[]) {
@@ -947,7 +728,6 @@ function replaceImageAssetsInHtml(html: string, assets: ResolvedAsset[]) {
       const node = doc.body.querySelector(
         `[data-image-slot="${asset.slot}"]`
       ) as HTMLElement | null;
-
       if (!node) return;
 
       if (node.tagName.toLowerCase() === "img") {
@@ -1009,8 +789,15 @@ function updateTextInHtml(
   }
 }
 
-function buildPreviewDocument(html: string, css: string, js: string) {
-  const htmlWithEditableMarkers = injectEditableTextAttributes(html);
+function buildPreviewDocument(
+  html: string,
+  css: string,
+  js: string,
+  interactive = true
+) {
+  const htmlWithEditableMarkers = interactive
+    ? injectEditableTextAttributes(html)
+    : html;
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -1021,9 +808,12 @@ function buildPreviewDocument(html: string, css: string, js: string) {
   <style>
 ${css}
 
+*, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { position: relative; }
-[data-section-id] { transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+${
+  interactive
+    ? `[data-section-id] { transition: outline-color .18s ease, box-shadow .18s ease, transform .18s ease; }
 [data-section-id].zyvia-section-hover {
   outline: 2px solid rgba(90,209,255,.45);
   outline-offset: 4px;
@@ -1065,6 +855,11 @@ body { position: relative; }
   box-shadow: 0 8px 22px rgba(0,0,0,.20);
   transform: translateY(-10px);
   white-space: nowrap;
+}`
+    : `a, button, [role="button"], input, textarea, select, label {
+  pointer-events: none !important;
+  cursor: default !important;
+}`
 }
   </style>
 </head>
@@ -1073,7 +868,9 @@ ${htmlWithEditableMarkers}
 <script>
 ${js}
 </script>
-<script>
+${
+  interactive
+    ? `<script>
 (function () {
   let selectedSectionId = null;
   let selectedImageSlot = null;
@@ -1168,7 +965,7 @@ ${js}
 
   function extractBackgroundImageUrl(el) {
     const backgroundImage = window.getComputedStyle(el).backgroundImage || "";
-    const match = backgroundImage.match(/url\\((["']?)(.*?)\\1\\)/i);
+    const match = backgroundImage.match(/url\\((['\"]?)(.*?)\\1\\)/i);
     return match ? match[2] : "";
   }
 
@@ -1312,7 +1109,9 @@ ${js}
 
   applySelectedState();
 })();
-</script>
+</script>`
+    : ""
+}
 </body>
 </html>`;
 }
@@ -1353,11 +1152,11 @@ function BuilderPlaceholder({ status }: { status: string }) {
   return (
     <div className="flex h-full min-h-[720px] w-full items-center justify-center px-4 py-5">
       <div className="relative h-full min-h-[680px] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06070b]">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
-        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/10 blur-[80px]" />
-        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/10 blur-[90px]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
+        <div className="pointer-events-none absolute left-[10%] top-[8%] h-40 w-40 rounded-[10px] bg-violet-500/6 blur-[90px]" />
+        <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-48 w-48 rounded-[10px] bg-cyan-500/6 blur-[100px]" />
 
-        <div className="relative z-10 flex h-full flex-col p-5 md:p-7">
+        <div className="relative z-10 flex h-full flex-col p-5 md:p-7 opacity-60">
           <div className="mx-auto w-full max-w-5xl flex-1">
             <div className="mb-4 flex items-center justify-between rounded-[1.3rem] border border-white/10 bg-white/[0.03] px-4 py-3 animate-[zyviaPulse_2.2s_ease-in-out_infinite]">
               <div className="flex items-center gap-3">
@@ -1367,7 +1166,6 @@ function BuilderPlaceholder({ status }: { status: string }) {
                   <div className="h-3 w-20 rounded-[10px] bg-white/5" />
                 </div>
               </div>
-
               <div className="flex gap-3">
                 <div className="h-9 w-20 rounded-[10px] border border-white/10 bg-white/[0.04]" />
                 <div className="h-9 w-24 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10" />
@@ -1383,19 +1181,7 @@ function BuilderPlaceholder({ status }: { status: string }) {
                   <div className="h-7 w-[78%] rounded-[10px] bg-white/10" />
                   <div className="h-7 w-[62%] rounded-[10px] bg-white/10" />
                 </div>
-
-                <div className="mt-8 space-y-3">
-                  <div className="h-4 w-[88%] rounded-[10px] bg-white/6" />
-                  <div className="h-4 w-[81%] rounded-[10px] bg-white/6" />
-                  <div className="h-4 w-[72%] rounded-[10px] bg-white/6" />
-                </div>
-
-                <div className="mt-8 flex gap-3">
-                  <div className="h-11 w-32 rounded-[10px] border border-cyan-400/20 bg-cyan-400/15" />
-                  <div className="h-11 w-36 rounded-[10px] border border-white/10 bg-white/[0.04]" />
-                </div>
               </div>
-
               <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.03] p-5 animate-[zyviaPulse_2.8s_ease-in-out_infinite]">
                 <div className="mb-4 h-[320px] rounded-[1.3rem] border border-white/10 bg-gradient-to-br from-white/5 to-cyan-400/5" />
                 <div className="space-y-3">
@@ -1406,21 +1192,19 @@ function BuilderPlaceholder({ status }: { status: string }) {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="relative z-10 mt-5 border-t border-white/8 px-2 pt-5">
-            <div className="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-100">
-                <span className="inline-block h-2.5 w-2.5 rounded-[10px] bg-cyan-300 animate-pulse" />
-                Builder právě skládá jednotlivé sekce
-              </div>
-
-              <div className="text-base font-medium text-white md:text-lg">
-                {status || "Sestavuji strukturu webu…"}
-              </div>
-
-              <div className="mt-2 text-sm text-zinc-500">
-                Vytvářím layout, hierarchii obsahu, CTA prvky a vizuální směr.
-              </div>
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
+          <div className="w-full max-w-2xl rounded-[18px] border border-white/10 bg-[#07070b]/70 px-6 py-6 text-center backdrop-blur-xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/8 px-4 py-2 text-[13px] text-cyan-100">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300 animate-pulse" />
+              Zyvia generuje sekce
+            </div>
+            <div className="text-lg font-medium text-white md:text-xl">
+              {status || "Sestavuji strukturu webu…"}
+            </div>
+            <div className="mt-2 text-[13px] leading-6 text-zinc-400">
+              Vytvářím layout, vizuální směr, hierarchii obsahu a CTA prvky.
             </div>
           </div>
         </div>
@@ -1434,30 +1218,20 @@ export default function AiEditorPage() {
   const [html, setHtml] = useState("");
   const [css, setCss] = useState("");
   const [js, setJs] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [improving, setImproving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [resolvingAssets, setResolvingAssets] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState("");
-
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Připraveno");
-
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
-
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-  null
-);
-  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(
-    null
-  );
-
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "system-initial",
@@ -1465,44 +1239,26 @@ export default function AiEditorPage() {
       text: "Zyvia je připravena tvořit weby podle oboru, loga a vašich odpovědí v chatu.",
     },
   ]);
-
   const [chatInput, setChatInput] = useState("");
-
   const [textModalOpen, setTextModalOpen] = useState(false);
-  const [selectedText, setSelectedText] =
-    useState<EditableTextSelection | null>(null);
+  const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
   const [editedTextValue, setEditedTextValue] = useState("");
   const [editedHrefValue, setEditedHrefValue] = useState("");
-
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] =
-    useState<EditableImageSelection | null>(null);
-  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">(
-    "search"
-  );
+  const [selectedImage, setSelectedImage] = useState<EditableImageSelection | null>(null);
+  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">("search");
   const [imageSearchQuery, setImageSearchQuery] = useState("");
-  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>(
-    []
-  );
+  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>([]);
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
-
   const [uploadedLogo, setUploadedLogo] = useState<BrandLogoAsset | null>(null);
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
-
-  const [generationPreferences, setGenerationPreferences] =
-    useState<GenerationPreferences>(createDefaultPreferences(""));
+  const [generationPreferences, setGenerationPreferences] = useState<GenerationPreferences>(createDefaultPreferences(""));
   const [otazky, setOtazky] = useState<Otazka[]>([]);
   const [aktivniOtazkaIndex, setAktivniOtazkaIndex] = useState(0);
   const [odpovedInput, setOdpovedInput] = useState("");
   const [otazkyDokonceny, setOtazkyDokonceny] = useState(false);
-
-  const [generatedIndustry, setGeneratedIndustry] =
-    useState<IndustryKind | null>(null);
-  const [postGenerateSuggestions, setPostGenerateSuggestions] = useState<
-    string[]
-  >([]);
-
+  const [postGenerateSuggestions, setPostGenerateSuggestions] = useState<string[]>([]);
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
   const autostartRef = useRef(false);
@@ -1511,10 +1267,7 @@ export default function AiEditorPage() {
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
 
-  const iframeKey = useMemo(
-    () => `${html.length}-${css.length}-${js.length}`,
-    [html, css, js]
-  );
+  const iframeKey = useMemo(() => `${html.length}-${css.length}-${js.length}`, [html, css, js]);
   const availableSections = useMemo(() => extractSectionsFromHtml(html), [html]);
 
   const selectedSectionMeta = useMemo(() => {
@@ -1530,11 +1283,15 @@ export default function AiEditorPage() {
 
   const previewDocument = useMemo(() => {
     if (!html) return "";
-    return buildPreviewDocument(html, css, js);
+    return buildPreviewDocument(html, css, js, false);
+  }, [html, css, js]);
+
+  const editorDocument = useMemo(() => {
+    if (!html) return "";
+    return buildPreviewDocument(html, css, js, true);
   }, [html, css, js]);
 
   const aktualniOtazka = otazky[aktivniOtazkaIndex] || null;
-
   const previewWidthClass =
     viewMode === "desktop"
       ? "w-full"
@@ -1543,30 +1300,22 @@ export default function AiEditorPage() {
       : "mx-auto w-[430px] max-w-full";
 
   function getChatHistoryPayload() {
-    return messages.slice(-12).map((message) => ({
-      role: message.role,
-      text: message.text,
-    }));
+    return messages.slice(-12).map((message) => ({ role: message.role, text: message.text }));
   }
 
   function scrollChatToBottom(smooth = true) {
-    chatBottomRef.current?.scrollIntoView({
-      behavior: smooth ? "smooth" : "auto",
-      block: "end",
-    });
+    chatBottomRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
   }
 
   function startQuestionFlow(currentPrompt: string) {
     const prefs = createDefaultPreferences(currentPrompt);
     const industry = inferIndustryKind(currentPrompt);
     const nextOtazky = getQuestionsForIndustry(industry);
-
     setGenerationPreferences(prefs);
     setOtazky(nextOtazky);
     setAktivniOtazkaIndex(0);
     setOdpovedInput("");
     setOtazkyDokonceny(false);
-
     setMessages((prev) => [
       ...prev,
       {
@@ -1583,42 +1332,29 @@ export default function AiEditorPage() {
   }
 
   function applyFollowUpSuggestion(suggestion: string) {
-    setChatInput(
-      selectedSectionMeta
-        ? `${suggestion} Zaměř se na sekci ${selectedSectionMeta.label}.`
-        : `${suggestion} Vyberu pak konkrétní sekci v náhledu.`
-    );
-
+    setChatInput(selectedSectionMeta ? `${suggestion} Zaměř se na sekci ${selectedSectionMeta.label}.` : `${suggestion} Vyberu pak konkrétní sekci v editoru.`);
     if (isFullscreen) {
       setIsFullscreen(false);
       setTimeout(() => chatInputRef.current?.focus(), 200);
       return;
     }
-
     setTimeout(() => {
       chatInputRef.current?.focus();
       scrollChatToBottom(true);
     }, 60);
   }
 
-  async function resolveAssetsAndPatchHtml(
-    assetPlan: AssetPlanItem[] | undefined,
-    currentPrompt: string
-  ) {
+  async function resolveAssetsAndPatchHtml(assetPlan: AssetPlanItem[] | undefined, currentPrompt: string) {
     if (!assetPlan?.length) return;
-
     setResolvingAssets(true);
-
     try {
       const res = await fetch("/api/resolve-assets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: currentPrompt, assetPlan }),
       });
-
       const data = await parseApiResponse<AssetResolveResponse>(res);
       if (!res.ok) throw new Error(data?.error ?? "Dohledání obrázků selhalo");
-
       if (data.assets?.length) {
         setHtml((prev) => replaceImageAssetsInHtml(prev, data.assets));
         setMessages((prev) => [
@@ -1626,9 +1362,7 @@ export default function AiEditorPage() {
           {
             id: `assets-resolved-${Date.now()}`,
             role: "system",
-            text: `Obrázky byly doplněny (${data.assets
-              .map((a) => a.source)
-              .join(", ")}). Kliknutím na obrázek ho můžete změnit.`,
+            text: `Obrázky byly doplněny (${data.assets.map((a) => a.source).join(", ")}). Kliknutím na obrázek ho můžete změnit.`,
           },
         ]);
       }
@@ -1638,9 +1372,7 @@ export default function AiEditorPage() {
         {
           id: `assets-failed-${Date.now()}`,
           role: "system",
-          text: `Layout zůstal zachovaný, ale obrázky se nepodařilo dohledat: ${
-            e?.message ?? "neznámá chyba"
-          }`,
+          text: `Layout zůstal zachovaný, ale obrázky se nepodařilo dohledat: ${e?.message ?? "neznámá chyba"}`,
         },
       ]);
     } finally {
@@ -1648,34 +1380,21 @@ export default function AiEditorPage() {
     }
   }
 
-  async function searchEditorImages(
-    queryOverride?: string,
-    orientationOverride?: "landscape" | "portrait" | "square"
-  ) {
+  async function searchEditorImages(queryOverride?: string, orientationOverride?: "landscape" | "portrait" | "square") {
     const finalQuery = (queryOverride ?? imageSearchQuery).trim();
-    const finalOrientation =
-      orientationOverride ?? selectedImage?.orientation ?? "landscape";
-
+    const finalOrientation = orientationOverride ?? selectedImage?.orientation ?? "landscape";
     if (finalQuery.length < 2) {
       setImageSearchResults([]);
       return;
     }
-
     setImageSearchLoading(true);
     setImageUploadError(null);
-
     try {
       const res = await fetch("/api/resolve-assets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          searchQuery: finalQuery,
-          orientation: finalOrientation,
-          maxResults: 8,
-        }),
+        body: JSON.stringify({ prompt, searchQuery: finalQuery, orientation: finalOrientation, maxResults: 8 }),
       });
-
       const data = await parseApiResponse<AssetSearchResponse>(res);
       if (!res.ok) throw new Error(data?.error ?? "Vyhledání obrázků selhalo");
       setImageSearchResults(Array.isArray(data.images) ? data.images : []);
@@ -1689,55 +1408,37 @@ export default function AiEditorPage() {
 
   function applyImageChange(asset: ResolvedAsset) {
     if (!selectedImage) return;
-
-    setHtml((prev) =>
-      replaceImageAssetsInHtml(prev, [{ ...asset, slot: selectedImage.slot }])
-    );
+    setHtml((prev) => replaceImageAssetsInHtml(prev, [{ ...asset, slot: selectedImage.slot }]));
     setSelectedSectionId(selectedImage.sectionId);
-
     setMessages((prev) => [
       ...prev,
       {
         id: `image-updated-${Date.now()}`,
         role: "assistant",
-        text: `Obrázek ve vybrané sekci ${prettifySectionLabel(
-          selectedImage.sectionId,
-          ""
-        )} byl změněn.`,
+        text: `Obrázek ve vybrané sekci ${prettifySectionLabel(selectedImage.sectionId, "")} byl změněn.`,
       },
     ]);
-
     closeImageModal();
   }
 
   async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !selectedImage) return;
-
     if (!file.type.startsWith("image/")) {
       setImageUploadError("Vybraný soubor není obrázek.");
       event.target.value = "";
       return;
     }
-
     setImageUploadError(null);
     const reader = new FileReader();
-
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
       if (!result) {
         setImageUploadError("Soubor se nepodařilo načíst.");
         return;
       }
-
-      applyImageChange({
-        slot: selectedImage.slot,
-        url: result,
-        alt: selectedImage.alt || file.name.replace(/\.[^.]+$/, ""),
-        source: "fallback",
-      });
+      applyImageChange({ slot: selectedImage.slot, url: result, alt: selectedImage.alt || file.name.replace(/\.[^.]+$/, ""), source: "fallback" });
     };
-
     reader.onerror = () => setImageUploadError("Nahrání obrázku selhalo.");
     reader.readAsDataURL(file);
     event.target.value = "";
@@ -1763,24 +1464,14 @@ export default function AiEditorPage() {
   function handleLogoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    const looksLikeSvg =
-      file.name.toLowerCase().endsWith(".svg") ||
-      file.type === "image/svg+xml";
-
-    const isAllowed =
-      ACCEPTED_LOGO_TYPES.includes(file.type) ||
-      looksLikeSvg ||
-      file.type === "";
-
+    const looksLikeSvg = file.name.toLowerCase().endsWith(".svg") || file.type === "image/svg+xml";
+    const isAllowed = ACCEPTED_LOGO_TYPES.includes(file.type) || looksLikeSvg || file.type === "";
     if (!isAllowed) {
       setLogoUploadError("Povolené jsou pouze PNG, JPG, SVG nebo WEBP.");
       event.target.value = "";
       return;
     }
-
     setLogoUploadError(null);
-
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
@@ -1788,18 +1479,15 @@ export default function AiEditorPage() {
         setLogoUploadError("Logo se nepodařilo načíst.");
         return;
       }
-
       const nextLogo: BrandLogoAsset = {
         name: file.name,
         mimeType: file.type || (looksLikeSvg ? "image/svg+xml" : "image/png"),
         dataUrl: result,
       };
-
       setUploadedLogo(nextLogo);
       sessionStorage.setItem("ai_webgen_logo_data_url", nextLogo.dataUrl);
       sessionStorage.setItem("ai_webgen_logo_name", nextLogo.name);
       sessionStorage.setItem("ai_webgen_logo_mime_type", nextLogo.mimeType);
-
       setMessages((prev) => [
         ...prev,
         {
@@ -1809,11 +1497,7 @@ export default function AiEditorPage() {
         },
       ]);
     };
-
-    reader.onerror = () => {
-      setLogoUploadError("Nahrání loga selhalo.");
-    };
-
+    reader.onerror = () => setLogoUploadError("Nahrání loga selhalo.");
     reader.readAsDataURL(file);
     event.target.value = "";
   }
@@ -1821,29 +1505,16 @@ export default function AiEditorPage() {
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
-
-    const storedLogoDataUrl =
-      sessionStorage.getItem("ai_webgen_logo_data_url") ?? "";
+    const storedLogoDataUrl = sessionStorage.getItem("ai_webgen_logo_data_url") ?? "";
     const storedLogoName = sessionStorage.getItem("ai_webgen_logo_name") ?? "";
-    const storedLogoMimeType =
-      sessionStorage.getItem("ai_webgen_logo_mime_type") ?? "image/png";
-
+    const storedLogoMimeType = sessionStorage.getItem("ai_webgen_logo_mime_type") ?? "image/png";
     if (storedLogoDataUrl && storedLogoName) {
-      setUploadedLogo({
-        name: storedLogoName,
-        mimeType: storedLogoMimeType,
-        dataUrl: storedLogoDataUrl,
-      });
+      setUploadedLogo({ name: storedLogoName, mimeType: storedLogoMimeType, dataUrl: storedLogoDataUrl });
     }
-
     if (initialPrompt) {
       setPrompt(initialPrompt);
-      setMessages((prev) => [
-        ...prev,
-        { id: `user-initial-${Date.now()}`, role: "user", text: initialPrompt },
-      ]);
+      setMessages((prev) => [...prev, { id: `user-initial-${Date.now()}`, role: "user", text: initialPrompt }]);
     }
-
     if (autostart && initialPrompt && !autostartRef.current) {
       autostartRef.current = true;
       sessionStorage.removeItem("ai_webgen_autostart");
@@ -1855,12 +1526,10 @@ export default function AiEditorPage() {
     function onMessage(event: MessageEvent) {
       const data = event.data;
       if (!data || typeof data !== "object") return;
-
       if (data.type === "zyvia-section-select") {
         setSelectedSectionId(data.sectionId || null);
         setSelectedSectionType(data.sectionType || null);
       }
-
       if (data.type === "zyvia-text-select") {
         const selection: EditableTextSelection = {
           id: data.textId || "",
@@ -1869,9 +1538,7 @@ export default function AiEditorPage() {
           sectionId: data.sectionId || "",
           href: typeof data.href === "string" ? data.href : undefined,
         };
-
         if (!selection.id || !selection.sectionId) return;
-
         setSelectedSectionId(selection.sectionId);
         setSelectedImage(null);
         setSelectedText(selection);
@@ -1879,49 +1546,36 @@ export default function AiEditorPage() {
         setEditedHrefValue(selection.href || "");
         setTextModalOpen(true);
       }
-
       if (data.type === "zyvia-image-select") {
         const selection: EditableImageSelection = {
           slot: data.slot || "",
           tagName: data.tagName || "",
           sectionId: data.sectionId || "",
-          currentUrl:
-            typeof data.currentUrl === "string" ? data.currentUrl : "",
+          currentUrl: typeof data.currentUrl === "string" ? data.currentUrl : "",
           alt: typeof data.alt === "string" ? data.alt : "",
           orientation:
-            data.orientation === "portrait" ||
-            data.orientation === "square" ||
-            data.orientation === "landscape"
+            data.orientation === "portrait" || data.orientation === "square" || data.orientation === "landscape"
               ? data.orientation
               : "landscape",
         };
-
         if (!selection.slot || !selection.sectionId) return;
-
         setSelectedSectionId(selection.sectionId);
         setSelectedText(null);
         setTextModalOpen(false);
         setSelectedImage(selection);
-        setImageSearchQuery(
-          selection.alt?.trim() ||
-            selection.slot.replace(/[-_]/g, " ").trim() ||
-            "premium business photo"
-        );
+        setImageSearchQuery(selection.alt?.trim() || selection.slot.replace(/[-_]/g, " ").trim() || "premium business photo");
         setImageSearchResults([]);
         setImageUploadError(null);
         setImagePickerTab("search");
         setImageModalOpen(true);
       }
     }
-
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (progressRef.current) window.clearInterval(progressRef.current);
-    };
+  useEffect(() => () => {
+    if (progressRef.current) window.clearInterval(progressRef.current);
   }, []);
 
   useEffect(() => {
@@ -1934,42 +1588,25 @@ export default function AiEditorPage() {
 
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
-
-    iframeRef.current.contentWindow.postMessage(
-      { type: "zyvia-set-selected-section", sectionId: selectedSectionId },
-      "*"
-    );
-
-    iframeRef.current.contentWindow.postMessage(
-      { type: "zyvia-set-selected-image", slot: selectedImage?.slot || null },
-      "*"
-    );
-  }, [selectedSectionId, selectedImage?.slot, previewDocument]);
+    iframeRef.current.contentWindow.postMessage({ type: "zyvia-set-selected-section", sectionId: selectedSectionId }, "*");
+    iframeRef.current.contentWindow.postMessage({ type: "zyvia-set-selected-image", slot: selectedImage?.slot || null }, "*");
+  }, [selectedSectionId, selectedImage?.slot, editorDocument]);
 
   useEffect(() => {
     if (!imageModalOpen || !selectedImage) return;
-    const initialQuery =
-      selectedImage.alt?.trim() ||
-      selectedImage.slot.replace(/[-_]/g, " ").trim();
-    if (initialQuery.length >= 2) {
-      void searchEditorImages(initialQuery, selectedImage.orientation);
-    }
+    const initialQuery = selectedImage.alt?.trim() || selectedImage.slot.replace(/[-_]/g, " ").trim();
+    if (initialQuery.length >= 2) void searchEditorImages(initialQuery, selectedImage.orientation);
   }, [imageModalOpen, selectedImage?.slot]);
 
   function startSmoothProgress(mode: "generate" | "improve") {
     if (progressRef.current) window.clearInterval(progressRef.current);
-
-    const source =
-      mode === "generate" ? GENERATE_LOADING_MESSAGES : IMPROVE_LOADING_MESSAGES;
-
+    const source = mode === "generate" ? GENERATE_LOADING_MESSAGES : IMPROVE_LOADING_MESSAGES;
     loadingMessageRef.current = 0;
     setProgress(1);
     setStatus(source[0]);
-
     progressRef.current = window.setInterval(() => {
       loadingMessageRef.current = (loadingMessageRef.current + 1) % source.length;
       setStatus(source[loadingMessageRef.current]);
-
       setProgress((prev) => {
         if (prev < 18) return prev + 1.2;
         if (prev < 34) return prev + 0.95;
@@ -1990,7 +1627,6 @@ export default function AiEditorPage() {
       window.clearInterval(progressRef.current);
       progressRef.current = null;
     }
-
     if (success) {
       setProgress(100);
       setStatus(finalStatus || "Hotovo");
@@ -1999,15 +1635,10 @@ export default function AiEditorPage() {
     }
   }
 
-  async function handleGenerate(
-    customPrompt?: string,
-    forcedPreferences?: GenerationPreferences
-  ) {
+  async function handleGenerate(customPrompt?: string, forcedPreferences?: GenerationPreferences) {
     const finalPrompt = (customPrompt ?? prompt).trim();
     if (finalPrompt.length < 12) return;
-
     const effectivePreferences = forcedPreferences || generationPreferences;
-
     setLoading(true);
     setError(null);
     setPublishError(null);
@@ -2018,57 +1649,31 @@ export default function AiEditorPage() {
     setSelectedSectionId(null);
     setSelectedSectionType(null);
     setSelectedImage(null);
-    setGeneratedIndustry(null);
     setPostGenerateSuggestions([]);
     setProgress(0);
     setActiveTab("preview");
-
     startSmoothProgress("generate");
-
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          generationPreferences: effectivePreferences,
-          chatHistory: getChatHistoryPayload(),
-          brandLogo: uploadedLogo,
-        }),
+        body: JSON.stringify({ prompt: finalPrompt, generationPreferences: effectivePreferences, chatHistory: getChatHistoryPayload(), brandLogo: uploadedLogo }),
       });
-
       const data = await parseApiResponse<GeneratorResponse>(res);
       if (!res.ok) throw new Error(data?.error ?? "Generování selhalo");
-      if (!data?.html || !data?.css) {
-        throw new Error("API /api/generate nevrátilo validní HTML/CSS.");
-      }
-
+      if (!data?.html || !data?.css) throw new Error("API /api/generate nevrátilo validní HTML/CSS.");
       const detectedIndustry = inferIndustryKind(finalPrompt);
       const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
-
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
       setHtml(data.html);
       setCss(data.css);
       setJs(data.js || "");
-      setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
-
       setMessages((prev) => [
         ...prev,
-        {
-          id: `assistant-generate-${Date.now()}`,
-          role: "assistant",
-          text: "Návrh je připraven. Klikněte na sekci, text nebo obrázek v náhledu a pokračujte v úpravách.",
-        },
-        {
-          id: `assistant-followup-${Date.now() + 1}`,
-          role: "assistant",
-          text: `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
-            detectedIndustry
-          )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,
-        },
+        { id: `assistant-generate-${Date.now()}`, role: "assistant", text: "Návrh je připraven. V Editoru klikněte na sekci, text nebo obrázek a pokračujte v úpravách." },
+        { id: `assistant-followup-${Date.now() + 1}`, role: "assistant", text: `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(detectedIndustry)}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.` },
       ]);
-
       void resolveAssetsAndPatchHtml(data.assetPlan, finalPrompt);
     } catch (e: any) {
       stopSmoothProgress(false, "Generování selhalo");
@@ -2080,67 +1685,40 @@ export default function AiEditorPage() {
 
   async function handleImprove(instructionOverride?: string) {
     if (!html || !css) return;
-
     const instruction = (instructionOverride ?? chatInput).trim();
     if (instruction.length < 3) return;
-
     if (!selectedSectionId) {
       setError("Nejdřív vyberte konkrétní sekci, kterou chcete upravit.");
       return;
     }
-
     setImproving(true);
     setError(null);
     setPublishError(null);
     setPublishedUrl("");
-
-    setMessages((prev) => [
-      ...prev,
-      { id: `user-improve-${Date.now()}`, role: "user", text: instruction },
-    ]);
-
+    setMessages((prev) => [...prev, { id: `user-improve-${Date.now()}`, role: "user", text: instruction }]);
     startSmoothProgress("improve");
-
     try {
       const res = await fetch("/api/improve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          instruction,
-          html,
-          css,
-          js,
-          selectedSectionId,
-          chatHistory: getChatHistoryPayload(),
-          brandLogo: uploadedLogo,
-        }),
+        body: JSON.stringify({ prompt, instruction, html, css, js, selectedSectionId, chatHistory: getChatHistoryPayload(), brandLogo: uploadedLogo }),
       });
-
       const data = await parseApiResponse<GeneratorResponse>(res);
       if (!res.ok) throw new Error(data?.error ?? "Úprava designu selhala");
-      if (!data?.html || !data?.css) {
-        throw new Error("API /api/improve nevrátilo validní HTML/CSS.");
-      }
-
+      if (!data?.html || !data?.css) throw new Error("API /api/improve nevrátilo validní HTML/CSS.");
       stopSmoothProgress(true, "Úpravy byly úspěšně aplikovány");
       setHtml(data.html);
       setCss(data.css);
       setJs(data.js || "");
       setChatInput("");
-      setActiveTab("preview");
-
       setMessages((prev) => [
         ...prev,
         {
           id: `assistant-improve-${Date.now()}`,
           role: "assistant",
-          text: `Úprava byla aplikována pouze do sekce ${
-            selectedSectionMeta?.label || selectedSectionId
-          }.`,
+          text: `Úprava byla aplikována pouze do sekce ${selectedSectionMeta?.label || selectedSectionId}.`,
         },
       ]);
-
       void resolveAssetsAndPatchHtml(data.assetPlan, prompt);
     } catch (e: any) {
       stopSmoothProgress(false, "Úpravy se nepodařilo dokončit");
@@ -2152,41 +1730,26 @@ export default function AiEditorPage() {
 
   async function handlePublish() {
     if (!html || !css) return;
-
     setPublishing(true);
     setPublishError(null);
-
     try {
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, html, css, js }),
+        body: JSON.stringify({ prompt, html, css, js, siteName: "Můj web", slug: prompt.slice(0, 64) }),
       });
-
       const data = await parseApiResponse<PublishResponse>(res);
-      if (!res.ok || !data.url) {
-        throw new Error(data?.error ?? "Publikace selhala");
-      }
-
+      if (!res.ok || !data.url) throw new Error(data?.error ?? "Publikace selhala");
       setPublishedUrl(data.url);
+      setMessages((prev) => [
+        ...prev,
+        { id: `publish-done-${Date.now()}`, role: "system", text: `Web byl publikován na ${data.url}` },
+      ]);
     } catch (e: any) {
       setPublishError(e?.message ?? "Publikace selhala");
     } finally {
       setPublishing(false);
     }
-  }
-
-  function focusEditInput() {
-    if (isFullscreen) {
-      setIsFullscreen(false);
-      setTimeout(() => chatInputRef.current?.focus(), 200);
-      return;
-    }
-
-    setTimeout(() => {
-      chatInputRef.current?.focus();
-      scrollChatToBottom(true);
-    }, 50);
   }
 
   function onChatKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -2198,25 +1761,13 @@ export default function AiEditorPage() {
 
   function useSectionAction(type: "text" | "visual" | "regenerate") {
     if (!selectedSectionMeta) return;
-
     const sectionName = selectedSectionMeta.label;
     const prompts: Record<typeof type, string> = {
       text: `Uprav texty v sekci ${sectionName}, aby byly přesvědčivější a lépe strukturované.`,
       visual: `Vylepši vzhled sekce ${sectionName}, přidej lepší hierarchii, rozestupy, animace a výraznější kompozici.`,
       regenerate: `Přegeneruj sekci ${sectionName} v novém, kvalitnějším rozvržení, ale zachovej celkový styl webu.`,
     };
-
     setChatInput(prompts[type]);
-
-    if (isFullscreen) {
-      setIsFullscreen(false);
-      setTimeout(() => {
-        chatInputRef.current?.focus();
-        scrollChatToBottom(true);
-      }, 200);
-      return;
-    }
-
     setTimeout(() => {
       chatInputRef.current?.focus();
       scrollChatToBottom(true);
@@ -2225,40 +1776,20 @@ export default function AiEditorPage() {
 
   function handleSaveInlineText() {
     if (!selectedText) return;
-
     const trimmed = editedTextValue.trim();
     if (!trimmed) return;
-
-    setHtml((prev) =>
-      updateTextInHtml(
-        prev,
-        selectedText.sectionId,
-        selectedText.id,
-        trimmed,
-        selectedText.href !== undefined ? editedHrefValue : undefined
-      )
-    );
-
+    setHtml((prev) => updateTextInHtml(prev, selectedText.sectionId, selectedText.id, trimmed, selectedText.href !== undefined ? editedHrefValue : undefined));
     setSelectedSectionId(selectedText.sectionId);
-
     setMessages((prev) => [
       ...prev,
       {
         id: `inline-text-${Date.now()}`,
         role: "assistant",
-        text:
-          selectedText.href !== undefined
-            ? `Text a odkaz byly upraveny pouze v sekci ${prettifySectionLabel(
-                selectedText.sectionId,
-                ""
-              )}.`
-            : `Text byl upraven pouze v sekci ${prettifySectionLabel(
-                selectedText.sectionId,
-                ""
-              )}.`,
+        text: selectedText.href !== undefined
+          ? `Text a odkaz byly upraveny pouze v sekci ${prettifySectionLabel(selectedText.sectionId, "")}.`
+          : `Text byl upraven pouze v sekci ${prettifySectionLabel(selectedText.sectionId, "")}.`,
       },
     ]);
-
     setTextModalOpen(false);
     setSelectedText(null);
     setEditedTextValue("");
@@ -2267,217 +1798,81 @@ export default function AiEditorPage() {
 
   function ulozitOdpovedNaOtazku() {
     if (!aktualniOtazka) return;
-
     const trimmed = odpovedInput.trim();
-
     const nextPreferences = {
       ...generationPreferences,
       clientAnswers: {
         ...generationPreferences.clientAnswers,
-        [aktualniOtazka.id]: mergeAnswerValue(
-          generationPreferences.clientAnswers[aktualniOtazka.id],
-          aktualniOtazka.appendLabel,
-          trimmed
-        ),
+        [aktualniOtazka.id]: mergeAnswerValue(generationPreferences.clientAnswers[aktualniOtazka.id], aktualniOtazka.appendLabel, trimmed),
       },
     };
-
     setGenerationPreferences(nextPreferences);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `question-answer-${Date.now()}`,
-        role: "user",
-        text: trimmed || "Bez odpovědi.",
-      },
-    ]);
-
+    setMessages((prev) => [...prev, { id: `question-answer-${Date.now()}`, role: "user", text: trimmed || "Bez odpovědi." }]);
     const nextIndex = aktivniOtazkaIndex + 1;
     setOdpovedInput("");
-
     if (nextIndex < otazky.length) {
       setAktivniOtazkaIndex(nextIndex);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `question-next-${Date.now() + 1}`,
-          role: "assistant",
-          text: otazky[nextIndex].text,
-        },
-      ]);
+      setMessages((prev) => [...prev, { id: `question-next-${Date.now() + 1}`, role: "assistant", text: otazky[nextIndex].text }]);
       return;
     }
-
     setOtazkyDokonceny(true);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `question-finished-${Date.now()}`,
-        role: "assistant",
-        text: "Děkuji, mám víc kontextu k projektu. Teď můžeme web vygenerovat přesněji podle vašich odpovědí.",
-      },
-    ]);
-
+    setMessages((prev) => [...prev, { id: `question-finished-${Date.now()}`, role: "assistant", text: "Děkuji, mám víc kontextu k projektu. Teď můžeme web vygenerovat přesněji podle vašich odpovědí." }]);
     void handleGenerate(prompt, nextPreferences);
   }
 
   function preskocitOtazkyAGenerovat() {
     setOtazkyDokonceny(true);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `skip-questions-${Date.now()}`,
-        role: "system",
-        text: "Otázky byly přeskočeny. Generuji web podle promptu, loga a automatického rozpoznání oboru.",
-      },
-    ]);
+    setMessages((prev) => [...prev, { id: `skip-questions-${Date.now()}`, role: "system", text: "Otázky byly přeskočeny. Generuji web podle promptu, loga a automatického rozpoznání oboru." }]);
     void handleGenerate(prompt, generationPreferences);
   }
 
   return (
     <div className="relative h-dvh overflow-hidden bg-[#050507] text-zinc-100">
       <style jsx global>{`
-        @keyframes zyviaEditorFloatA {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          100% {
-            transform: translate3d(28px, -18px, 0) scale(1.04);
-          }
-        }
-        @keyframes zyviaEditorFloatB {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          100% {
-            transform: translate3d(-26px, 18px, 0) scale(1.05);
-          }
-        }
-        @keyframes zyviaPulse {
-          0%,
-          100% {
-            opacity: 0.72;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.01);
-          }
-        }
+        @keyframes zyviaEditorFloatA { 0% { transform: translate3d(0,0,0) scale(1); } 100% { transform: translate3d(28px,-18px,0) scale(1.04); } }
+        @keyframes zyviaEditorFloatB { 0% { transform: translate3d(0,0,0) scale(1); } 100% { transform: translate3d(-26px,18px,0) scale(1.05); } }
+        @keyframes zyviaPulse { 0%,100% { opacity: .72; transform: scale(1); } 50% { opacity: 1; transform: scale(1.01); } }
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.08]" />
-      <div
-        className="pointer-events-none absolute left-[-120px] top-[-120px] h-[24rem] w-[24rem] rounded-[10px] blur-[120px]"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(124,92,255,0.18) 0%, rgba(124,92,255,0.05) 35%, transparent 75%)",
-          animation: "zyviaEditorFloatA 16s ease-in-out infinite alternate",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-[-140px] right-[-100px] h-[28rem] w-[28rem] rounded-[10px] blur-[120px]"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(90,209,255,0.14) 0%, rgba(90,209,255,0.05) 35%, transparent 75%)",
-          animation: "zyviaEditorFloatB 18s ease-in-out infinite alternate",
-        }}
-      />
+      <div className="pointer-events-none absolute left-[-120px] top-[-120px] h-[24rem] w-[24rem] rounded-[10px] blur-[120px]" style={{ background: "radial-gradient(circle, rgba(124,92,255,0.18) 0%, rgba(124,92,255,0.05) 35%, transparent 75%)", animation: "zyviaEditorFloatA 16s ease-in-out infinite alternate" }} />
+      <div className="pointer-events-none absolute bottom-[-140px] right-[-100px] h-[28rem] w-[28rem] rounded-[10px] blur-[120px]" style={{ background: "radial-gradient(circle, rgba(90,209,255,0.14) 0%, rgba(90,209,255,0.05) 35%, transparent 75%)", animation: "zyviaEditorFloatB 18s ease-in-out infinite alternate" }} />
 
       <div className="relative z-10 flex h-full flex-col">
         {!isFullscreen && (
           <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-2.5 backdrop-blur-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-3">
-                <img
-                  src="/zyvia-logo.svg"
-                  alt="Zyvia"
-                  className="h-6 w-auto shrink-0"
-                />
+                <img src="/zyvia-logo.svg" alt="Zyvia" className="h-6 w-auto shrink-0" />
                 <div className="text-xs text-zinc-500">AI Web Builder</div>
               </div>
-
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => downloadZipSite(html, css, js)}
-                  disabled={!html}
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-                >
-                  <Icon icon="solar:download-linear" width={14} />
-                  Export
+                <button type="button" onClick={() => downloadZipSite(html, css, js)} disabled={!html} className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40">
+                  <Icon icon="solar:download-linear" width={14} /> Export
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={!html || publishing}
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
-                >
-                  <Icon icon="solar:upload-linear" width={14} />
-                  {publishing ? "Publikuji…" : "Publikovat"}
+                <button type="button" onClick={handlePublish} disabled={!html || publishing} className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40">
+                  <Icon icon="solar:upload-linear" width={14} /> {publishing ? "Publikuji…" : "Publikovat"}
                 </button>
               </div>
             </div>
           </header>
         )}
 
-        <div
-          className={`min-h-0 flex-1 ${
-            isFullscreen
-              ? "grid grid-cols-1"
-              : "grid grid-cols-1 xl:grid-cols-[380px_minmax(0,1fr)]"
-          }`}
-        >
+        <div className={`min-h-0 flex-1 ${isFullscreen ? "grid grid-cols-1" : "grid grid-cols-1 xl:grid-cols-[380px_minmax(0,1fr)]"}`}>
           {!isFullscreen && (
             <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
               <div className="flex h-full flex-col">
                 <div className="border-b border-white/8 px-4 py-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <div className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
-                      Editor
-                    </div>
+                    <div className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">Editor</div>
                     {(loading || improving || resolvingAssets) && (
                       <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-300">
-                        {loading
-                          ? "Generuji"
-                          : improving
-                          ? "Upravuji"
-                          : "Doplňuji obrázky"}
+                        {loading ? "Generuji" : improving ? "Upravuji" : "Doplňuji obrázky"}
                       </div>
                     )}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!otazky.length || otazkyDokonceny) {
-                        startQuestionFlow(prompt);
-                        return;
-                      }
-                      scrollChatToBottom(true);
-                    }}
-                    disabled={
-                      loading ||
-                      improving ||
-                      resolvingAssets ||
-                      prompt.trim().length < 12
-                    }
-                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
-                      boxShadow:
-                        "0 10px 24px rgba(124,92,255,0.20), 0 0 28px rgba(90,209,255,0.08)",
-                    }}
-                  >
-                    {loading
-                      ? "Generuji…"
-                      : improving
-                      ? "Probíhá úprava…"
-                      : resolvingAssets
-                      ? "Doplňuji obrázky…"
-                      : "Začít generovat"}
+                  <button type="button" onClick={() => { if (!otazky.length || otazkyDokonceny) { startQuestionFlow(prompt); return; } scrollChatToBottom(true); }} disabled={loading || improving || resolvingAssets || prompt.trim().length < 12} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50" style={{ background: "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))", boxShadow: "0 10px 24px rgba(124,92,255,0.20), 0 0 28px rgba(90,209,255,0.08)" }}>
+                    {loading ? "Generuji…" : improving ? "Probíhá úprava…" : resolvingAssets ? "Doplňuji obrázky…" : "Začít generovat"}
                     <Icon icon="solar:arrow-up-linear" width={15} />
                   </button>
                 </div>
@@ -2487,18 +1882,8 @@ export default function AiEditorPage() {
                     {messages.map((message) => {
                       const isUser = message.role === "user";
                       const isSystem = message.role === "system";
-
                       return (
-                        <div
-                          key={message.id}
-                          className={`max-w-[94%] rounded-[10px] px-3 py-2 text-[13px] leading-5 ${
-                            isUser
-                              ? "ml-auto border border-cyan-500/15 bg-cyan-500/10 text-cyan-50"
-                              : isSystem
-                              ? "border border-white/8 bg-white/[0.03] text-zinc-400"
-                              : "border border-white/8 bg-[#0b0b10] text-zinc-200"
-                          }`}
-                        >
+                        <div key={message.id} className={`max-w-[94%] rounded-[10px] px-3 py-2 text-[13px] leading-5 ${isUser ? "ml-auto border border-cyan-500/15 bg-cyan-500/10 text-cyan-50" : isSystem ? "border border-white/8 bg-white/[0.03] text-zinc-400" : "border border-white/8 bg-[#0b0b10] text-zinc-200"}`}>
                           {message.text}
                         </div>
                       );
@@ -2509,138 +1894,52 @@ export default function AiEditorPage() {
                         <span>{status}</span>
                         <span>{Math.round(progress)}%</span>
                       </div>
-
                       <div className="h-2 overflow-hidden rounded-[10px] bg-zinc-800">
-                        <div
-                          className="h-full rounded-[10px] transition-all duration-500"
-                          style={{
-                            width: `${progress}%`,
-                            background:
-                              "linear-gradient(90deg, rgba(124,92,255,1), rgba(90,209,255,1))",
-                          }}
-                        />
+                        <div className="h-full rounded-[10px] transition-all duration-500" style={{ width: `${progress}%`, background: "linear-gradient(90deg, rgba(124,92,255,1), rgba(90,209,255,1))" }} />
                       </div>
-
                       <div className="mt-3 text-[11px] leading-5 text-zinc-500">
-                        {loading
-                          ? "Probíhá generování layoutu podle oboru, loga a vašich odpovědí."
-                          : improving
-                          ? "Probíhá zpracování úprav a aplikace změn do návrhu."
-                          : resolvingAssets
-                          ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
-                          : selectedSectionMeta
-                          ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
-                          : "Odpovězte na otázky a případně přidejte logo přímo v otázkách."}
+                        {loading ? "Probíhá generování layoutu podle oboru, loga a vašich odpovědí." : improving ? "Probíhá zpracování úprav a aplikace změn do návrhu." : resolvingAssets ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně." : selectedSectionMeta ? "V Editoru vybíráte konkrétní sekce, texty i obrázky pro úpravy." : "V Editoru vybíráte sekce, texty i obrázky. Náhled slouží jen pro čisté zobrazení."}
                       </div>
                     </div>
 
                     {otazky.length > 0 && !otazkyDokonceny && aktualniOtazka && (
                       <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 p-3">
                         <div className="mb-2 flex items-center justify-between gap-2">
-                          <div className="text-sm font-medium text-white">
-                            Otázka {aktivniOtazkaIndex + 1} z {otazky.length}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => logoInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
-                          >
-                            <Icon icon="solar:upload-linear" width={13} />
-                            {uploadedLogo ? "Změnit logo" : "Nahrát logo"}
+                          <div className="text-sm font-medium text-white">Otázka {aktivniOtazkaIndex + 1} z {otazky.length}</div>
+                          <button type="button" onClick={() => logoInputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100 transition hover:bg-cyan-500/15">
+                            <Icon icon="solar:upload-linear" width={13} /> {uploadedLogo ? "Změnit logo" : "Nahrát logo"}
                           </button>
                         </div>
-
                         {uploadedLogo && (
                           <div className="mb-3 flex items-center gap-3 rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
                             <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[10px] border border-white/10 bg-white">
-                              <img
-                                src={uploadedLogo.dataUrl}
-                                alt={uploadedLogo.name}
-                                className="max-h-full max-w-full object-contain"
-                              />
+                              <img src={uploadedLogo.dataUrl} alt={uploadedLogo.name} className="max-h-full max-w-full object-contain" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm text-white">
-                                {uploadedLogo.name}
-                              </div>
-                              <div className="mt-1 text-[11px] text-zinc-500">
-                                Logo bude použito při generování
-                              </div>
+                              <div className="truncate text-sm text-white">{uploadedLogo.name}</div>
+                              <div className="mt-1 text-[11px] text-zinc-500">Logo bude použito při generování</div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={removeUploadedLogo}
-                              className="text-[11px] text-zinc-500 transition hover:text-white"
-                            >
-                              Odebrat
-                            </button>
+                            <button type="button" onClick={removeUploadedLogo} className="text-[11px] text-zinc-500 transition hover:text-white">Odebrat</button>
                           </div>
                         )}
-
-                        <input
-                          ref={logoInputRef}
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp"
-                          className="hidden"
-                          onChange={handleLogoUpload}
-                        />
-
-                        {logoUploadError && (
-                          <div className="mb-3 rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-[11px] text-red-200">
-                            {logoUploadError}
-                          </div>
-                        )}
-
-                        <div className="mb-3 text-[13px] text-zinc-200">
-                          {aktualniOtazka.text}
-                        </div>
-
-                        <textarea
-                          value={odpovedInput}
-                          onChange={(e) => setOdpovedInput(e.target.value)}
-                          placeholder={aktualniOtazka.placeholder}
-                          className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/25 p-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
-                        />
-
+                        <input ref={logoInputRef} type="file" accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleLogoUpload} />
+                        {logoUploadError && <div className="mb-3 rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-[11px] text-red-200">{logoUploadError}</div>}
+                        <div className="mb-3 text-[13px] text-zinc-200">{aktualniOtazka.text}</div>
+                        <textarea value={odpovedInput} onChange={(e) => setOdpovedInput(e.target.value)} placeholder={aktualniOtazka.placeholder} className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/25 p-3 text-[13px] text-white outline-none placeholder:text-zinc-500" />
                         <div className="mt-3 flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={preskocitOtazkyAGenerovat}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                          >
-                            Přeskočit a generovat
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={ulozitOdpovedNaOtazku}
-                            className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15"
-                          >
-                            Uložit odpověď
-                          </button>
+                          <button type="button" onClick={preskocitOtazkyAGenerovat} className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white">Přeskočit a generovat</button>
+                          <button type="button" onClick={ulozitOdpovedNaOtazku} className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15">Uložit odpověď</button>
                         </div>
                       </div>
                     )}
 
                     {html && postGenerateSuggestions.length > 0 && (
                       <div className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Další rychlé úpravy
-                        </div>
-                        <div className="mb-3 text-[11px] leading-5 text-zinc-300">
-                          Vyberte sekci v náhledu a jedním klikem si připravte další zadání.
-                        </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="mb-2 text-sm font-medium text-white">Další rychlé úpravy</div>
+                        <div className="mb-3 text-[11px] leading-5 text-zinc-300">Vyberte sekci v editoru a jedním klikem si připravte další zadání.</div>
+                        <div className="flex flex-col gap-2">
                           {postGenerateSuggestions.map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => applyFollowUpSuggestion(item)}
-                              className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-100 transition hover:bg-white/[0.10]"
-                            >
-                              {item}
-                            </button>
+                            <button key={item} type="button" onClick={() => applyFollowUpSuggestion(item)} className="w-full rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-[13px] leading-5 text-zinc-100 transition hover:bg-white/[0.10]">{item}</button>
                           ))}
                         </div>
                       </div>
@@ -2648,104 +1947,29 @@ export default function AiEditorPage() {
 
                     {selectedSectionMeta && (
                       <div className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Vybraná sekce: {selectedSectionMeta.label}
-                        </div>
+                        <div className="mb-2 text-sm font-medium text-white">Vybraná sekce: {selectedSectionMeta.label}</div>
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => useSectionAction("text")}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
-                          >
-                            Změnit text
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => useSectionAction("visual")}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
-                          >
-                            Změnit vzhled
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => useSectionAction("regenerate")}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
-                          >
-                            Přegenerovat
-                          </button>
+                          <button type="button" onClick={() => useSectionAction("text")} className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]">Změnit text</button>
+                          <button type="button" onClick={() => useSectionAction("visual")} className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]">Změnit vzhled</button>
+                          <button type="button" onClick={() => useSectionAction("regenerate")} className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]">Přegenerovat</button>
                         </div>
                       </div>
                     )}
 
-                    {publishedUrl && (
-                      <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-                        <div className="mb-1 font-medium">Web publikován</div>
-                        <a
-                          href={publishedUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="break-all underline underline-offset-4"
-                        >
-                          {publishedUrl}
-                        </a>
-                      </div>
-                    )}
-
-                    {publishError && (
-                      <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-                        {publishError}
-                      </div>
-                    )}
-
-                    {error && (
-                      <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-                        {error}
-                      </div>
-                    )}
-
+                    {publishedUrl && <div className="rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100"><div className="mb-1 font-medium">Web publikován</div><a href={publishedUrl} target="_blank" rel="noreferrer" className="break-all underline underline-offset-4">{publishedUrl}</a></div>}
+                    {publishError && <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">{publishError}</div>}
+                    {error && <div className="rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">{error}</div>}
                     <div ref={chatBottomRef} />
                   </div>
                 </div>
 
                 <div className="border-t border-white/8 px-4 py-3">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                    Upravit návrh
-                  </div>
-
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">Upravit návrh</div>
                   <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
-                    <textarea
-                      ref={chatInputRef}
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={onChatKeyDown}
-                      placeholder={
-                        selectedSectionMeta
-                          ? `Napište úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
-                          : "Nejdřív klikněte v náhledu na konkrétní sekci, kterou chcete upravit."
-                      }
-                      className="h-14 w-full resize-none bg-transparent text-[13px] text-white outline-none placeholder:text-zinc-500"
-                    />
-
+                    <textarea ref={chatInputRef} value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={onChatKeyDown} placeholder={selectedSectionMeta ? `Napište úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…` : "Nejdřív klikněte v Editoru na konkrétní sekci, kterou chcete upravit."} className="h-14 w-full resize-none bg-transparent text-[13px] text-white outline-none placeholder:text-zinc-500" />
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <div className="text-[11px] text-zinc-500">
-                        Enter odešle úpravu
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleImprove()}
-                        disabled={
-                          !html ||
-                          loading ||
-                          improving ||
-                          resolvingAssets ||
-                          chatInput.trim().length < 3
-                        }
-                        className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
-                      >
-                        <Icon icon="solar:pen-2-linear" width={14} />
-                        {improving ? "Upravuji…" : "Použít"}
-                      </button>
+                      <div className="text-[11px] text-zinc-500">Enter odešle úpravu</div>
+                      <button type="button" onClick={() => handleImprove()} disabled={!html || loading || improving || resolvingAssets || chatInput.trim().length < 3} className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"><Icon icon="solar:pen-2-linear" width={14} />{improving ? "Upravuji…" : "Použít"}</button>
                     </div>
                   </div>
                 </div>
@@ -2757,62 +1981,13 @@ export default function AiEditorPage() {
             {isFullscreen && activeTab === "preview" && (
               <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center p-4">
                 <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-[10px] border border-white/10 bg-[#08080c]/88 px-3 py-2 shadow-2xl backdrop-blur-2xl">
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreen(false)}
-                    className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <Icon icon="solar:arrow-left-linear" width={14} />
-                    Zpět do editoru
-                  </button>
-
+                  <button type="button" onClick={() => setIsFullscreen(false)} className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-200 transition hover:bg-white/[0.08] hover:text-white"><Icon icon="solar:arrow-left-linear" width={14} />Zpět do editoru</button>
                   <div className="mx-1 h-6 w-px bg-white/10" />
-
-                  <button
-                    type="button"
-                    className="inline-flex h-9 items-center rounded-[10px] bg-white/[0.10] px-4 text-[13px] text-white"
-                  >
-                    Náhled
-                  </button>
-
+                  <button type="button" className="inline-flex h-9 items-center rounded-[10px] bg-white/[0.10] px-4 text-[13px] text-white">Náhled</button>
                   <div className="mx-1 h-6 w-px bg-white/10" />
-
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("desktop")}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                      viewMode === "desktop"
-                        ? "bg-white/[0.10] text-white"
-                        : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                    title="Desktop"
-                  >
-                    <Icon icon="solar:monitor-linear" width={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("tablet")}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                      viewMode === "tablet"
-                        ? "bg-white/[0.10] text-white"
-                        : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                    title="Tablet"
-                  >
-                    <Icon icon="solar:tablet-linear" width={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("mobile")}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                      viewMode === "mobile"
-                        ? "bg-white/[0.10] text-white"
-                        : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                    title="Mobil"
-                  >
-                    <Icon icon="solar:smartphone-linear" width={16} />
-                  </button>
+                  <button type="button" onClick={() => setViewMode("desktop")} className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${viewMode === "desktop" ? "bg-white/[0.10] text-white" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"}`} title="Desktop"><Icon icon="solar:monitor-linear" width={16} /></button>
+                  <button type="button" onClick={() => setViewMode("tablet")} className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${viewMode === "tablet" ? "bg-white/[0.10] text-white" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"}`} title="Tablet"><Icon icon="solar:tablet-linear" width={16} /></button>
+                  <button type="button" onClick={() => setViewMode("mobile")} className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${viewMode === "mobile" ? "bg-white/[0.10] text-white" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"}`} title="Mobil"><Icon icon="solar:smartphone-linear" width={16} /></button>
                 </div>
               </div>
             )}
@@ -2821,173 +1996,36 @@ export default function AiEditorPage() {
               {!isFullscreen && (
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5 md:px-5">
                   <div className="flex items-center gap-2">
-                    <div className="rounded-[10px] bg-white/[0.10] px-4 py-2 text-[13px] text-white">
-                      Náhled
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("editor")}
-                      className={`rounded-[10px] px-4 py-2 text-[13px] transition ${
-                        activeTab === "editor"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
-                      Editor
-                    </button>
+                    <button type="button" onClick={() => setActiveTab("preview")} className={`rounded-[10px] px-4 py-2 text-[13px] transition ${activeTab === "preview" ? "bg-white/[0.10] text-white" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"}`}>Náhled</button>
+                    <button type="button" onClick={() => setActiveTab("editor")} className={`rounded-[10px] px-4 py-2 text-[13px] transition ${activeTab === "editor" ? "bg-white/[0.10] text-white" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"}`}>Editor</button>
                   </div>
-
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isFullscreen) setActiveTab("preview");
-                        setIsFullscreen((prev) => !prev);
-                      }}
-                      className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                    >
-                      <Icon
-                        icon={
-                          isFullscreen
-                            ? "solar:minimize-square-3-linear"
-                            : "solar:maximize-square-3-linear"
-                        }
-                        width={14}
-                      />
-                      {isFullscreen
-                        ? "Ukončit"
-                        : "Celá obrazovka"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("desktop")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                        viewMode === "desktop"
-                          ? "bg-white/[0.10] text-white"
-                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Desktop"
-                    >
-                      <Icon icon="solar:monitor-linear" width={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("tablet")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                        viewMode === "tablet"
-                          ? "bg-white/[0.10] text-white"
-                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Tablet"
-                    >
-                      <Icon icon="solar:tablet-linear" width={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("mobile")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                        viewMode === "mobile"
-                          ? "bg-white/[0.10] text-white"
-                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Mobil"
-                    >
-                      <Icon icon="solar:smartphone-linear" width={16} />
-                    </button>
+                    <button type="button" onClick={() => { if (!isFullscreen) setActiveTab("preview"); setIsFullscreen((prev) => !prev); }} className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"><Icon icon={isFullscreen ? "solar:minimize-square-3-linear" : "solar:maximize-square-3-linear"} width={14} />{isFullscreen ? "Ukončit" : "Celá obrazovka"}</button>
+                    <button type="button" onClick={() => setViewMode("desktop")} className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${viewMode === "desktop" ? "bg-white/[0.10] text-white" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"}`} title="Desktop"><Icon icon="solar:monitor-linear" width={16} /></button>
+                    <button type="button" onClick={() => setViewMode("tablet")} className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${viewMode === "tablet" ? "bg-white/[0.10] text-white" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"}`} title="Tablet"><Icon icon="solar:tablet-linear" width={16} /></button>
+                    <button type="button" onClick={() => setViewMode("mobile")} className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${viewMode === "mobile" ? "bg-white/[0.10] text-white" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"}`} title="Mobil"><Icon icon="solar:smartphone-linear" width={16} /></button>
                   </div>
                 </div>
               )}
 
               <div className="min-h-0 flex-1">
-                {activeTab === "preview" ? (
-                  <div
-                    className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${
-                      isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"
-                    }`}
-                  >
-                    {previewDocument ? (
-                      <div
-                        className={`${previewWidthClass} ${
-                          isFullscreen ? "h-full min-h-full pt-20" : "h-full"
-                        }`}
-                      >
-                        <iframe
-                          ref={iframeRef}
-                          key={iframeKey}
-                          title="Zyvia preview"
-                          className="h-full min-h-[720px] w-full bg-white"
-                          srcDoc={previewDocument}
-                          sandbox="allow-scripts allow-same-origin"
-                        />
+                <div className={`flex h-full min-h-0 items-stretch justify-center overflow-auto ${isFullscreen ? "px-0 py-0" : "px-2 py-0 md:px-3"}`}>
+                  {activeTab === "preview" ? (
+                    previewDocument ? (
+                      <div className={`${previewWidthClass} ${isFullscreen ? "h-full min-h-full pt-20" : "h-full"}`}>
+                        <iframe key={`${iframeKey}-preview`} title="Zyvia preview" className="h-full min-h-[720px] w-full bg-white" srcDoc={previewDocument} sandbox="allow-scripts allow-same-origin" />
                       </div>
                     ) : (
-                      <div className={`${previewWidthClass} h-full`}>
-                        <BuilderPlaceholder status={status} />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="h-full overflow-y-auto px-3 py-3">
-                    <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-3">
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("text")}
-                        disabled={!selectedSectionMeta}
-                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-white">
-                          <Icon icon="solar:text-bold-linear" width={16} />
-                          <span className="text-sm font-medium">Změnit text</span>
-                        </div>
-                        <div className="text-[12px] leading-5 text-zinc-500">
-                          Připraví prompt pro úpravu textů ve vybrané sekci.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("visual")}
-                        disabled={!selectedSectionMeta}
-                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-white">
-                          <Icon icon="solar:palette-linear" width={16} />
-                          <span className="text-sm font-medium">Změnit fotku / vzhled</span>
-                        </div>
-                        <div className="text-[12px] leading-5 text-zinc-500">
-                          Připraví prompt pro vizuální vylepšení vybrané sekce.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => useSectionAction("regenerate")}
-                        disabled={!selectedSectionMeta}
-                        className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07] disabled:opacity-40"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-white">
-                          <Icon icon="solar:restart-linear" width={16} />
-                          <span className="text-sm font-medium">Přegenerovat sekci</span>
-                        </div>
-                        <div className="text-[12px] leading-5 text-zinc-500">
-                          Udělá novou variantu layoutu jen pro aktuálně vybranou sekci.
-                        </div>
-                      </button>
+                      <div className={`${previewWidthClass} h-full`}><BuilderPlaceholder status={status} /></div>
+                    )
+                  ) : editorDocument ? (
+                    <div className={`${previewWidthClass} ${isFullscreen ? "h-full min-h-full pt-20" : "h-full"}`}>
+                      <iframe ref={iframeRef} key={`${iframeKey}-editor`} title="Zyvia editor preview" className="h-full min-h-[720px] w-full bg-white" srcDoc={editorDocument} sandbox="allow-scripts allow-same-origin" />
                     </div>
-
-                    <div className="mx-auto mt-3 max-w-5xl rounded-[10px] border border-white/8 bg-[#0b0b10] p-4">
-                      <div className="mb-2 text-sm font-medium text-white">
-                        {selectedSectionMeta
-                          ? `Aktuálně vybraná sekce: ${selectedSectionMeta.label}`
-                          : "Nejdřív klikněte v náhledu na konkrétní sekci"}
-                      </div>
-                      <div className="text-[12px] leading-5 text-zinc-500">
-                        Tady jsou jen editovací akce. Náhled zůstává vedle a není potřeba přepínat na žádný kód.
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className={`${previewWidthClass} h-full`}><BuilderPlaceholder status={status} /></div>
+                  )}
+                </div>
               </div>
             </div>
           </main>
@@ -3000,70 +2038,22 @@ export default function AiEditorPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-white">Upravit text</div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Tag: {selectedText.tagName.toLowerCase()}
-                </div>
+                <div className="mt-1 text-xs text-zinc-500">Tag: {selectedText.tagName.toLowerCase()}</div>
               </div>
-
-              <button
-                type="button"
-                aria-label="Zavřít"
-                onClick={() => {
-                  setTextModalOpen(false);
-                  setSelectedText(null);
-                  setEditedTextValue("");
-                  setEditedHrefValue("");
-                }}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
-              >
-                <span className="block -translate-y-[1px] text-[24px] leading-none">
-                  ×
-                </span>
+              <button type="button" aria-label="Zavřít" onClick={() => { setTextModalOpen(false); setSelectedText(null); setEditedTextValue(""); setEditedHrefValue(""); }} className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]">
+                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
               </button>
             </div>
-
-            <textarea
-              value={editedTextValue}
-              onChange={(e) => setEditedTextValue(e.target.value)}
-              className="h-32 w-full resize-none rounded-[10px] border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
-              placeholder="Upravte text…"
-            />
-
+            <textarea value={editedTextValue} onChange={(e) => setEditedTextValue(e.target.value)} className="h-32 w-full resize-none rounded-[10px] border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30" placeholder="Upravte text…" />
             {selectedText.href !== undefined && (
               <div className="mt-3">
-                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Odkaz tlačítka / odkazu
-                </div>
-                <input
-                  value={editedHrefValue}
-                  onChange={(e) => setEditedHrefValue(e.target.value)}
-                  className="w-full rounded-[10px] border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
-                  placeholder="Např. /kontakt nebo https://example.com"
-                />
+                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">Odkaz tlačítka / odkazu</div>
+                <input value={editedHrefValue} onChange={(e) => setEditedHrefValue(e.target.value)} className="w-full rounded-[10px] border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30" placeholder="Např. /kontakt nebo https://example.com" />
               </div>
             )}
-
             <div className="mt-4 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setTextModalOpen(false);
-                  setSelectedText(null);
-                  setEditedTextValue("");
-                  setEditedHrefValue("");
-                }}
-                className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-              >
-                Zrušit
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveInlineText}
-                className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15"
-              >
-                Uložit text
-              </button>
+              <button type="button" onClick={() => { setTextModalOpen(false); setSelectedText(null); setEditedTextValue(""); setEditedHrefValue(""); }} className="rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white">Zrušit</button>
+              <button type="button" onClick={handleSaveInlineText} className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15">Uložit text</button>
             </div>
           </div>
         </div>
@@ -3075,92 +2065,31 @@ export default function AiEditorPage() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium text-white">Upravit obrázek</div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Slot: {selectedImage.slot} • Sekce{" "}
-                  {prettifySectionLabel(selectedImage.sectionId, "")}
-                </div>
+                <div className="mt-1 text-xs text-zinc-500">Slot: {selectedImage.slot} • Sekce {prettifySectionLabel(selectedImage.sectionId, "")}</div>
               </div>
-
-              <button
-                type="button"
-                aria-label="Zavřít"
-                onClick={closeImageModal}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]"
-              >
-                <span className="block -translate-y-[1px] text-[24px] leading-none">
-                  ×
-                </span>
+              <button type="button" aria-label="Zavřít" onClick={closeImageModal} className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] text-white transition hover:bg-white/[0.10]">
+                <span className="block -translate-y-[1px] text-[24px] leading-none">×</span>
               </button>
             </div>
-
             <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
               <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
-                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Aktuální obrázek
-                </div>
-
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-500">Aktuální obrázek</div>
                 <div className="overflow-hidden rounded-[10px] border border-white/8 bg-black/30">
-                  {selectedImage.currentUrl ? (
-                    <img
-                      src={selectedImage.currentUrl}
-                      alt={selectedImage.alt || selectedImage.slot}
-                      className="h-64 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-64 items-center justify-center text-sm text-zinc-500">
-                      Náhled není dostupný
-                    </div>
-                  )}
+                  {selectedImage.currentUrl ? <img src={selectedImage.currentUrl} alt={selectedImage.alt || selectedImage.slot} className="h-64 w-full object-cover" /> : <div className="flex h-64 items-center justify-center text-sm text-zinc-500">Náhled není dostupný</div>}
                 </div>
-
                 <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.03] p-1">
-                  <button
-                    type="button"
-                    onClick={() => setImagePickerTab("search")}
-                    className={`flex-1 rounded-[10px] px-4 py-2 text-sm transition ${
-                      imagePickerTab === "search"
-                        ? "bg-white/[0.10] text-white"
-                        : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    Hledat
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImagePickerTab("upload")}
-                    className={`flex-1 rounded-[10px] px-4 py-2 text-sm transition ${
-                      imagePickerTab === "upload"
-                        ? "bg-white/[0.10] text-white"
-                        : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    Nahrát
-                  </button>
+                  <button type="button" onClick={() => setImagePickerTab("search")} className={`flex-1 rounded-[10px] px-4 py-2 text-sm transition ${imagePickerTab === "search" ? "bg-white/[0.10] text-white" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"}`}>Hledat</button>
+                  <button type="button" onClick={() => setImagePickerTab("upload")} className={`flex-1 rounded-[10px] px-4 py-2 text-sm transition ${imagePickerTab === "upload" ? "bg-white/[0.10] text-white" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"}`}>Nahrát</button>
                 </div>
-
                 {imagePickerTab === "upload" && (
                   <div className="mt-4 rounded-[10px] border border-white/8 bg-black/20 p-4">
-                    <div className="mb-2 text-sm font-medium text-white">
-                      Nahrát vlastní obrázek
-                    </div>
-                    <div className="mb-3 text-sm text-zinc-500">
-                      Vyberte obrázek z počítače a hned se vloží do náhledu.
-                    </div>
-
+                    <div className="mb-2 text-sm font-medium text-white">Nahrát vlastní obrázek</div>
+                    <div className="mb-3 text-sm text-zinc-500">Vyberte obrázek z počítače a hned se vloží do náhledu.</div>
                     <label className="flex cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed border-white/15 bg-white/[0.03] px-4 py-8 text-center transition hover:bg-white/[0.06]">
                       <Icon icon="solar:upload-linear" width={24} />
-                      <span className="mt-3 text-sm text-white">
-                        Klikněte pro nahrání obrázku
-                      </span>
-                      <span className="mt-1 text-xs text-zinc-500">
-                        PNG, JPG, WEBP, SVG
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
+                      <span className="mt-3 text-sm text-white">Klikněte pro nahrání obrázku</span>
+                      <span className="mt-1 text-xs text-zinc-500">PNG, JPG, WEBP, SVG</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                     </label>
                   </div>
                 )}
@@ -3169,118 +2098,45 @@ export default function AiEditorPage() {
               <div className="min-w-0 rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
                 {imagePickerTab === "search" ? (
                   <>
-                    <div className="mb-3 text-sm font-medium text-white">
-                      Hledat nový obrázek
-                    </div>
-
+                    <div className="mb-3 text-sm font-medium text-white">Hledat nový obrázek</div>
                     <div className="flex flex-col gap-3 sm:flex-row">
-                      <input
-                        value={imageSearchQuery}
-                        onChange={(e) => setImageSearchQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            void searchEditorImages();
-                          }
-                        }}
-                        className="min-w-0 flex-1 rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30"
-                        placeholder="Např. luxury resort pool, barber portrait, modern office…"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => void searchEditorImages()}
-                        disabled={
-                          imageSearchLoading ||
-                          imageSearchQuery.trim().length < 2
-                        }
-                        className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
-                      >
-                        <Icon icon="solar:magnifer-linear" width={16} />
-                        {imageSearchLoading ? "Hledám…" : "Hledat"}
-                      </button>
+                      <input value={imageSearchQuery} onChange={(e) => setImageSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void searchEditorImages(); } }} className="min-w-0 flex-1 rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-cyan-400/30" placeholder="Např. luxury resort pool, barber portrait, modern office…" />
+                      <button type="button" onClick={() => void searchEditorImages()} disabled={imageSearchLoading || imageSearchQuery.trim().length < 2} className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"><Icon icon="solar:magnifer-linear" width={16} />{imageSearchLoading ? "Hledám…" : "Hledat"}</button>
                     </div>
-
-                    <div className="mt-3 text-xs text-zinc-500">
-                      Hledání používá zdroje jako Unsplash a Pexels podle typu
-                      obrázku.
-                    </div>
-
+                    <div className="mt-3 text-xs text-zinc-500">Hledání používá zdroje jako Unsplash a Pexels podle typu obrázku.</div>
                     <div className="mt-4 max-h-[30rem] overflow-y-auto pr-1">
                       {imageSearchLoading ? (
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {Array.from({ length: 6 }).map((_, index) => (
-                            <div
-                              key={index}
-                              className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]"
-                            >
-                              <div className="h-40 animate-pulse bg-white/[0.06]" />
-                              <div className="space-y-2 p-3">
-                                <div className="h-3 w-3/4 rounded-[10px] bg-white/[0.08]" />
-                                <div className="h-3 w-1/2 rounded-[10px] bg-white/[0.06]" />
-                              </div>
-                            </div>
+                            <div key={index} className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]"><div className="h-40 animate-pulse bg-white/[0.06]" /><div className="space-y-2 p-3"><div className="h-3 w-3/4 rounded-[10px] bg-white/[0.08]" /><div className="h-3 w-1/2 rounded-[10px] bg-white/[0.06]" /></div></div>
                           ))}
                         </div>
                       ) : imageSearchResults.length > 0 ? (
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {imageSearchResults.map((image, index) => (
-                            <div
-                              key={`${image.url}-${index}`}
-                              className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]"
-                            >
-                              <img
-                                src={image.url}
-                                alt={image.alt}
-                                className="h-40 w-full object-cover"
-                              />
+                            <div key={`${image.url}-${index}`} className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]">
+                              <img src={image.url} alt={image.alt} className="h-40 w-full object-cover" />
                               <div className="space-y-3 p-3">
                                 <div>
-                                  <div className="line-clamp-2 text-sm text-white">
-                                    {image.alt}
-                                  </div>
-                                  <div className="mt-1 text-xs text-zinc-500">
-                                    {image.source}
-                                    {image.photographer
-                                      ? ` • ${image.photographer}`
-                                      : ""}
-                                  </div>
+                                  <div className="line-clamp-2 text-sm text-white">{image.alt}</div>
+                                  <div className="mt-1 text-xs text-zinc-500">{image.source}{image.photographer ? ` • ${image.photographer}` : ""}</div>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => applyImageChange(image)}
-                                  className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"
-                                >
-                                  <Icon
-                                    icon="solar:gallery-add-linear"
-                                    width={16}
-                                  />
-                                  Použít obrázek
-                                </button>
+                                <button type="button" onClick={() => applyImageChange(image)} className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"><Icon icon="solar:gallery-add-linear" width={16} />Použít obrázek</button>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="flex min-h-[16rem] items-center justify-center rounded-[10px] border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
-                          Zatím nejsou žádné výsledky.
-                        </div>
+                        <div className="flex min-h-[16rem] items-center justify-center rounded-[10px] border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">Zatím nejsou žádné výsledky.</div>
                       )}
                     </div>
                   </>
                 ) : (
-                  <div className="flex h-full min-h-[18rem] items-center justify-center rounded-[10px] border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">
-                    Vlevo nahrajte vlastní obrázek.
-                  </div>
+                  <div className="flex h-full min-h-[18rem] items-center justify-center rounded-[10px] border border-dashed border-white/10 bg-black/20 text-sm text-zinc-500">Vlevo nahrajte vlastní obrázek.</div>
                 )}
               </div>
             </div>
-
-            {imageUploadError && (
-              <div className="mt-4 rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-                {imageUploadError}
-              </div>
-            )}
+            {imageUploadError && <div className="mt-4 rounded-[10px] border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">{imageUploadError}</div>}
           </div>
         </div>
       )}
