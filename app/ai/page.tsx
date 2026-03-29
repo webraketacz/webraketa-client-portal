@@ -72,14 +72,6 @@ type LandingPreferences = {
   preferredBackgroundColor: string;
 };
 
-type QuickPromptItem = {
-  id: string;
-  title: string;
-  shortPreview: string;
-  icon: string;
-  fullPrompt: string;
-};
-
 const DEFAULT_BUILD_TYPE = "premium";
 const DEFAULT_MODEL = "openai-gpt-4";
 
@@ -89,41 +81,6 @@ const TYPING_PROMPTS = [
   "Připravte luxusní landing page pro developerský projekt…",
   "Vygenerujte redesign podle URL konkurenčního webu…",
   "Vytvořte prémiový web pro fine dining restauraci…",
-];
-
-const QUICK_PROMPTS: QuickPromptItem[] = [
-  {
-    id: "clinic",
-    title: "Soukromá klinika",
-    shortPreview: "Klidný, důvěryhodný, prémiový web pro kliniku v Praze.",
-    icon: "solar:stethoscope-linear",
-    fullPrompt:
-      "Vytvoř prémiový web pro soukromou kliniku v Praze. Styl má být klidný, důvěryhodný, čistý a moderní. Přidej sekce: hero, služby, tým, reference, objednání, kontakt, FAQ a footer. Použij jemné animace, kvalitní spacing, profesionální CTA a elegantní vizuální hierarchii. Výsledek musí působit jako špičková soukromá klinika, ne jako generická šablona.",
-  },
-  {
-    id: "real-estate",
-    title: "Luxusní realitní projekt",
-    shortPreview: "Editorial landing page pro prémiový developerský projekt.",
-    icon: "solar:buildings-2-linear",
-    fullPrompt:
-      "Vytvoř luxusní landing page pro prémiový developerský projekt v Praze. Styl má být editorial, vzdušný, elegantní a velmi prémiový. Přidej hero, lokalitu, galerii, standardy, dispozice, investiční výhody, kontakt a CTA sekce. Použij jemné animace, tenké linky, krásnou typografii, kvalitní spacing a upscale atmosféru.",
-  },
-  {
-    id: "saas",
-    title: "Dark SaaS pro AI",
-    shortPreview: "Wow dark SaaS web s dashboardem, pricingem a motion prvky.",
-    icon: "solar:widget-5-linear",
-    fullPrompt:
-      "Navrhni wow dark SaaS web pro AI startup. Chci prémiový hero, sticky navbar, dashboard preview, benefits, use cases, pricing, social proof, FAQ a CTA sekce. Použij glass efekty, gradienty, micro animations, glow detaily, animované border efekty a velmi polished premium product design. Výsledek musí působit jako moderní high-end SaaS produkt.",
-  },
-  {
-    id: "restaurant",
-    title: "Fine dining restaurace",
-    shortPreview: "Luxusní, sofistikovaný web pro fine dining restauraci.",
-    icon: "solar:chef-hat-heart-linear",
-    fullPrompt:
-      "Vytvoř prémiový web pro fine dining restauraci v Praze. Styl má být elegantní, luxusní, sofistikovaný, s jemným editorial feelingem. Přidej sticky navbar, hero sekci s atmosférickou fotografií, signature menu cards s obrázky, gallery grid, sekci o konceptu, rezervaci, kontakt a footer se social links. Použij decentní animace, micro interactions, gradientové nebo glass prvky jen velmi vkusně, aby to působilo jako high-end restaurace.",
-  },
 ];
 
 function buildEnhancedPrompt(params: {
@@ -243,9 +200,9 @@ export default function AiLandingPage() {
   const [sourceUrl, setSourceUrl] = useState("");
   const [sourceHtml, setSourceHtml] = useState("");
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-  const [openPanel, setOpenPanel] = useState<"visual" | "cta" | null>(null);
   const [typingText, setTypingText] = useState("");
-  const [activeQuickIndex, setActiveQuickIndex] = useState(0);
+
+  const [creativeSetupOpen, setCreativeSetupOpen] = useState(false);
 
   const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
   const [originalPromptPreview, setOriginalPromptPreview] = useState("");
@@ -281,7 +238,10 @@ export default function AiLandingPage() {
   }, [prompt, sourceMode, sourceUrl, sourceHtml]);
 
   useEffect(() => {
-    if (prompt.trim().length > 0) {
+    const shouldShowTyping =
+      sourceMode === "prompt" && prompt.trim().length === 0 && !sourceUrl.trim();
+
+    if (!shouldShowTyping) {
       setTypingText("");
       return;
     }
@@ -304,7 +264,7 @@ export default function AiLandingPage() {
           return;
         }
 
-        timeoutId = window.setTimeout(tick, 42);
+        timeoutId = window.setTimeout(tick, 44);
         return;
       }
 
@@ -318,7 +278,7 @@ export default function AiLandingPage() {
         return;
       }
 
-      timeoutId = window.setTimeout(tick, 20);
+      timeoutId = window.setTimeout(tick, 22);
     };
 
     timeoutId = window.setTimeout(tick, 500);
@@ -326,15 +286,7 @@ export default function AiLandingPage() {
     return () => {
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [prompt]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setActiveQuickIndex((prev) => (prev + 1) % QUICK_PROMPTS.length);
-    }, 3500);
-
-    return () => window.clearInterval(interval);
-  }, []);
+  }, [prompt, sourceMode, sourceUrl]);
 
   function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
@@ -450,13 +402,6 @@ export default function AiLandingPage() {
     router.push("/ai/editor");
   }
 
-  const visibleQuickPrompts = [
-    QUICK_PROMPTS[activeQuickIndex],
-    QUICK_PROMPTS[(activeQuickIndex + 1) % QUICK_PROMPTS.length],
-    QUICK_PROMPTS[(activeQuickIndex + 2) % QUICK_PROMPTS.length],
-    QUICK_PROMPTS[(activeQuickIndex + 3) % QUICK_PROMPTS.length],
-  ];
-
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#050507] text-white">
       <style jsx global>{`
@@ -465,7 +410,7 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(42px, -26px, 0) scale(1.08);
+            transform: translate3d(36px, -22px, 0) scale(1.05);
           }
         }
 
@@ -474,26 +419,17 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(-52px, 36px, 0) scale(1.1);
-          }
-        }
-
-        @keyframes zyviaFloatC {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          100% {
-            transform: translate3d(20px, 40px, 0) scale(1.05);
+            transform: translate3d(-42px, 28px, 0) scale(1.06);
           }
         }
 
         @keyframes zyviaGlowPulse {
           0%,
           100% {
-            opacity: 0.35;
+            opacity: 0.34;
           }
           50% {
-            opacity: 1;
+            opacity: 0.78;
           }
         }
 
@@ -511,7 +447,7 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0);
           }
           100% {
-            transform: translate3d(24px, 18px, 0);
+            transform: translate3d(18px, 12px, 0);
           }
         }
 
@@ -526,35 +462,35 @@ export default function AiLandingPage() {
           }
         }
 
-        @keyframes zyviaHorizontalSweep {
+        @keyframes zyviaBeamMove {
           0% {
-            transform: translateX(-8%);
-            opacity: 0.2;
+            transform: translateX(-6%);
+            opacity: 0.22;
           }
           50% {
-            transform: translateX(8%);
-            opacity: 0.36;
+            transform: translateX(6%);
+            opacity: 0.34;
           }
           100% {
-            transform: translateX(-8%);
-            opacity: 0.2;
+            transform: translateX(-6%);
+            opacity: 0.22;
           }
         }
 
-        @keyframes zyviaLinePulse {
+        @keyframes zyviaLinesPulse {
           0%,
           100% {
-            opacity: 0.14;
+            opacity: 0.11;
           }
           50% {
-            opacity: 0.3;
+            opacity: 0.22;
           }
         }
 
         @keyframes zyviaCardFade {
           0% {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(8px);
           }
           100% {
             opacity: 1;
@@ -564,46 +500,46 @@ export default function AiLandingPage() {
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,255,255,0.07),transparent_22%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,255,255,0.04),transparent_22%)]" />
 
         <div
-          className="absolute inset-0 opacity-[0.10]"
+          className="absolute inset-0 opacity-[0.08]"
           style={{
             backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)",
+              "linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px)",
             backgroundSize: "42px 42px",
             animation: "zyviaGridDrift 18s linear infinite alternate",
           }}
         />
 
         <div
-          className="absolute inset-x-[-8%] top-[118px] h-[280px] md:top-[132px] md:h-[320px]"
+          className="absolute inset-x-[-8%] top-[112px] h-[340px] md:top-[104px] md:h-[380px]"
           style={{
             background:
-              "linear-gradient(90deg, transparent 0%, rgba(255,170,78,0.04) 12%, rgba(255,170,78,0.12) 50%, rgba(255,170,78,0.04) 88%, transparent 100%)",
-            filter: "blur(18px)",
-            animation: "zyviaHorizontalSweep 10s ease-in-out infinite",
+              "linear-gradient(90deg, transparent 0%, rgba(255,180,92,0.025) 12%, rgba(255,180,92,0.10) 50%, rgba(255,180,92,0.025) 88%, transparent 100%)",
+            filter: "blur(22px)",
+            animation: "zyviaBeamMove 10s ease-in-out infinite",
           }}
         />
 
         <div
-          className="absolute left-0 right-0 top-[152px] h-[160px] md:top-[170px] md:h-[190px]"
+          className="absolute left-0 right-0 top-[140px] h-[240px] md:top-[134px] md:h-[260px]"
           style={{
             backgroundImage:
-              "repeating-linear-gradient(to bottom, rgba(255,170,78,0.08) 0px, rgba(255,170,78,0.08) 1px, transparent 1px, transparent 14px)",
+              "repeating-linear-gradient(to bottom, rgba(255,180,92,0.08) 0px, rgba(255,180,92,0.08) 1px, transparent 1px, transparent 16px)",
             maskImage:
-              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
             WebkitMaskImage:
-              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
-            animation: "zyviaLinePulse 4.8s ease-in-out infinite",
+              "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+            animation: "zyviaLinesPulse 4.6s ease-in-out infinite",
           }}
         />
 
         <div
-          className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-[10px] blur-[140px]"
+          className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-[10px] blur-[150px]"
           style={{
             background:
-              "radial-gradient(circle, rgba(98,70,255,0.30) 0%, rgba(98,70,255,0.10) 36%, transparent 74%)",
+              "radial-gradient(circle, rgba(98,70,255,0.18) 0%, rgba(98,70,255,0.08) 36%, transparent 74%)",
             animation: "zyviaFloatA 16s ease-in-out infinite alternate",
           }}
         />
@@ -612,54 +548,69 @@ export default function AiLandingPage() {
           className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-[10px] blur-[150px]"
           style={{
             background:
-              "radial-gradient(circle, rgba(42,169,255,0.22) 0%, rgba(42,169,255,0.09) 36%, transparent 76%)",
+              "radial-gradient(circle, rgba(42,169,255,0.14) 0%, rgba(42,169,255,0.06) 36%, transparent 76%)",
             animation: "zyviaFloatB 18s ease-in-out infinite alternate",
           }}
         />
 
-        <div
-          className="absolute left-[35%] top-[18%] h-[24rem] w-[24rem] rounded-[10px] blur-[120px]"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(124,92,255,0.04) 30%, transparent 72%)",
-            animation: "zyviaFloatC 14s ease-in-out infinite alternate",
-          }}
-        />
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_45%,rgba(0,0,0,0.35)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_48%,rgba(0,0,0,0.34)_100%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-dvh max-w-6xl flex-col px-6 py-8 md:px-8 lg:px-10">
-        <header className="flex items-center justify-center">
-          <img
-            src="/zyvia-logo.svg?v=1"
-            alt="Zyvia"
-            className="h-8 w-auto opacity-95 md:h-9"
-          />
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-5 py-6 md:px-8 md:py-7">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="flex items-center">
+            <img
+              src="/zyvia-logo.svg?v=1"
+              alt="Zyvia"
+              className="h-7 w-auto opacity-95 md:h-8"
+            />
+          </div>
+
+          <nav className="hidden items-center gap-7 text-sm text-zinc-400 md:flex">
+            <button type="button" className="transition hover:text-white">
+              Agent
+            </button>
+            <button type="button" className="transition hover:text-white">
+              Pricing
+            </button>
+            <button type="button" className="transition hover:text-white">
+              Docs
+            </button>
+          </nav>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 backdrop-blur-xl transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+            >
+              <Icon icon="solar:login-3-linear" width={16} />
+              Vstoupit do Zyvie
+            </button>
+          </div>
         </header>
 
         <main className="flex flex-1 items-center justify-center py-8 md:py-12">
           <div className="w-full max-w-5xl">
-            <div className="mb-5 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
+            <div className="mb-4 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-zinc-300 backdrop-blur-xl md:text-sm">
                 <span
-                  className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300"
+                  className="inline-block h-2 w-2 rounded-full bg-cyan-300"
                   style={{ animation: "zyviaGlowPulse 1.8s ease-in-out infinite" }}
                 />
                 1M kreditů zdarma pro váš první návrh
               </div>
             </div>
 
-            <div className="mb-8 text-center">
-              <h1 className="text-balance text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            <div className="mb-7 text-center">
+              <h1 className="text-balance text-[2.2rem] font-semibold tracking-[-0.03em] text-white md:text-[3.6rem]">
                 Co chcete dnes vytvořit?
               </h1>
-              <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-500 md:text-base">
+              <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-500 md:text-[15px]">
                 Web, landing page nebo redesign z URL, screenshotu či HTML.
               </p>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.82)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
+            <div className="rounded-[30px] border border-white/10 bg-[rgba(13,13,18,0.8)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
               <div className="mb-3 flex flex-wrap gap-2">
                 {[
                   {
@@ -696,7 +647,7 @@ export default function AiLandingPage() {
                           : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
-                      <Icon icon={item.icon} width={16} />
+                      <Icon icon={item.icon} width={15} />
                       {item.label}
                     </button>
                   );
@@ -704,24 +655,24 @@ export default function AiLandingPage() {
               </div>
 
               <div
-                className="rounded-[1.7rem] p-[1px]"
+                className="rounded-[26px] p-[1px]"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(90,209,255,0.48), rgba(255,170,78,0.38), rgba(124,92,255,0.85))",
+                    "linear-gradient(135deg, rgba(124,92,255,0.72), rgba(90,209,255,0.34), rgba(255,180,92,0.22), rgba(124,92,255,0.72))",
                   backgroundSize: "220% 220%",
-                  animation: "zyviaBorderShift 6s linear infinite",
+                  animation: "zyviaBorderShift 7s linear infinite",
                   boxShadow:
-                    "0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(90,209,255,0.06)",
+                    "0 0 0 1px rgba(255,255,255,0.02), 0 0 34px rgba(90,209,255,0.05)",
                 }}
               >
-                <div className="relative rounded-[1.65rem] bg-[#0B0B10]">
+                <div className="relative rounded-[25px] bg-[#09090D]">
                   {sourceMode === "url" && (
                     <div className="border-b border-white/8 px-5 pt-5 md:px-6">
                       <input
                         value={sourceUrl}
                         onChange={(e) => setSourceUrl(e.target.value)}
                         placeholder="Vložte URL webu, podle kterého se má návrh inspirovat…"
-                        className="mb-4 h-12 w-full rounded-[14px] border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="mb-4 h-12 w-full rounded-[14px] border border-white/8 bg-white/[0.03] px-4 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   )}
@@ -746,16 +697,16 @@ export default function AiLandingPage() {
                         value={sourceHtml}
                         onChange={(e) => setSourceHtml(e.target.value)}
                         placeholder="<html>…</html>"
-                        className="mb-4 h-32 w-full resize-none rounded-[14px] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="mb-4 h-32 w-full resize-none rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   )}
 
-                  {prompt.trim().length === 0 && sourceMode !== "html" && (
-                    <div className="pointer-events-none absolute left-5 top-5 z-10 text-base text-zinc-500 md:left-6 md:top-6 md:text-lg">
+                  {sourceMode === "prompt" && prompt.trim().length === 0 && (
+                    <div className="pointer-events-none absolute left-5 top-5 z-10 text-[15px] text-zinc-500 md:left-6 md:top-6 md:text-base">
                       {typingText}
                       <span
-                        className="ml-0.5 inline-block h-[1.1em] w-[1px] translate-y-[3px] bg-zinc-400"
+                        className="ml-0.5 inline-block h-[1.05em] w-[1px] translate-y-[3px] bg-zinc-400"
                         style={{ animation: "zyviaCaretBlink 1s linear infinite" }}
                       />
                     </div>
@@ -764,7 +715,7 @@ export default function AiLandingPage() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="relative z-[2] h-52 w-full resize-none rounded-[1.65rem] border-0 bg-transparent px-5 py-5 text-base text-white outline-none placeholder:text-transparent md:h-56 md:px-6 md:py-6 md:text-lg"
+                    className="relative z-[2] h-48 w-full resize-none rounded-[25px] border-0 bg-transparent px-5 py-5 text-[15px] text-white outline-none placeholder:text-transparent md:h-52 md:px-6 md:py-6 md:text-base"
                     placeholder="Popište, co chcete vytvořit..."
                   />
 
@@ -775,7 +726,7 @@ export default function AiLandingPage() {
                       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
                       title="Screenshot"
                     >
-                      <Icon icon="solar:gallery-wide-linear" width={18} />
+                      <Icon icon="solar:gallery-wide-linear" width={17} />
                     </button>
 
                     <button
@@ -784,7 +735,7 @@ export default function AiLandingPage() {
                       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
                       title="Soubor"
                     >
-                      <Icon icon="solar:file-text-linear" width={18} />
+                      <Icon icon="solar:file-text-linear" width={17} />
                     </button>
 
                     <button
@@ -794,7 +745,23 @@ export default function AiLandingPage() {
                       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Vylepšit zadání"
                     >
-                      <Icon icon="solar:magic-stick-3-linear" width={18} />
+                      <Icon icon="solar:magic-stick-3-linear" width={17} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCreativeSetupOpen((prev) => !prev)
+                      }
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-3 text-sm transition ${
+                        creativeSetupOpen
+                          ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
+                          : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                      }`}
+                      title="Creative setup"
+                    >
+                      <Icon icon="solar:tuning-2-linear" width={17} />
+                      Creative setup
                     </button>
                   </div>
 
@@ -803,16 +770,16 @@ export default function AiLandingPage() {
                       type="button"
                       onClick={() => startGenerating()}
                       disabled={!canContinue}
-                      className="inline-flex min-w-[190px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex min-w-[168px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                       style={{
                         background:
-                          "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                          "linear-gradient(135deg, rgba(124,92,255,0.96), rgba(90,209,255,0.84))",
                         boxShadow:
-                          "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
+                          "0 10px 28px rgba(124,92,255,0.2), 0 0 32px rgba(90,209,255,0.08)",
                       }}
                     >
                       Generovat návrh
-                      <Icon icon="solar:arrow-right-linear" width={18} />
+                      <Icon icon="solar:arrow-right-linear" width={17} />
                     </button>
                   </div>
 
@@ -854,7 +821,7 @@ export default function AiLandingPage() {
                             ? "solar:gallery-wide-linear"
                             : "solar:file-text-linear"
                         }
-                        width={15}
+                        width={14}
                       />
                       <span className="max-w-[180px] truncate">{item.name}</span>
                       <button
@@ -863,86 +830,32 @@ export default function AiLandingPage() {
                         className="text-zinc-500 transition hover:text-white"
                         aria-label="Odebrat soubor"
                       >
-                        <Icon icon="solar:close-circle-linear" width={15} />
+                        <Icon icon="solar:close-circle-linear" width={14} />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="mt-4 grid gap-2 md:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenPanel((prev) => (prev === "visual" ? null : "visual"))
-                  }
-                  className="group flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition hover:border-white/15 hover:bg-white/[0.06]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-200 transition group-hover:text-white">
-                      <Icon icon="solar:palette-2-linear" width={18} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-white">
-                        Prompt builder
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        Styl, fonty, animace, layout
-                      </div>
-                    </div>
-                  </div>
-
-                  <Icon
-                    icon={
-                      openPanel === "visual"
-                        ? "solar:alt-arrow-up-linear"
-                        : "solar:alt-arrow-down-linear"
-                    }
-                    width={18}
-                    className="text-zinc-500"
-                  />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenPanel((prev) => (prev === "cta" ? null : "cta"))
-                  }
-                  className="group flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition hover:border-white/15 hover:bg-white/[0.06]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-200 transition group-hover:text-white">
-                      <Icon icon="solar:cursor-linear" width={18} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-white">
-                        CTA builder
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        Tlačítka, barvy, režim promptu
-                      </div>
-                    </div>
-                  </div>
-
-                  <Icon
-                    icon={
-                      openPanel === "cta"
-                        ? "solar:alt-arrow-up-linear"
-                        : "solar:alt-arrow-down-linear"
-                    }
-                    width={18}
-                    className="text-zinc-500"
-                  />
-                </button>
-              </div>
-
-              {openPanel === "visual" && (
+              {creativeSetupOpen && (
                 <div
-                  className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4"
+                  className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4"
                   style={{ animation: "zyviaCardFade 220ms ease-out" }}
                 >
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
+                      <Icon icon="solar:tuning-2-linear" width={16} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">
+                        Creative setup
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        Styl, fonty, layout, CTA a barvy
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
@@ -953,7 +866,7 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setVisualStyle(e.target.value as VisualStyle)
                         }
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="clean">Clean</option>
@@ -972,7 +885,7 @@ export default function AiLandingPage() {
                       <select
                         value={fontMood}
                         onChange={(e) => setFontMood(e.target.value as FontMood)}
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="geometric">Geometric</option>
@@ -993,7 +906,7 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setAnimationLevel(e.target.value as AnimationLevel)
                         }
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
                       >
                         <option value="minimal">Minimal</option>
                         <option value="subtle">Subtle</option>
@@ -1013,7 +926,7 @@ export default function AiLandingPage() {
                             e.target.value as LayoutPreference
                           )
                         }
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="editorial">Editorial</option>
@@ -1024,16 +937,7 @@ export default function AiLandingPage() {
                         <option value="luxury">Luxury</option>
                       </select>
                     </div>
-                  </div>
-                </div>
-              )}
 
-              {openPanel === "cta" && (
-                <div
-                  className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4"
-                  style={{ animation: "zyviaCardFade 220ms ease-out" }}
-                >
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Styl tlačítek
@@ -1043,7 +947,7 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setButtonStyle(e.target.value as ButtonStyle)
                         }
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="soft-pill">Soft pill</option>
@@ -1065,7 +969,7 @@ export default function AiLandingPage() {
                             e.target.value as PromptEnhancerMode
                           )
                         }
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
                       >
                         <option value="balanced">Balanced</option>
                         <option value="conversion">Conversion</option>
@@ -1082,7 +986,7 @@ export default function AiLandingPage() {
                         value={preferredPrimaryColor}
                         onChange={(e) => setPreferredPrimaryColor(e.target.value)}
                         placeholder="Např. champagne"
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
 
@@ -1096,48 +1000,15 @@ export default function AiLandingPage() {
                           setPreferredBackgroundColor(e.target.value)
                         }
                         placeholder="Např. dark navy"
-                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   </div>
                 </div>
               )}
-
-              <div className="mt-5 border-t border-white/8 pt-5">
-                <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                  Rychlé prompty
-                </div>
-
-                <div className="grid gap-2 md:grid-cols-2">
-                  {visibleQuickPrompts.map((item) => (
-                    <button
-                      key={`${item.id}-${activeQuickIndex}`}
-                      type="button"
-                      onClick={() => setPrompt(item.fullPrompt)}
-                      className="group rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-4 text-left transition duration-200 hover:border-white/15 hover:bg-white/[0.07]"
-                      style={{ animation: "zyviaCardFade 260ms ease-out" }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="mb-1 text-sm font-medium text-white">
-                            {item.title}
-                          </div>
-                          <div className="truncate text-xs text-zinc-500 group-hover:text-zinc-400">
-                            {item.shortPreview}
-                          </div>
-                        </div>
-
-                        <div className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-400 transition group-hover:text-white">
-                          <Icon icon={item.icon} width={16} />
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
-            <div className="mt-5 text-center text-sm text-zinc-500">
+            <div className="mt-5 text-center text-xs text-zinc-500 md:text-sm">
               Prémiový start bez složitého nastavování
             </div>
           </div>
