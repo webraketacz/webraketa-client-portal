@@ -19,9 +19,9 @@
 }
 
 :root {
-  --font-display: var(--font-nohemi), Inter, system-ui, sans-serif;
-  --font-body: var(--font-nohemi), Inter, system-ui, sans-serif;
-  --font-ui: var(--font-nohemi), Inter, system-ui, sans-serif;
+  --font-display: var(--font-manrope), Inter, system-ui, sans-serif;
+  --font-body: var(--font-manrope), Inter, system-ui, sans-serif;
+  --font-ui: var(--font-manrope), Inter, system-ui, sans-serif;
 }
 
 *,
@@ -47,6 +47,7 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   font-weight: 400;
+  letter-spacing: -0.01em;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -61,6 +62,13 @@ label {
   font-family: var(--font-ui);
 }
 
+textarea,
+input,
+select,
+button {
+  letter-spacing: -0.01em;
+}
+
 h1,
 h2,
 h3,
@@ -68,7 +76,8 @@ h4,
 h5,
 h6 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
 }
 
 .font-display {
