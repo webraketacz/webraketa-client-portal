@@ -192,6 +192,28 @@ function buildEnhancedPrompt(params: {
     .join("\n");
 }
 
+function SettingCard(props: {
+  title: string;
+  subtitle: string;
+  icon: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-[18px] border border-white/8 bg-white/[0.025] p-4">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
+          <Icon icon={props.icon} width={16} />
+        </div>
+        <div>
+          <div className="text-sm font-medium text-white">{props.title}</div>
+          <div className="mt-0.5 text-xs text-zinc-500">{props.subtitle}</div>
+        </div>
+      </div>
+      {props.children}
+    </section>
+  );
+}
+
 export default function AiLandingPage() {
   const router = useRouter();
 
@@ -264,7 +286,7 @@ export default function AiLandingPage() {
           return;
         }
 
-        timeoutId = window.setTimeout(tick, 44);
+        timeoutId = window.setTimeout(tick, 42);
         return;
       }
 
@@ -274,11 +296,11 @@ export default function AiLandingPage() {
       if (charIndex <= 0) {
         deleting = false;
         promptIndex = (promptIndex + 1) % TYPING_PROMPTS.length;
-        timeoutId = window.setTimeout(tick, 280);
+        timeoutId = window.setTimeout(tick, 260);
         return;
       }
 
-      timeoutId = window.setTimeout(tick, 22);
+      timeoutId = window.setTimeout(tick, 20);
     };
 
     timeoutId = window.setTimeout(tick, 500);
@@ -480,10 +502,10 @@ export default function AiLandingPage() {
         @keyframes zyviaLinesPulse {
           0%,
           100% {
-            opacity: 0.11;
+            opacity: 0.1;
           }
           50% {
-            opacity: 0.22;
+            opacity: 0.2;
           }
         }
 
@@ -495,6 +517,17 @@ export default function AiLandingPage() {
           100% {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+
+        @keyframes zyviaModalIn {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.985);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
           }
         }
       `}</style>
@@ -513,7 +546,7 @@ export default function AiLandingPage() {
         />
 
         <div
-          className="absolute inset-x-[-8%] top-[112px] h-[340px] md:top-[104px] md:h-[380px]"
+          className="absolute inset-x-[-8%] top-[110px] h-[340px] md:top-[102px] md:h-[380px]"
           style={{
             background:
               "linear-gradient(90deg, transparent 0%, rgba(255,180,92,0.025) 12%, rgba(255,180,92,0.10) 50%, rgba(255,180,92,0.025) 88%, transparent 100%)",
@@ -523,7 +556,7 @@ export default function AiLandingPage() {
         />
 
         <div
-          className="absolute left-0 right-0 top-[140px] h-[240px] md:top-[134px] md:h-[260px]"
+          className="absolute left-0 right-0 top-[138px] h-[240px] md:top-[130px] md:h-[260px]"
           style={{
             backgroundImage:
               "repeating-linear-gradient(to bottom, rgba(255,180,92,0.08) 0px, rgba(255,180,92,0.08) 1px, transparent 1px, transparent 16px)",
@@ -584,7 +617,7 @@ export default function AiLandingPage() {
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 backdrop-blur-xl transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
             >
               <Icon icon="solar:login-3-linear" width={16} />
-              Vstoupit do Zyvie
+              Přihlášení / Registrace
             </button>
           </div>
         </header>
@@ -602,7 +635,7 @@ export default function AiLandingPage() {
             </div>
 
             <div className="mb-7 text-center">
-              <h1 className="text-balance text-[2.2rem] font-semibold tracking-[-0.03em] text-white md:text-[3.6rem]">
+              <h1 className="text-balance text-[2.15rem] font-semibold tracking-[-0.03em] text-white md:text-[3.35rem]">
                 Co chcete dnes vytvořit?
               </h1>
               <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-500 md:text-[15px]">
@@ -750,14 +783,8 @@ export default function AiLandingPage() {
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setCreativeSetupOpen((prev) => !prev)
-                      }
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-3 text-sm transition ${
-                        creativeSetupOpen
-                          ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
-                          : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                      }`}
+                      onClick={() => setCreativeSetupOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
                       title="Creative setup"
                     >
                       <Icon icon="solar:tuning-2-linear" width={17} />
@@ -836,29 +863,75 @@ export default function AiLandingPage() {
                   ))}
                 </div>
               )}
+            </div>
 
-              {creativeSetupOpen && (
-                <div
-                  className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4"
-                  style={{ animation: "zyviaCardFade 220ms ease-out" }}
-                >
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
-                      <Icon icon="solar:tuning-2-linear" width={16} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">
-                        Creative setup
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        Styl, fonty, layout, CTA a barvy
-                      </div>
-                    </div>
+            <div className="mt-5 text-center text-xs text-zinc-500 md:text-sm">
+              Prémiový start bez složitého nastavování
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {creativeSetupOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md">
+          <div
+            className="w-full max-w-6xl rounded-[28px] border border-white/10 bg-[#0A0A0D]/97 shadow-[0_40px_140px_rgba(0,0,0,0.55)]"
+            style={{ animation: "zyviaModalIn 220ms ease-out" }}
+          >
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4 md:px-6">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
+                  <Icon icon="solar:tuning-2-linear" width={18} />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    Creative setup
                   </div>
+                  <div className="mt-0.5 text-xs text-zinc-500">
+                    Styl, typografie, layout, CTA, barvy a režim promptu
+                  </div>
+                </div>
+              </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVisualStyle("premium");
+                    setFontMood("auto");
+                    setAnimationLevel("rich");
+                    setLayoutPreference("auto");
+                    setButtonStyle("auto");
+                    setPromptEnhancerMode("premium-brand");
+                    setPreferredPrimaryColor("");
+                    setPreferredBackgroundColor("");
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+                >
+                  <Icon icon="solar:restart-linear" width={14} />
+                  Reset
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCreativeSetupOpen(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                >
+                  <Icon icon="solar:close-circle-linear" width={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[78vh] overflow-auto px-5 py-5 md:px-6 md:py-6">
+              <div className="grid gap-4 xl:grid-cols-2">
+                <SettingCard
+                  title="Art direction"
+                  subtitle="Celkový dojem a kompozice"
+                  icon="solar:palette-2-linear"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Styl
                       </label>
                       <select
@@ -866,7 +939,7 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setVisualStyle(e.target.value as VisualStyle)
                         }
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="clean">Clean</option>
@@ -879,13 +952,44 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Layout
+                      </label>
+                      <select
+                        value={layoutPreference}
+                        onChange={(e) =>
+                          setLayoutPreference(
+                            e.target.value as LayoutPreference
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="editorial">Editorial</option>
+                        <option value="split">Split</option>
+                        <option value="asymmetrical">Asymmetrical</option>
+                        <option value="story">Story</option>
+                        <option value="grid">Grid</option>
+                        <option value="luxury">Luxury</option>
+                      </select>
+                    </div>
+                  </div>
+                </SettingCard>
+
+                <SettingCard
+                  title="Typography"
+                  subtitle="Font nálada a čitelnost"
+                  icon="solar:text-field-focus-linear"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Font mood
                       </label>
                       <select
                         value={fontMood}
                         onChange={(e) => setFontMood(e.target.value as FontMood)}
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="geometric">Geometric</option>
@@ -898,7 +1002,7 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Animace
                       </label>
                       <select
@@ -906,7 +1010,7 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setAnimationLevel(e.target.value as AnimationLevel)
                         }
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
                       >
                         <option value="minimal">Minimal</option>
                         <option value="subtle">Subtle</option>
@@ -914,32 +1018,17 @@ export default function AiLandingPage() {
                         <option value="expressive">Expressive</option>
                       </select>
                     </div>
+                  </div>
+                </SettingCard>
 
+                <SettingCard
+                  title="CTA system"
+                  subtitle="Tlačítka a konverzní styl"
+                  icon="solar:cursor-linear"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                        Layout
-                      </label>
-                      <select
-                        value={layoutPreference}
-                        onChange={(e) =>
-                          setLayoutPreference(
-                            e.target.value as LayoutPreference
-                          )
-                        }
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="editorial">Editorial</option>
-                        <option value="split">Split</option>
-                        <option value="asymmetrical">Asymmetrical</option>
-                        <option value="story">Story</option>
-                        <option value="grid">Grid</option>
-                        <option value="luxury">Luxury</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Styl tlačítek
                       </label>
                       <select
@@ -947,7 +1036,7 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setButtonStyle(e.target.value as ButtonStyle)
                         }
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
                       >
                         <option value="auto">Auto</option>
                         <option value="soft-pill">Soft pill</option>
@@ -959,7 +1048,7 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Režim promptu
                       </label>
                       <select
@@ -969,7 +1058,7 @@ export default function AiLandingPage() {
                             e.target.value as PromptEnhancerMode
                           )
                         }
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
                       >
                         <option value="balanced">Balanced</option>
                         <option value="conversion">Conversion</option>
@@ -977,21 +1066,29 @@ export default function AiLandingPage() {
                         <option value="wow-creative">Wow creative</option>
                       </select>
                     </div>
+                  </div>
+                </SettingCard>
 
+                <SettingCard
+                  title="Color system"
+                  subtitle="Akcent a tonalita pozadí"
+                  icon="solar:pallete-2-linear"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Barva tlačítek
                       </label>
                       <input
                         value={preferredPrimaryColor}
                         onChange={(e) => setPreferredPrimaryColor(e.target.value)}
                         placeholder="Např. champagne"
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Barva pozadí
                       </label>
                       <input
@@ -1000,24 +1097,44 @@ export default function AiLandingPage() {
                           setPreferredBackgroundColor(e.target.value)
                         }
                         placeholder="Např. dark navy"
-                        className="w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   </div>
-                </div>
-              )}
+                </SettingCard>
+              </div>
             </div>
 
-            <div className="mt-5 text-center text-xs text-zinc-500 md:text-sm">
-              Prémiový start bez složitého nastavování
+            <div className="flex items-center justify-between border-t border-white/8 px-5 py-4 md:px-6">
+              <div className="text-xs text-zinc-500">
+                Nastavení se použije i pro vylepšení promptu a další editor flow.
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCreativeSetupOpen(false)}
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                  boxShadow:
+                    "0 10px 30px rgba(124,92,255,0.24), 0 0 40px rgba(90,209,255,0.1)",
+                }}
+              >
+                Použít nastavení
+                <Icon icon="solar:check-circle-linear" width={16} />
+              </button>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      )}
 
       {enhanceModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
-          <div className="w-full max-w-5xl rounded-[28px] border border-white/10 bg-[#0B0B10]/95 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.55)] md:p-6">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div
+            className="w-full max-w-5xl rounded-[28px] border border-white/10 bg-[#0B0B10]/95 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.55)] md:p-6"
+            style={{ animation: "zyviaModalIn 220ms ease-out" }}
+          >
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <div className="text-lg font-semibold text-white">
