@@ -384,6 +384,10 @@ export default function AiLandingPage() {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#050507] text-white">
       <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
+
         @keyframes zyviaFloatA {
           0% {
             transform: translate3d(0, 0, 0) scale(1);
@@ -449,49 +453,154 @@ export default function AiLandingPage() {
             opacity: 0;
           }
         }
+
+        @keyframes zyviaBeamPulse {
+          0%,
+          100% {
+            opacity: 0.34;
+            transform: translateX(-50%) scaleY(1);
+            filter: blur(0px);
+          }
+          50% {
+            opacity: 0.56;
+            transform: translateX(-50%) scaleY(1.03);
+            filter: blur(1px);
+          }
+        }
+
+        @keyframes zyviaBeamCorePulse {
+          0%,
+          100% {
+            opacity: 0.4;
+          }
+          50% {
+            opacity: 0.72;
+          }
+        }
+
+        @keyframes zyviaRainDrift {
+          0% {
+            transform: translate3d(0, -18px, 0);
+            opacity: 0.22;
+          }
+          100% {
+            transform: translate3d(0, 22px, 0);
+            opacity: 0.36;
+          }
+        }
+
+        @keyframes zyviaEnergyBloom {
+          0%,
+          100% {
+            transform: translate(-50%, -50%) scale(0.96);
+            opacity: 0.2;
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.08);
+            opacity: 0.38;
+          }
+        }
+
+        @keyframes zyviaHazeShift {
+          0% {
+            transform: translate3d(-18px, 0, 0) scale(1);
+          }
+          100% {
+            transform: translate3d(16px, -10px, 0) scale(1.04);
+          }
+        }
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,255,255,0.07),transparent_22%)]" />
 
         <div
-          className="absolute inset-0 opacity-[0.10]"
+          className="absolute inset-0 opacity-[0.08]"
           style={{
             backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)",
+              "linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)",
             backgroundSize: "42px 42px",
             animation: "zyviaGridDrift 18s linear infinite alternate",
           }}
         />
 
         <div
-          className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-[10px] blur-[140px]"
+          className="absolute left-1/2 top-[8%] h-[72%] w-[220px] -translate-x-1/2 rounded-full blur-[58px]"
           style={{
             background:
-              "radial-gradient(circle, rgba(98,70,255,0.30) 0%, rgba(98,70,255,0.10) 36%, transparent 74%)",
+              "linear-gradient(to bottom, rgba(255,188,76,0.00) 0%, rgba(255,162,37,0.12) 16%, rgba(255,166,40,0.28) 34%, rgba(255,190,85,0.46) 50%, rgba(255,160,24,0.22) 66%, rgba(255,160,24,0.00) 100%)",
+            animation: "zyviaBeamPulse 5.8s ease-in-out infinite",
+          }}
+        />
+
+        <div
+          className="absolute left-1/2 top-[6%] h-[76%] w-[18px] -translate-x-1/2 rounded-full blur-[8px]"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(255,215,150,0) 0%, rgba(255,196,92,0.22) 14%, rgba(255,188,55,0.72) 48%, rgba(255,181,48,0.24) 82%, rgba(255,181,48,0) 100%)",
+            animation: "zyviaBeamCorePulse 4.2s ease-in-out infinite",
+          }}
+        />
+
+        <div
+          className="absolute left-1/2 top-[46%] h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[80px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(255,194,92,0.34) 0%, rgba(255,154,27,0.17) 32%, rgba(255,154,27,0.06) 58%, transparent 78%)",
+            animation: "zyviaEnergyBloom 5.4s ease-in-out infinite",
+          }}
+        />
+
+        <div
+          className="absolute inset-x-[17%] top-[13%] h-[60%] opacity-[0.18] blur-[0.25px]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(to bottom, rgba(255,192,92,0.24) 0px, rgba(255,192,92,0.24) 1px, transparent 1px, transparent 12px)",
+            maskImage:
+              "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,1) 12%, rgba(0,0,0,1) 76%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,1) 12%, rgba(0,0,0,1) 76%, transparent 100%)",
+            animation: "zyviaRainDrift 3.4s linear infinite alternate",
+          }}
+        />
+
+        <div
+          className="absolute left-[16%] top-[14%] h-[24rem] w-[24rem] rounded-full blur-[110px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(86,50,255,0.16) 0%, rgba(86,50,255,0.07) 36%, transparent 74%)",
             animation: "zyviaFloatA 16s ease-in-out infinite alternate",
           }}
         />
 
         <div
-          className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-[10px] blur-[150px]"
+          className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-full blur-[150px]"
           style={{
             background:
-              "radial-gradient(circle, rgba(42,169,255,0.22) 0%, rgba(42,169,255,0.09) 36%, transparent 76%)",
+              "radial-gradient(circle, rgba(42,169,255,0.18) 0%, rgba(42,169,255,0.08) 36%, transparent 76%)",
             animation: "zyviaFloatB 18s ease-in-out infinite alternate",
           }}
         />
 
         <div
-          className="absolute left-[35%] top-[18%] h-[24rem] w-[24rem] rounded-[10px] blur-[120px]"
+          className="absolute left-[35%] top-[18%] h-[24rem] w-[24rem] rounded-full blur-[120px]"
           style={{
             background:
-              "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(124,92,255,0.04) 30%, transparent 72%)",
+              "radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(124,92,255,0.03) 30%, transparent 72%)",
             animation: "zyviaFloatC 14s ease-in-out infinite alternate",
           }}
         />
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_45%,rgba(0,0,0,0.35)_100%)]" />
+        <div
+          className="absolute inset-0 opacity-[0.18]"
+          style={{
+            background:
+              "radial-gradient(circle_at_50%_42%, rgba(255,170,40,0.06), transparent 20%), radial-gradient(circle_at_50%_52%, rgba(255,255,255,0.03), transparent 28%)",
+            animation: "zyviaHazeShift 8s ease-in-out infinite alternate",
+          }}
+        />
+
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_44%,rgba(0,0,0,0.36)_100%)]" />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-6xl flex-col px-6 py-8 md:px-8 lg:px-10">
@@ -521,19 +630,27 @@ export default function AiLandingPage() {
               </h1>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.82)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
+            <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.78)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
               <div
                 className="rounded-[1.7rem] p-[1px]"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(90,209,255,0.48), rgba(124,92,255,0.85))",
-                  backgroundSize: "200% 200%",
-                  animation: "zyviaBorderShift 6s linear infinite",
+                    "linear-gradient(135deg, rgba(124,92,255,0.72), rgba(90,209,255,0.34), rgba(255,176,64,0.32), rgba(124,92,255,0.72))",
+                  backgroundSize: "220% 220%",
+                  animation: "zyviaBorderShift 8s linear infinite",
                   boxShadow:
-                    "0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(90,209,255,0.06)",
+                    "0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(90,209,255,0.05), 0 0 80px rgba(255,170,40,0.03)",
                 }}
               >
-                <div className="relative rounded-[1.65rem] bg-[#0B0B10]">
+                <div className="relative overflow-hidden rounded-[1.65rem] bg-[#0B0B10]">
+                  <div
+                    className="pointer-events-none absolute inset-0 opacity-[0.55]"
+                    style={{
+                      background:
+                        "radial-gradient(circle at 50% 38%, rgba(255,170,40,0.06), transparent 24%), radial-gradient(circle at 22% 18%, rgba(124,92,255,0.05), transparent 28%), radial-gradient(circle at 78% 14%, rgba(90,209,255,0.05), transparent 24%)",
+                    }}
+                  />
+
                   {prompt.trim().length === 0 && (
                     <div className="pointer-events-none absolute left-5 top-5 z-10 text-base text-zinc-500 md:left-6 md:top-6 md:text-lg">
                       {typingText}
@@ -589,9 +706,9 @@ export default function AiLandingPage() {
                       className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                       style={{
                         background:
-                          "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                          "linear-gradient(135deg, rgba(124,92,255,0.96), rgba(90,209,255,0.9))",
                         boxShadow:
-                          "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
+                          "0 10px 30px rgba(124,92,255,0.24), 0 0 40px rgba(90,209,255,0.10)",
                       }}
                     >
                       Začít zdarma
