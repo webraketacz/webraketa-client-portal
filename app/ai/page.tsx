@@ -1,26 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-
-const QUICK_PROMPTS = [
-  "Vytvořte web pro soukromou kliniku v Praze, klidný a důvěryhodný styl, služby, objednání a kontakt.",
-  "Vytvořte si luxusní landing page pro prémiový realitní projekt v Praze.",
-  "Navrhněte wow dark SaaS web pro AI startup s pricingem, dashboardem a CTA.",
-  "Připravte moderní web pro autoservis a detailing studio s rezervací termínu.",
-];
-
-const RUNNING_TEXT = [
-  "Vytvořte web pro kliniku",
-  "Vytvořte si luxusní landing page",
-  "Navrhněte wow dark SaaS web",
-  "Připravte web pro realitního makléře",
-  "Vytvořte prémiový web pro autoservis",
-];
-
-const DEFAULT_BUILD_TYPE = "premium";
-const DEFAULT_MODEL = "openai-gpt-4";
 
 type AttachmentItem = {
   id: string;
@@ -82,6 +64,54 @@ type LandingPreferences = {
   preferredBackgroundColor: string;
 };
 
+type QuickPromptItem = {
+  id: string;
+  label: string;
+  fullPrompt: string;
+  icon: string;
+};
+
+const DEFAULT_BUILD_TYPE = "premium";
+const DEFAULT_MODEL = "openai-gpt-4";
+
+const TYPING_PROMPTS = [
+  "Vytvořte web pro soukromou kliniku v Praze…",
+  "Navrhněte wow dark SaaS web pro AI startup…",
+  "Připravte luxusní landing page pro realitní projekt…",
+  "Vytvořte prémiový web pro fine dining restauraci…",
+];
+
+const QUICK_PROMPTS: QuickPromptItem[] = [
+  {
+    id: "clinic",
+    label: "Soukromá klinika v Praze",
+    icon: "solar:stethoscope-linear",
+    fullPrompt:
+      "Vytvoř prémiový web pro soukromou kliniku v Praze. Styl má být klidný, důvěryhodný, čistý a moderní. Přidej sekce: hero, služby, tým, reference, objednání, kontakt. Použij jemné animace, kvalitní spacing, profesionální CTA a elegantní vizuální hierarchii.",
+  },
+  {
+    id: "real-estate",
+    label: "Luxusní realitní projekt",
+    icon: "solar:buildings-2-linear",
+    fullPrompt:
+      "Vytvoř luxusní landing page pro prémiový developerský projekt v Praze. Styl má být editorial, vzdušný, elegantní a velmi prémiový. Přidej hero, lokalitu, galerii, standardy, dispozice, kontakt a CTA sekce. Použij jemné animace, tenké linky, krásnou typografii a upscale atmosféru.",
+  },
+  {
+    id: "saas",
+    label: "Wow dark SaaS",
+    icon: "solar:widget-5-linear",
+    fullPrompt:
+      "Navrhni wow dark SaaS web pro AI startup. Chci prémiový hero, sticky navbar, pricing, dashboard preview, benefits, social proof, FAQ a CTA sekce. Použij glass efekty, gradienty, micro animations, glow detaily, animované border efekty a velmi polished premium product design.",
+  },
+  {
+    id: "restaurant",
+    label: "Fine dining restaurace",
+    icon: "solar:chef-hat-heart-linear",
+    fullPrompt:
+      "Vytvoř prémiový web pro fine dining restauraci v Praze. Styl má být elegantní, luxusní, sofistikovaný, s jemným editorial feelingem. Přidej sticky navbar, hero sekci s atmosférickou fotografií, signature menu cards s obrázky, gallery grid, sekci o konceptu, rezervaci, kontakt a footer se social links. Použij decentní animace, micro interactions, gradientové nebo glass prvky jen velmi vkusně, aby to působilo jako high-end restaurace.",
+  },
+];
+
 function buildEnhancedPrompt(params: {
   prompt: string;
   preferences: LandingPreferences;
@@ -93,7 +123,8 @@ function buildEnhancedPrompt(params: {
     clean: "Vizuální styl má být čistý, moderní a uhlazený.",
     premium: "Vizuální styl má být prémiový, elegantní a velmi polished.",
     bold: "Vizuální styl má být výrazný, kontrastní a sebevědomý.",
-    editorial: "Vizuální styl má mít editorial feeling, vzduch a rafinovanou typografii.",
+    editorial:
+      "Vizuální styl má mít editorial feeling, vzduch a rafinovanou typografii.",
     luxury: "Vizuální styl má působit luxusně, sofistikovaně a exkluzivně.",
     playful: "Vizuální styl může být hravější, ale stále kvalitní a profesionální.",
   };
@@ -109,7 +140,7 @@ function buildEnhancedPrompt(params: {
   };
 
   const animationMap: Record<AnimationLevel, string> = {
-    minimal: "Animace drž spíše minimální, jemné a nenápadné.",
+    minimal: "Animace drž minimální, jemné a nenápadné.",
     subtle: "Použij jemné prémiové animace a decentní hover efekty.",
     rich: "Použij bohatší animace, mikrointerakce, reveal efekty a polished motion.",
     expressive:
@@ -129,7 +160,7 @@ function buildEnhancedPrompt(params: {
   const buttonStyleMap: Record<ButtonStyle, string> = {
     auto: "Styl tlačítek zvol podle značky a layoutu.",
     "soft-pill": "Použij měkčí pill tlačítka s prémiovým dojmem.",
-    glass: "Použij glass / translucent styl tlačítek tam, kde to dává smysl.",
+    glass: "Použij glass nebo translucent styl tlačítek tam, kde to dává smysl.",
     "solid-premium": "Použij silnější solid premium tlačítka s vysokým kontrastem.",
     "outline-elegant": "Použij elegantní outline tlačítka s čistým prémiovým dojmem.",
     "gradient-glow": "Použij gradient CTA tlačítka s jemným glow efektem.",
@@ -148,7 +179,7 @@ function buildEnhancedPrompt(params: {
 
   const colorLines = [
     preferences.preferredPrimaryColor.trim()
-      ? `Primární akcent / CTA barva preferovaně: ${preferences.preferredPrimaryColor.trim()}.`
+      ? `Primární akcent nebo CTA barva preferovaně: ${preferences.preferredPrimaryColor.trim()}.`
       : "",
     preferences.preferredBackgroundColor.trim()
       ? `Preferovaná barva pozadí nebo základní tonalita: ${preferences.preferredBackgroundColor.trim()}.`
@@ -177,9 +208,13 @@ function buildEnhancedPrompt(params: {
 
 export default function AiLandingPage() {
   const router = useRouter();
+
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
+  const [openPanel, setOpenPanel] = useState<"visual" | "cta" | null>(null);
+  const [typingText, setTypingText] = useState("");
+  const [activeQuickIndex, setActiveQuickIndex] = useState(0);
 
   const [visualStyle, setVisualStyle] = useState<VisualStyle>("premium");
   const [fontMood, setFontMood] = useState<FontMood>("auto");
@@ -197,6 +232,62 @@ export default function AiLandingPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canContinue = useMemo(() => prompt.trim().length >= 12, [prompt]);
+
+  useEffect(() => {
+    if (prompt.trim().length > 0) {
+      setTypingText("");
+      return;
+    }
+
+    let promptIndex = 0;
+    let charIndex = 0;
+    let deleting = false;
+    let timeoutId: number | undefined;
+
+    const tick = () => {
+      const fullText = TYPING_PROMPTS[promptIndex];
+
+      if (!deleting) {
+        charIndex += 1;
+        setTypingText(fullText.slice(0, charIndex));
+
+        if (charIndex >= fullText.length) {
+          deleting = true;
+          timeoutId = window.setTimeout(tick, 1100);
+          return;
+        }
+
+        timeoutId = window.setTimeout(tick, 44);
+        return;
+      }
+
+      charIndex -= 1;
+      setTypingText(fullText.slice(0, charIndex));
+
+      if (charIndex <= 0) {
+        deleting = false;
+        promptIndex = (promptIndex + 1) % TYPING_PROMPTS.length;
+        timeoutId = window.setTimeout(tick, 260);
+        return;
+      }
+
+      timeoutId = window.setTimeout(tick, 22);
+    };
+
+    timeoutId = window.setTimeout(tick, 500);
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [prompt]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveQuickIndex((prev) => (prev + 1) % QUICK_PROMPTS.length);
+    }, 3200);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
@@ -285,6 +376,11 @@ export default function AiLandingPage() {
     router.push("/ai/editor");
   }
 
+  const visibleQuickPrompts = [
+    QUICK_PROMPTS[activeQuickIndex],
+    QUICK_PROMPTS[(activeQuickIndex + 1) % QUICK_PROMPTS.length],
+  ];
+
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#050507] text-white">
       <style jsx global>{`
@@ -343,12 +439,14 @@ export default function AiLandingPage() {
           }
         }
 
-        @keyframes zyviaMarquee {
-          0% {
-            transform: translateX(0%);
+        @keyframes zyviaCaretBlink {
+          0%,
+          49% {
+            opacity: 1;
           }
+          50%,
           100% {
-            transform: translateX(-50%);
+            opacity: 0;
           }
         }
       `}</style>
@@ -396,34 +494,24 @@ export default function AiLandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_45%,rgba(0,0,0,0.35)_100%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-6 py-8 md:px-8 lg:px-10">
-        <header className="relative flex items-center justify-center">
+      <div className="relative z-10 mx-auto flex min-h-dvh max-w-6xl flex-col px-6 py-8 md:px-8 lg:px-10">
+        <header className="flex items-center justify-center">
           <img
             src="/zyvia-logo.svg?v=1"
             alt="Zyvia"
             className="h-8 w-auto opacity-95 md:h-9"
           />
-
-          <div className="absolute right-0 hidden sm:flex">
-            <div className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 backdrop-blur-xl">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-[10px] bg-emerald-400"
-                style={{ animation: "zyviaGlowPulse 1.8s ease-in-out infinite" }}
-              />
-              Začít zdarma
-            </div>
-          </div>
         </header>
 
-        <main className="flex flex-1 items-center justify-center py-10 md:py-14">
+        <main className="flex flex-1 items-center justify-center py-8 md:py-12">
           <div className="w-full max-w-5xl">
-            <div className="mb-6 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
+            <div className="mb-5 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-xl">
                 <span
-                  className="inline-block h-2.5 w-2.5 rounded-[10px] bg-cyan-300"
+                  className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300"
                   style={{ animation: "zyviaGlowPulse 1.8s ease-in-out infinite" }}
                 />
-                50 kreditů zdarma
+                1M kreditů zdarma pro váš první návrh
               </div>
             </div>
 
@@ -435,30 +523,6 @@ export default function AiLandingPage() {
 
             <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.82)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
               <div
-                className="mb-3 overflow-hidden rounded-[1.15rem] border border-white/10 bg-white/[0.03]"
-                style={{
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-                }}
-              >
-                <div className="flex min-w-max gap-10 px-5 py-3 text-sm text-zinc-300">
-                  <div
-                    className="flex min-w-max items-center gap-10"
-                    style={{ animation: "zyviaMarquee 22s linear infinite" }}
-                  >
-                    {[...RUNNING_TEXT, ...RUNNING_TEXT].map((item, index) => (
-                      <span
-                        key={`${item}-${index}`}
-                        className="inline-flex items-center gap-3 whitespace-nowrap"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-[10px] bg-cyan-300/90" />
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div
                 className="rounded-[1.7rem] p-[1px]"
                 style={{
                   background:
@@ -469,12 +533,85 @@ export default function AiLandingPage() {
                     "0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(90,209,255,0.06)",
                 }}
               >
-                <div className="rounded-[1.65rem] bg-[#0B0B10]">
+                <div className="relative rounded-[1.65rem] bg-[#0B0B10]">
+                  {prompt.trim().length === 0 && (
+                    <div className="pointer-events-none absolute left-5 top-5 z-10 text-base text-zinc-500 md:left-6 md:top-6 md:text-lg">
+                      {typingText}
+                      <span
+                        className="ml-0.5 inline-block h-[1.1em] w-[1px] translate-y-[3px] bg-zinc-400"
+                        style={{ animation: "zyviaCaretBlink 1s linear infinite" }}
+                      />
+                    </div>
+                  )}
+
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
+                    className="relative z-[2] h-52 w-full resize-none rounded-[1.65rem] border-0 bg-transparent px-5 py-5 text-base text-white outline-none placeholder:text-transparent md:h-56 md:px-6 md:py-6 md:text-lg"
                     placeholder="Popište, co chcete vytvořit..."
-                    className="h-44 w-full resize-none rounded-[1.65rem] border-0 bg-transparent px-5 py-5 text-base text-white outline-none placeholder:text-zinc-500 md:h-48 md:px-6 md:text-lg"
+                  />
+
+                  <div className="absolute bottom-4 left-4 z-[3] flex flex-wrap items-center gap-2 md:left-5">
+                    <button
+                      type="button"
+                      onClick={() => screenshotInputRef.current?.click()}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                      title="Printscreen"
+                    >
+                      <Icon icon="solar:gallery-wide-linear" width={18} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                      title="Soubor"
+                    >
+                      <Icon icon="solar:file-text-linear" width={18} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleEnhancePrompt}
+                      disabled={prompt.trim().length < 8 || isEnhancingPrompt}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Vylepšit zadání"
+                    >
+                      <Icon icon="solar:magic-stick-3-linear" width={18} />
+                    </button>
+                  </div>
+
+                  <div className="absolute bottom-4 right-4 z-[3]">
+                    <button
+                      type="button"
+                      onClick={() => startGenerating()}
+                      disabled={!canContinue}
+                      className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                        boxShadow:
+                          "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
+                      }}
+                    >
+                      Začít zdarma
+                      <Icon icon="solar:arrow-right-linear" width={18} />
+                    </button>
+                  </div>
+
+                  <input
+                    ref={screenshotInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleScreenshotSelect}
+                  />
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileSelect}
                   />
                 </div>
               </div>
@@ -484,7 +621,7 @@ export default function AiLandingPage() {
                   {attachments.map((item) => (
                     <div
                       key={item.id}
-                      className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-zinc-300"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300"
                     >
                       <Icon
                         icon={
@@ -492,31 +629,91 @@ export default function AiLandingPage() {
                             ? "solar:gallery-wide-linear"
                             : "solar:file-text-linear"
                         }
-                        width={16}
+                        width={15}
                       />
-                      <span className="max-w-[220px] truncate">{item.name}</span>
+                      <span className="max-w-[180px] truncate">{item.name}</span>
                       <button
                         type="button"
                         onClick={() => removeAttachment(item.id)}
                         className="text-zinc-500 transition hover:text-white"
                         aria-label="Odebrat soubor"
                       >
-                        <Icon icon="solar:close-circle-linear" width={16} />
+                        <Icon icon="solar:close-circle-linear" width={15} />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="mt-5 grid gap-3 xl:grid-cols-2">
-                <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4">
-                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
-                    Vizuální směr
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-2 md:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenPanel((prev) => (prev === "visual" ? null : "visual"))
+                  }
+                  className="flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition hover:bg-white/[0.06]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-200">
+                      <Icon icon="solar:palette-2-linear" width={18} />
+                    </div>
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <div className="text-sm font-medium text-white">
+                        Vizuální směr
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        Styl, fonty, animace, layout
+                      </div>
+                    </div>
+                  </div>
+                  <Icon
+                    icon={
+                      openPanel === "visual"
+                        ? "solar:alt-arrow-up-linear"
+                        : "solar:alt-arrow-down-linear"
+                    }
+                    width={18}
+                    className="text-zinc-500"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenPanel((prev) => (prev === "cta" ? null : "cta"))
+                  }
+                  className="flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition hover:bg-white/[0.06]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-200">
+                      <Icon icon="solar:cursor-linear" width={18} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">
+                        CTA a barvy
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        Tlačítka, prompt mode, barevnost
+                      </div>
+                    </div>
+                  </div>
+                  <Icon
+                    icon={
+                      openPanel === "cta"
+                        ? "solar:alt-arrow-up-linear"
+                        : "solar:alt-arrow-down-linear"
+                    }
+                    width={18}
+                    className="text-zinc-500"
+                  />
+                </button>
+              </div>
+
+              {openPanel === "visual" && (
+                <div className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Styl
                       </label>
                       <select
@@ -537,7 +734,7 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Font mood
                       </label>
                       <select
@@ -556,7 +753,7 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Animace
                       </label>
                       <select
@@ -574,7 +771,7 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Layout
                       </label>
                       <select
@@ -597,15 +794,13 @@ export default function AiLandingPage() {
                     </div>
                   </div>
                 </div>
+              )}
 
-                <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4">
-                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
-                    CTA a barvy
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
+              {openPanel === "cta" && (
+                <div className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Styl tlačítek
                       </label>
                       <select
@@ -625,8 +820,8 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
-                        Režim vylepšení promptu
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                        Režim promptu
                       </label>
                       <select
                         value={promptEnhancerMode}
@@ -645,19 +840,19 @@ export default function AiLandingPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Barva tlačítek
                       </label>
                       <input
                         value={preferredPrimaryColor}
                         onChange={(e) => setPreferredPrimaryColor(e.target.value)}
-                        placeholder="Např. tyrkysová, champagne, #7C5CFF"
+                        placeholder="Např. champagne"
                         className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                      <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                         Barva pozadí
                       </label>
                       <input
@@ -665,107 +860,39 @@ export default function AiLandingPage() {
                         onChange={(e) =>
                           setPreferredBackgroundColor(e.target.value)
                         }
-                        placeholder="Např. dark navy, warm beige, #0B1020"
+                        placeholder="Např. dark navy"
                         className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => screenshotInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
-                  >
-                    <Icon icon="solar:gallery-wide-linear" width={18} />
-                    Printscreen
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.07] hover:text-white"
-                  >
-                    <Icon icon="solar:file-text-linear" width={18} />
-                    Soubor
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleEnhancePrompt}
-                    disabled={prompt.trim().length < 8 || isEnhancingPrompt}
-                    className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 px-4 py-2.5 text-sm text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <Icon icon="solar:magic-stick-3-linear" width={18} />
-                    {isEnhancingPrompt ? "Vylepšuji zadání…" : "Vylepšit zadání"}
-                  </button>
-
-                  <input
-                    ref={screenshotInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleScreenshotSelect}
-                  />
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => startGenerating()}
-                  disabled={!canContinue}
-                  className="inline-flex min-w-[210px] items-center justify-center gap-2 rounded-[10px] px-6 py-3.5 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
-                    boxShadow:
-                      "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
-                  }}
-                >
-                  Začít zdarma
-                  <Icon icon="solar:arrow-right-linear" width={18} />
-                </button>
-              </div>
+              )}
 
               <div className="mt-5 border-t border-white/8 pt-5">
-                <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                   Rychlé prompty
                 </div>
 
                 <div className="grid gap-2 md:grid-cols-2">
-                  {QUICK_PROMPTS.map((item, index) => (
+                  {visibleQuickPrompts.map((item) => (
                     <button
-                      key={item}
+                      key={`${item.id}-${activeQuickIndex}`}
                       type="button"
-                      onClick={() => setPrompt(item)}
+                      onClick={() => setPrompt(item.fullPrompt)}
                       className="group rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-4 text-left transition duration-200 hover:border-white/15 hover:bg-white/[0.07]"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="text-sm leading-6 text-zinc-200 transition group-hover:text-white">
-                          {item}
+                        <div className="min-w-0">
+                          <div className="mb-1 text-sm text-white">
+                            {item.label}
+                          </div>
+                          <div className="truncate text-xs text-zinc-500 group-hover:text-zinc-400">
+                            {item.fullPrompt}
+                          </div>
                         </div>
-                        <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.05] text-zinc-400 transition group-hover:text-white">
-                          <Icon
-                            icon={
-                              index % 4 === 0
-                                ? "solar:stethoscope-linear"
-                                : index % 4 === 1
-                                ? "solar:buildings-2-linear"
-                                : index % 4 === 2
-                                ? "solar:widget-5-linear"
-                                : "solar:smartphone-2-linear"
-                            }
-                            width={16}
-                          />
+
+                        <div className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-400 transition group-hover:text-white">
+                          <Icon icon={item.icon} width={16} />
                         </div>
                       </div>
                     </button>
