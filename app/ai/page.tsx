@@ -28,10 +28,170 @@ type AttachmentItem = {
   kind: "screenshot" | "file";
 };
 
+type LayoutPreference =
+  | "auto"
+  | "editorial"
+  | "split"
+  | "asymmetrical"
+  | "story"
+  | "grid"
+  | "luxury";
+
+type VisualStyle =
+  | "auto"
+  | "clean"
+  | "premium"
+  | "bold"
+  | "editorial"
+  | "luxury"
+  | "playful";
+
+type AnimationLevel = "minimal" | "subtle" | "rich" | "expressive";
+
+type FontMood =
+  | "auto"
+  | "geometric"
+  | "editorial"
+  | "luxury"
+  | "trustworthy"
+  | "tech"
+  | "friendly";
+
+type ButtonStyle =
+  | "auto"
+  | "soft-pill"
+  | "glass"
+  | "solid-premium"
+  | "outline-elegant"
+  | "gradient-glow";
+
+type PromptEnhancerMode =
+  | "balanced"
+  | "conversion"
+  | "premium-brand"
+  | "wow-creative";
+
+type LandingPreferences = {
+  visualStyle: VisualStyle;
+  fontMood: FontMood;
+  animationLevel: AnimationLevel;
+  layoutPreference: LayoutPreference;
+  buttonStyle: ButtonStyle;
+  promptEnhancerMode: PromptEnhancerMode;
+  preferredPrimaryColor: string;
+  preferredBackgroundColor: string;
+};
+
+function buildEnhancedPrompt(params: {
+  prompt: string;
+  preferences: LandingPreferences;
+}) {
+  const { prompt, preferences } = params;
+
+  const visualStyleMap: Record<VisualStyle, string> = {
+    auto: "Styl zvol chytře podle oboru a promptu.",
+    clean: "Vizuální styl má být čistý, moderní a uhlazený.",
+    premium: "Vizuální styl má být prémiový, elegantní a velmi polished.",
+    bold: "Vizuální styl má být výrazný, kontrastní a sebevědomý.",
+    editorial: "Vizuální styl má mít editorial feeling, vzduch a rafinovanou typografii.",
+    luxury: "Vizuální styl má působit luxusně, sofistikovaně a exkluzivně.",
+    playful: "Vizuální styl může být hravější, ale stále kvalitní a profesionální.",
+  };
+
+  const fontMoodMap: Record<FontMood, string> = {
+    auto: "Fonty zvol podle oboru a nálady projektu.",
+    geometric: "Použij geometrický, moderní a čistý font feeling.",
+    editorial: "Použij výraznější editorial typografii s elegantním display dojmem.",
+    luxury: "Použij luxusní, rafinovanou a prémiovou typografii.",
+    trustworthy: "Použij důvěryhodnou, profesionální a klidnou typografii.",
+    tech: "Použij tech / product orientovanou typografii s přesným moderním dojmem.",
+    friendly: "Použij přístupnou, přátelskou a příjemnou typografii.",
+  };
+
+  const animationMap: Record<AnimationLevel, string> = {
+    minimal: "Animace drž spíše minimální, jemné a nenápadné.",
+    subtle: "Použij jemné prémiové animace a decentní hover efekty.",
+    rich: "Použij bohatší animace, mikrointerakce, reveal efekty a polished motion.",
+    expressive:
+      "Použij výraznější prémiové animace, gradient movement, glow efekty a wow motion, ale stále profesionálně.",
+  };
+
+  const layoutMap: Record<LayoutPreference, string> = {
+    auto: "Layout zvol chytře podle oboru a zadání.",
+    editorial: "Preferuj editorial layout s rytmem, vzduchem a silnou hierarchií.",
+    split: "Preferuj split layout s jasně oddělenými bloky obsahu.",
+    asymmetrical: "Preferuj asymetrický layout s prémiovou kompozicí.",
+    story: "Preferuj story-driven layout s návazností sekcí.",
+    grid: "Preferuj čistý grid layout s disciplinovaným spacingem.",
+    luxury: "Preferuj luxusní layout s velkým důrazem na kompozici a wow dojem.",
+  };
+
+  const buttonStyleMap: Record<ButtonStyle, string> = {
+    auto: "Styl tlačítek zvol podle značky a layoutu.",
+    "soft-pill": "Použij měkčí pill tlačítka s prémiovým dojmem.",
+    glass: "Použij glass / translucent styl tlačítek tam, kde to dává smysl.",
+    "solid-premium": "Použij silnější solid premium tlačítka s vysokým kontrastem.",
+    "outline-elegant": "Použij elegantní outline tlačítka s čistým prémiovým dojmem.",
+    "gradient-glow": "Použij gradient CTA tlačítka s jemným glow efektem.",
+  };
+
+  const enhancerModeMap: Record<PromptEnhancerMode, string> = {
+    balanced:
+      "Výsledek má být vyvážený mezi estetikou, použitelností a konverzí.",
+    conversion:
+      "Výsledek má mít silnější důraz na CTA, konverzní strukturu, hierarchy a obchodní efekt.",
+    "premium-brand":
+      "Výsledek má mít silnější důraz na brand, prémiový dojem, vizuální konzistenci a detail.",
+    "wow-creative":
+      "Výsledek má mít silnější wow efekt, originálnější kompozici, motion a výraznější art direction.",
+  };
+
+  const colorLines = [
+    preferences.preferredPrimaryColor.trim()
+      ? `Primární akcent / CTA barva preferovaně: ${preferences.preferredPrimaryColor.trim()}.`
+      : "",
+    preferences.preferredBackgroundColor.trim()
+      ? `Preferovaná barva pozadí nebo základní tonalita: ${preferences.preferredBackgroundColor.trim()}.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return [
+    prompt.trim(),
+    "",
+    "Doplňující kreativní instrukce:",
+    visualStyleMap[preferences.visualStyle],
+    fontMoodMap[preferences.fontMood],
+    animationMap[preferences.animationLevel],
+    layoutMap[preferences.layoutPreference],
+    buttonStyleMap[preferences.buttonStyle],
+    enhancerModeMap[preferences.promptEnhancerMode],
+    colorLines,
+    "Výsledek musí působit prémiově, promyšleně, vizuálně konzistentně a ne jako generická šablona.",
+    "Hlídej silný spacing, kvalitní hero sekci, přehlednou navigaci, konzistentní tlačítka, kvalitní práci s obrázky a lepší celkovou art direction.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export default function AiLandingPage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
+
+  const [visualStyle, setVisualStyle] = useState<VisualStyle>("premium");
+  const [fontMood, setFontMood] = useState<FontMood>("auto");
+  const [animationLevel, setAnimationLevel] =
+    useState<AnimationLevel>("rich");
+  const [layoutPreference, setLayoutPreference] =
+    useState<LayoutPreference>("auto");
+  const [buttonStyle, setButtonStyle] = useState<ButtonStyle>("auto");
+  const [promptEnhancerMode, setPromptEnhancerMode] =
+    useState<PromptEnhancerMode>("premium-brand");
+  const [preferredPrimaryColor, setPreferredPrimaryColor] = useState("");
+  const [preferredBackgroundColor, setPreferredBackgroundColor] = useState("");
 
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -72,15 +232,55 @@ export default function AiLandingPage() {
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   }
 
+  function getLandingPreferences(): LandingPreferences {
+    return {
+      visualStyle,
+      fontMood,
+      animationLevel,
+      layoutPreference,
+      buttonStyle,
+      promptEnhancerMode,
+      preferredPrimaryColor,
+      preferredBackgroundColor,
+    };
+  }
+
+  function handleEnhancePrompt() {
+    const trimmed = prompt.trim();
+    if (trimmed.length < 8) return;
+
+    setIsEnhancingPrompt(true);
+
+    try {
+      const enhanced = buildEnhancedPrompt({
+        prompt: trimmed,
+        preferences: getLandingPreferences(),
+      });
+
+      setPrompt(enhanced);
+    } finally {
+      window.setTimeout(() => setIsEnhancingPrompt(false), 500);
+    }
+  }
+
   function startGenerating(customPrompt?: string) {
     const finalPrompt = (customPrompt ?? prompt).trim();
     if (!finalPrompt) return;
+
+    const landingPreferences = getLandingPreferences();
 
     sessionStorage.setItem("ai_webgen_prompt", finalPrompt);
     sessionStorage.setItem("ai_webgen_autostart", "1");
     sessionStorage.setItem("ai_webgen_build_type", DEFAULT_BUILD_TYPE);
     sessionStorage.setItem("ai_webgen_model", DEFAULT_MODEL);
-    sessionStorage.setItem("ai_webgen_attachments", JSON.stringify(attachments));
+    sessionStorage.setItem(
+      "ai_webgen_attachments",
+      JSON.stringify(attachments)
+    );
+    sessionStorage.setItem(
+      "ai_webgen_landing_preferences",
+      JSON.stringify(landingPreferences)
+    );
 
     router.push("/ai/editor");
   }
@@ -199,7 +399,7 @@ export default function AiLandingPage() {
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-6 py-8 md:px-8 lg:px-10">
         <header className="relative flex items-center justify-center">
           <img
-            src="/zyvia-logo.svg"
+            src="/zyvia-logo.svg?v=1"
             alt="Zyvia"
             className="h-8 w-auto opacity-95 md:h-9"
           />
@@ -308,6 +508,171 @@ export default function AiLandingPage() {
                 </div>
               )}
 
+              <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                    Vizuální směr
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Styl
+                      </label>
+                      <select
+                        value={visualStyle}
+                        onChange={(e) =>
+                          setVisualStyle(e.target.value as VisualStyle)
+                        }
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="clean">Clean</option>
+                        <option value="premium">Premium</option>
+                        <option value="bold">Bold</option>
+                        <option value="editorial">Editorial</option>
+                        <option value="luxury">Luxury</option>
+                        <option value="playful">Playful</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Font mood
+                      </label>
+                      <select
+                        value={fontMood}
+                        onChange={(e) => setFontMood(e.target.value as FontMood)}
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="geometric">Geometric</option>
+                        <option value="editorial">Editorial</option>
+                        <option value="luxury">Luxury</option>
+                        <option value="trustworthy">Trustworthy</option>
+                        <option value="tech">Tech</option>
+                        <option value="friendly">Friendly</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Animace
+                      </label>
+                      <select
+                        value={animationLevel}
+                        onChange={(e) =>
+                          setAnimationLevel(e.target.value as AnimationLevel)
+                        }
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="minimal">Minimal</option>
+                        <option value="subtle">Subtle</option>
+                        <option value="rich">Rich</option>
+                        <option value="expressive">Expressive</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Layout
+                      </label>
+                      <select
+                        value={layoutPreference}
+                        onChange={(e) =>
+                          setLayoutPreference(
+                            e.target.value as LayoutPreference
+                          )
+                        }
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="editorial">Editorial</option>
+                        <option value="split">Split</option>
+                        <option value="asymmetrical">Asymmetrical</option>
+                        <option value="story">Story</option>
+                        <option value="grid">Grid</option>
+                        <option value="luxury">Luxury</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                    CTA a barvy
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Styl tlačítek
+                      </label>
+                      <select
+                        value={buttonStyle}
+                        onChange={(e) =>
+                          setButtonStyle(e.target.value as ButtonStyle)
+                        }
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="soft-pill">Soft pill</option>
+                        <option value="glass">Glass</option>
+                        <option value="solid-premium">Solid premium</option>
+                        <option value="outline-elegant">Outline elegant</option>
+                        <option value="gradient-glow">Gradient glow</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Režim vylepšení promptu
+                      </label>
+                      <select
+                        value={promptEnhancerMode}
+                        onChange={(e) =>
+                          setPromptEnhancerMode(
+                            e.target.value as PromptEnhancerMode
+                          )
+                        }
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="balanced">Balanced</option>
+                        <option value="conversion">Conversion</option>
+                        <option value="premium-brand">Premium brand</option>
+                        <option value="wow-creative">Wow creative</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Barva tlačítek
+                      </label>
+                      <input
+                        value={preferredPrimaryColor}
+                        onChange={(e) => setPreferredPrimaryColor(e.target.value)}
+                        placeholder="Např. tyrkysová, champagne, #7C5CFF"
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Barva pozadí
+                      </label>
+                      <input
+                        value={preferredBackgroundColor}
+                        onChange={(e) =>
+                          setPreferredBackgroundColor(e.target.value)
+                        }
+                        placeholder="Např. dark navy, warm beige, #0B1020"
+                        className="w-full rounded-[10px] border border-white/10 bg-[#0B0B10] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -326,6 +691,16 @@ export default function AiLandingPage() {
                   >
                     <Icon icon="solar:file-text-linear" width={18} />
                     Soubor
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleEnhancePrompt}
+                    disabled={prompt.trim().length < 8 || isEnhancingPrompt}
+                    className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 px-4 py-2.5 text-sm text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Icon icon="solar:magic-stick-3-linear" width={18} />
+                    {isEnhancingPrompt ? "Vylepšuji zadání…" : "Vylepšit zadání"}
                   </button>
 
                   <input
