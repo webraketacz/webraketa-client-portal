@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
@@ -9,6 +15,8 @@ type AttachmentItem = {
   name: string;
   kind: "screenshot" | "file";
 };
+
+type SourceMode = "prompt" | "url" | "screenshot" | "html";
 
 type LayoutPreference =
   | "auto"
@@ -64,21 +72,68 @@ type LandingPreferences = {
   preferredBackgroundColor: string;
 };
 
+type QuickPromptItem = {
+  id: string;
+  title: string;
+  shortPreview: string;
+  icon: string;
+  fullPrompt: string;
+};
+
 const DEFAULT_BUILD_TYPE = "premium";
 const DEFAULT_MODEL = "openai-gpt-4";
 
 const TYPING_PROMPTS = [
-  "Vytvořte web pro soukromou kliniku v Praze…",
+  "Vytvořte prémiový web pro soukromou kliniku v Praze…",
   "Navrhněte wow dark SaaS web pro AI startup…",
-  "Připravte luxusní landing page pro realitní projekt…",
+  "Připravte luxusní landing page pro developerský projekt…",
+  "Vygenerujte redesign podle URL konkurenčního webu…",
   "Vytvořte prémiový web pro fine dining restauraci…",
+];
+
+const QUICK_PROMPTS: QuickPromptItem[] = [
+  {
+    id: "clinic",
+    title: "Soukromá klinika",
+    shortPreview: "Klidný, důvěryhodný, prémiový web pro kliniku v Praze.",
+    icon: "solar:stethoscope-linear",
+    fullPrompt:
+      "Vytvoř prémiový web pro soukromou kliniku v Praze. Styl má být klidný, důvěryhodný, čistý a moderní. Přidej sekce: hero, služby, tým, reference, objednání, kontakt, FAQ a footer. Použij jemné animace, kvalitní spacing, profesionální CTA a elegantní vizuální hierarchii. Výsledek musí působit jako špičková soukromá klinika, ne jako generická šablona.",
+  },
+  {
+    id: "real-estate",
+    title: "Luxusní realitní projekt",
+    shortPreview: "Editorial landing page pro prémiový developerský projekt.",
+    icon: "solar:buildings-2-linear",
+    fullPrompt:
+      "Vytvoř luxusní landing page pro prémiový developerský projekt v Praze. Styl má být editorial, vzdušný, elegantní a velmi prémiový. Přidej hero, lokalitu, galerii, standardy, dispozice, investiční výhody, kontakt a CTA sekce. Použij jemné animace, tenké linky, krásnou typografii, kvalitní spacing a upscale atmosféru.",
+  },
+  {
+    id: "saas",
+    title: "Dark SaaS pro AI",
+    shortPreview: "Wow dark SaaS web s dashboardem, pricingem a motion prvky.",
+    icon: "solar:widget-5-linear",
+    fullPrompt:
+      "Navrhni wow dark SaaS web pro AI startup. Chci prémiový hero, sticky navbar, dashboard preview, benefits, use cases, pricing, social proof, FAQ a CTA sekce. Použij glass efekty, gradienty, micro animations, glow detaily, animované border efekty a velmi polished premium product design. Výsledek musí působit jako moderní high-end SaaS produkt.",
+  },
+  {
+    id: "restaurant",
+    title: "Fine dining restaurace",
+    shortPreview: "Luxusní, sofistikovaný web pro fine dining restauraci.",
+    icon: "solar:chef-hat-heart-linear",
+    fullPrompt:
+      "Vytvoř prémiový web pro fine dining restauraci v Praze. Styl má být elegantní, luxusní, sofistikovaný, s jemným editorial feelingem. Přidej sticky navbar, hero sekci s atmosférickou fotografií, signature menu cards s obrázky, gallery grid, sekci o konceptu, rezervaci, kontakt a footer se social links. Použij decentní animace, micro interactions, gradientové nebo glass prvky jen velmi vkusně, aby to působilo jako high-end restaurace.",
+  },
 ];
 
 function buildEnhancedPrompt(params: {
   prompt: string;
+  sourceMode: SourceMode;
+  sourceUrl: string;
+  sourceHtml: string;
   preferences: LandingPreferences;
 }) {
-  const { prompt, preferences } = params;
+  const { prompt, sourceMode, sourceUrl, sourceHtml, preferences } = params;
 
   const visualStyleMap: Record<VisualStyle, string> = {
     auto: "Styl zvol chytře podle oboru a promptu.",
@@ -141,6 +196,15 @@ function buildEnhancedPrompt(params: {
       "Výsledek má mít silnější wow efekt, originálnější kompozici, motion a výraznější art direction.",
   };
 
+  const sourceModeLine =
+    sourceMode === "url" && sourceUrl.trim()
+      ? `Jde o generování podle URL reference: ${sourceUrl.trim()}. Zachovej celkový dojem, hierarchii a kompozici, ale výsledek musí být čistý, vlastní a připravený pro nový brand.`
+      : sourceMode === "html" && sourceHtml.trim()
+      ? "Jde o generování nebo redesign podle vloženého HTML. Zachovej silné části struktury, ale vizuál i UX výrazně vylepši."
+      : sourceMode === "screenshot"
+      ? "Jde o generování podle screenshotu nebo vizuální reference. Vnímej layout, spacing, rytmus a hierarchii."
+      : "Jde o generování podle textového zadání.";
+
   const colorLines = [
     preferences.preferredPrimaryColor.trim()
       ? `Primární akcent nebo CTA barva preferovaně: ${preferences.preferredPrimaryColor.trim()}.`
@@ -156,6 +220,7 @@ function buildEnhancedPrompt(params: {
     prompt.trim(),
     "",
     "Doplňující kreativní instrukce:",
+    sourceModeLine,
     visualStyleMap[preferences.visualStyle],
     fontMoodMap[preferences.fontMood],
     animationMap[preferences.animationLevel],
@@ -164,7 +229,7 @@ function buildEnhancedPrompt(params: {
     enhancerModeMap[preferences.promptEnhancerMode],
     colorLines,
     "Výsledek musí působit prémiově, promyšleně, vizuálně konzistentně a ne jako generická šablona.",
-    "Hlídej silný spacing, kvalitní hero sekci, přehlednou navigaci, konzistentní tlačítka, kvalitní práci s obrázky a lepší celkovou art direction.",
+    "Hlídej silný spacing, kvalitní hero sekci, přehlednou navigaci, konzistentní tlačítka, kvalitní práci s obrázky, lepší celkovou art direction a výrazně lepší kompozici.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -174,10 +239,18 @@ export default function AiLandingPage() {
   const router = useRouter();
 
   const [prompt, setPrompt] = useState("");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("prompt");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceHtml, setSourceHtml] = useState("");
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-  const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
   const [openPanel, setOpenPanel] = useState<"visual" | "cta" | null>(null);
   const [typingText, setTypingText] = useState("");
+  const [activeQuickIndex, setActiveQuickIndex] = useState(0);
+
+  const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
+  const [originalPromptPreview, setOriginalPromptPreview] = useState("");
+  const [enhancedPromptPreview, setEnhancedPromptPreview] = useState("");
+  const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
 
   const [visualStyle, setVisualStyle] = useState<VisualStyle>("premium");
   const [fontMood, setFontMood] = useState<FontMood>("auto");
@@ -193,8 +266,19 @@ export default function AiLandingPage() {
 
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const htmlFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const canContinue = useMemo(() => prompt.trim().length >= 12, [prompt]);
+  const canContinue = useMemo(() => {
+    if (sourceMode === "url") {
+      return prompt.trim().length >= 8 && sourceUrl.trim().length >= 8;
+    }
+
+    if (sourceMode === "html") {
+      return prompt.trim().length >= 8 || sourceHtml.trim().length >= 20;
+    }
+
+    return prompt.trim().length >= 12;
+  }, [prompt, sourceMode, sourceUrl, sourceHtml]);
 
   useEffect(() => {
     if (prompt.trim().length > 0) {
@@ -220,7 +304,7 @@ export default function AiLandingPage() {
           return;
         }
 
-        timeoutId = window.setTimeout(tick, 44);
+        timeoutId = window.setTimeout(tick, 42);
         return;
       }
 
@@ -230,11 +314,11 @@ export default function AiLandingPage() {
       if (charIndex <= 0) {
         deleting = false;
         promptIndex = (promptIndex + 1) % TYPING_PROMPTS.length;
-        timeoutId = window.setTimeout(tick, 260);
+        timeoutId = window.setTimeout(tick, 280);
         return;
       }
 
-      timeoutId = window.setTimeout(tick, 22);
+      timeoutId = window.setTimeout(tick, 20);
     };
 
     timeoutId = window.setTimeout(tick, 500);
@@ -243,6 +327,14 @@ export default function AiLandingPage() {
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   }, [prompt]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveQuickIndex((prev) => (prev + 1) % QUICK_PROMPTS.length);
+    }, 3500);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
@@ -260,18 +352,33 @@ export default function AiLandingPage() {
     });
   }
 
-  function handleScreenshotSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleScreenshotSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     addAttachment(file, "screenshot");
+    setSourceMode("screenshot");
     e.target.value = "";
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     addAttachment(file, "file");
     e.target.value = "";
+  }
+
+  async function handleHtmlFileSelect(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      setSourceHtml(text);
+      setSourceMode("html");
+      addAttachment(file, "file");
+    } finally {
+      e.target.value = "";
+    }
   }
 
   function removeAttachment(id: string) {
@@ -291,27 +398,36 @@ export default function AiLandingPage() {
     };
   }
 
-  function handleEnhancePrompt() {
+  function openEnhanceModal() {
     const trimmed = prompt.trim();
     if (trimmed.length < 8) return;
 
     setIsEnhancingPrompt(true);
 
-    try {
-      const enhanced = buildEnhancedPrompt({
-        prompt: trimmed,
-        preferences: getLandingPreferences(),
-      });
+    const enhanced = buildEnhancedPrompt({
+      prompt: trimmed,
+      sourceMode,
+      sourceUrl,
+      sourceHtml,
+      preferences: getLandingPreferences(),
+    });
 
-      setPrompt(enhanced);
-    } finally {
-      window.setTimeout(() => setIsEnhancingPrompt(false), 500);
-    }
+    setOriginalPromptPreview(trimmed);
+    setEnhancedPromptPreview(enhanced);
+    setEnhanceModalOpen(true);
+
+    window.setTimeout(() => setIsEnhancingPrompt(false), 300);
+  }
+
+  function applyEnhancedPrompt() {
+    if (!enhancedPromptPreview.trim()) return;
+    setPrompt(enhancedPromptPreview);
+    setEnhanceModalOpen(false);
   }
 
   function startGenerating(customPrompt?: string) {
     const finalPrompt = (customPrompt ?? prompt).trim();
-    if (!finalPrompt) return;
+    if (!finalPrompt && sourceMode !== "html") return;
 
     const landingPreferences = getLandingPreferences();
 
@@ -327,9 +443,19 @@ export default function AiLandingPage() {
       "ai_webgen_landing_preferences",
       JSON.stringify(landingPreferences)
     );
+    sessionStorage.setItem("ai_webgen_source_mode", sourceMode);
+    sessionStorage.setItem("ai_webgen_source_url", sourceUrl.trim());
+    sessionStorage.setItem("ai_webgen_source_html", sourceHtml);
 
     router.push("/ai/editor");
   }
+
+  const visibleQuickPrompts = [
+    QUICK_PROMPTS[activeQuickIndex],
+    QUICK_PROMPTS[(activeQuickIndex + 1) % QUICK_PROMPTS.length],
+    QUICK_PROMPTS[(activeQuickIndex + 2) % QUICK_PROMPTS.length],
+    QUICK_PROMPTS[(activeQuickIndex + 3) % QUICK_PROMPTS.length],
+  ];
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#050507] text-white">
@@ -403,25 +529,36 @@ export default function AiLandingPage() {
         @keyframes zyviaHorizontalSweep {
           0% {
             transform: translateX(-8%);
-            opacity: 0.22;
+            opacity: 0.2;
           }
           50% {
             transform: translateX(8%);
-            opacity: 0.38;
+            opacity: 0.36;
           }
           100% {
             transform: translateX(-8%);
-            opacity: 0.22;
+            opacity: 0.2;
           }
         }
 
         @keyframes zyviaLinePulse {
           0%,
           100% {
-            opacity: 0.16;
+            opacity: 0.14;
           }
           50% {
-            opacity: 0.34;
+            opacity: 0.3;
+          }
+        }
+
+        @keyframes zyviaCardFade {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>
@@ -455,9 +592,9 @@ export default function AiLandingPage() {
             backgroundImage:
               "repeating-linear-gradient(to bottom, rgba(255,170,78,0.08) 0px, rgba(255,170,78,0.08) 1px, transparent 1px, transparent 14px)",
             maskImage:
-              "linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
             WebkitMaskImage:
-              "linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
             animation: "zyviaLinePulse 4.8s ease-in-out infinite",
           }}
         />
@@ -514,25 +651,107 @@ export default function AiLandingPage() {
             </div>
 
             <div className="mb-8 text-center">
-              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+              <h1 className="text-balance text-3xl font-semibold tracking-tight text-white md:text-5xl">
                 Co chcete dnes vytvořit?
               </h1>
+              <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-500 md:text-base">
+                Web, landing page nebo redesign z URL, screenshotu či HTML.
+              </p>
             </div>
 
             <div className="rounded-[2rem] border border-white/10 bg-[rgba(13,13,18,0.82)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
+              <div className="mb-3 flex flex-wrap gap-2">
+                {[
+                  {
+                    value: "prompt" as const,
+                    label: "Prompt",
+                    icon: "solar:pen-2-linear",
+                  },
+                  {
+                    value: "url" as const,
+                    label: "URL",
+                    icon: "solar:link-linear",
+                  },
+                  {
+                    value: "screenshot" as const,
+                    label: "Screenshot",
+                    icon: "solar:gallery-wide-linear",
+                  },
+                  {
+                    value: "html" as const,
+                    label: "HTML",
+                    icon: "solar:code-linear",
+                  },
+                ].map((item) => {
+                  const active = sourceMode === item.value;
+
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setSourceMode(item.value)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
+                        active
+                          ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
+                          : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      <Icon icon={item.icon} width={16} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div
                 className="rounded-[1.7rem] p-[1px]"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(90,209,255,0.48), rgba(124,92,255,0.85))",
-                  backgroundSize: "200% 200%",
+                    "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(90,209,255,0.48), rgba(255,170,78,0.38), rgba(124,92,255,0.85))",
+                  backgroundSize: "220% 220%",
                   animation: "zyviaBorderShift 6s linear infinite",
                   boxShadow:
                     "0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(90,209,255,0.06)",
                 }}
               >
                 <div className="relative rounded-[1.65rem] bg-[#0B0B10]">
-                  {prompt.trim().length === 0 && (
+                  {sourceMode === "url" && (
+                    <div className="border-b border-white/8 px-5 pt-5 md:px-6">
+                      <input
+                        value={sourceUrl}
+                        onChange={(e) => setSourceUrl(e.target.value)}
+                        placeholder="Vložte URL webu, podle kterého se má návrh inspirovat…"
+                        className="mb-4 h-12 w-full rounded-[14px] border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                  )}
+
+                  {sourceMode === "html" && (
+                    <div className="border-b border-white/8 px-5 pt-5 md:px-6">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div className="text-sm text-zinc-300">
+                          Vložte HTML nebo nahrajte HTML soubor
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => htmlFileInputRef.current?.click()}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        >
+                          <Icon icon="solar:upload-linear" width={14} />
+                          Nahrát HTML
+                        </button>
+                      </div>
+
+                      <textarea
+                        value={sourceHtml}
+                        onChange={(e) => setSourceHtml(e.target.value)}
+                        placeholder="<html>…</html>"
+                        className="mb-4 h-32 w-full resize-none rounded-[14px] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                  )}
+
+                  {prompt.trim().length === 0 && sourceMode !== "html" && (
                     <div className="pointer-events-none absolute left-5 top-5 z-10 text-base text-zinc-500 md:left-6 md:top-6 md:text-lg">
                       {typingText}
                       <span
@@ -554,7 +773,7 @@ export default function AiLandingPage() {
                       type="button"
                       onClick={() => screenshotInputRef.current?.click()}
                       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                      title="Printscreen"
+                      title="Screenshot"
                     >
                       <Icon icon="solar:gallery-wide-linear" width={18} />
                     </button>
@@ -570,7 +789,7 @@ export default function AiLandingPage() {
 
                     <button
                       type="button"
-                      onClick={handleEnhancePrompt}
+                      onClick={openEnhanceModal}
                       disabled={prompt.trim().length < 8 || isEnhancingPrompt}
                       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Vylepšit zadání"
@@ -584,7 +803,7 @@ export default function AiLandingPage() {
                       type="button"
                       onClick={() => startGenerating()}
                       disabled={!canContinue}
-                      className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex min-w-[190px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                       style={{
                         background:
                           "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
@@ -592,7 +811,7 @@ export default function AiLandingPage() {
                           "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
                       }}
                     >
-                      Začít zdarma
+                      Generovat návrh
                       <Icon icon="solar:arrow-right-linear" width={18} />
                     </button>
                   </div>
@@ -610,6 +829,14 @@ export default function AiLandingPage() {
                     type="file"
                     className="hidden"
                     onChange={handleFileSelect}
+                  />
+
+                  <input
+                    ref={htmlFileInputRef}
+                    type="file"
+                    accept=".html,text/html"
+                    className="hidden"
+                    onChange={handleHtmlFileSelect}
                   />
                 </div>
               </div>
@@ -661,7 +888,7 @@ export default function AiLandingPage() {
                         Prompt builder
                       </div>
                       <div className="text-xs text-zinc-500">
-                        Vizuální směr, fonty, animace a layout
+                        Styl, fonty, animace, layout
                       </div>
                     </div>
                   </div>
@@ -694,7 +921,7 @@ export default function AiLandingPage() {
                         CTA builder
                       </div>
                       <div className="text-xs text-zinc-500">
-                        Tlačítka, barvy a režim vylepšení zadání
+                        Tlačítka, barvy, režim promptu
                       </div>
                     </div>
                   </div>
@@ -712,7 +939,10 @@ export default function AiLandingPage() {
               </div>
 
               {openPanel === "visual" && (
-                <div className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+                <div
+                  className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4"
+                  style={{ animation: "zyviaCardFade 220ms ease-out" }}
+                >
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
@@ -799,7 +1029,10 @@ export default function AiLandingPage() {
               )}
 
               {openPanel === "cta" && (
-                <div className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+                <div
+                  className="mt-3 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4"
+                  style={{ animation: "zyviaCardFade 220ms ease-out" }}
+                >
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <label className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-zinc-500">
@@ -869,6 +1102,39 @@ export default function AiLandingPage() {
                   </div>
                 </div>
               )}
+
+              <div className="mt-5 border-t border-white/8 pt-5">
+                <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                  Rychlé prompty
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-2">
+                  {visibleQuickPrompts.map((item) => (
+                    <button
+                      key={`${item.id}-${activeQuickIndex}`}
+                      type="button"
+                      onClick={() => setPrompt(item.fullPrompt)}
+                      className="group rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-4 text-left transition duration-200 hover:border-white/15 hover:bg-white/[0.07]"
+                      style={{ animation: "zyviaCardFade 260ms ease-out" }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="mb-1 text-sm font-medium text-white">
+                            {item.title}
+                          </div>
+                          <div className="truncate text-xs text-zinc-500 group-hover:text-zinc-400">
+                            {item.shortPreview}
+                          </div>
+                        </div>
+
+                        <div className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-zinc-400 transition group-hover:text-white">
+                          <Icon icon={item.icon} width={16} />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 text-center text-sm text-zinc-500">
@@ -877,6 +1143,76 @@ export default function AiLandingPage() {
           </div>
         </main>
       </div>
+
+      {enhanceModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="w-full max-w-5xl rounded-[28px] border border-white/10 bg-[#0B0B10]/95 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.55)] md:p-6">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <div className="text-lg font-semibold text-white">
+                  Vylepšit zadání
+                </div>
+                <div className="mt-1 text-sm text-zinc-500">
+                  Porovnání původního a vylepšeného zadání před generováním.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEnhanceModalOpen(false)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+              >
+                <Icon icon="solar:close-circle-linear" width={20} />
+              </button>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                  Původní zadání
+                </div>
+                <div className="max-h-[420px] overflow-auto whitespace-pre-wrap text-sm leading-7 text-zinc-300">
+                  {originalPromptPreview}
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-cyan-400/15 bg-cyan-400/[0.05] p-4">
+                <div className="mb-3 text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+                  Vylepšené zadání
+                </div>
+                <div className="max-h-[420px] overflow-auto whitespace-pre-wrap text-sm leading-7 text-zinc-100">
+                  {enhancedPromptPreview}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setEnhanceModalOpen(false)}
+                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                Ponechat původní
+              </button>
+
+              <button
+                type="button"
+                onClick={applyEnhancedPrompt}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                  boxShadow:
+                    "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
+                }}
+              >
+                Použít vylepšené zadání
+                <Icon icon="solar:magic-stick-3-linear" width={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
