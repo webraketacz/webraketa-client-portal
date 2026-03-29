@@ -1,31 +1,26 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import Script from "next/script";
-import { appFontVariables } from "./fonts";
+import { Manrope } from "next/font/google";
+import "./globals.css";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Zyvia | AI Web Builder",
-  description: "Prémiový AI builder pro generování moderních webů.",
+  title: "Zyvia",
+  description: "AI Web Builder",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html
-      lang="cs"
-      className={`dark ${appFontVariables}`}
-      data-theme-preset="saas-dark"
-      suppressHydrationWarning
-    >
-      <head>
-        <Script
-          src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"
-          strategy="beforeInteractive"
-        />
-      </head>
-
-      <body className="min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)] selection:bg-violet-500/30 selection:text-violet-100 antialiased">
+    <html lang="cs">
+      <body className={`${manrope.variable} font-sans`}>
         {children}
       </body>
     </html>
