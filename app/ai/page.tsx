@@ -61,6 +61,122 @@ type PromptEnhancerMode =
   | "premium-brand"
   | "wow-creative";
 
+type TypefaceFamily =
+  | "auto"
+  | "sans"
+  | "serif"
+  | "rounded"
+  | "condensed"
+  | "mono";
+
+type FontChoice =
+  | "auto"
+  | "inter"
+  | "manrope"
+  | "geist"
+  | "playfair"
+  | "instrument-serif"
+  | "plex-serif";
+
+type HeadingSizePreset = "sm" | "md" | "lg" | "xl";
+type BodySizePreset = "sm" | "md" | "lg" | "xl";
+type HeadingWeightPreset =
+  | "light"
+  | "regular"
+  | "medium"
+  | "semibold"
+  | "bold";
+type LetterSpacingPreset = "tight" | "normal" | "wide";
+
+type AnimationType =
+  | "auto"
+  | "fade"
+  | "slide"
+  | "scale"
+  | "blur"
+  | "rotate"
+  | "glow";
+
+type AnimationScene =
+  | "auto"
+  | "all-at-once"
+  | "sequence"
+  | "word-by-word"
+  | "letter-by-letter";
+
+type TimingPreset =
+  | "linear"
+  | "ease"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "spring";
+
+type IterationPreset = "once" | "twice" | "thrice" | "infinite";
+type DirectionPreset =
+  | "normal"
+  | "reverse"
+  | "alternate"
+  | "alternate-reverse";
+
+type AccentColorPreset =
+  | "auto"
+  | "cyan"
+  | "blue"
+  | "indigo"
+  | "violet"
+  | "purple"
+  | "fuchsia"
+  | "amber"
+  | "emerald"
+  | "rose";
+
+type SurfaceColorPreset =
+  | "auto"
+  | "neutral"
+  | "slate"
+  | "zinc"
+  | "stone"
+  | "dark-navy"
+  | "warm-black"
+  | "charcoal";
+
+type BorderColorPreset =
+  | "auto"
+  | "subtle"
+  | "neutral"
+  | "soft-white"
+  | "cool-gray"
+  | "glass-cyan"
+  | "violet";
+
+type ShadowPreset =
+  | "none"
+  | "small"
+  | "medium"
+  | "large"
+  | "xl"
+  | "glow";
+
+type FramingPreset =
+  | "auto"
+  | "full-screen"
+  | "card"
+  | "browser"
+  | "device"
+  | "editorial-frame";
+
+type ThemePreset = "auto" | "dark" | "light" | "dark-premium" | "warm-light";
+
+type UiStylePreset =
+  | "auto"
+  | "flat"
+  | "outline"
+  | "minimal"
+  | "glass"
+  | "soft-premium"
+  | "editorial";
+
 type LandingPreferences = {
   visualStyle: VisualStyle;
   fontMood: FontMood;
@@ -70,6 +186,30 @@ type LandingPreferences = {
   promptEnhancerMode: PromptEnhancerMode;
   preferredPrimaryColor: string;
   preferredBackgroundColor: string;
+
+  typefaceFamily: TypefaceFamily;
+  headingFont: FontChoice;
+  bodyFont: FontChoice;
+  headingSizePreset: HeadingSizePreset;
+  bodySizePreset: BodySizePreset;
+  headingWeightPreset: HeadingWeightPreset;
+  letterSpacingPreset: LetterSpacingPreset;
+
+  animationType: AnimationType;
+  animationScene: AnimationScene;
+  animationDuration: number;
+  animationDelay: number;
+  animationTiming: TimingPreset;
+  animationIterations: IterationPreset;
+  animationDirection: DirectionPreset;
+
+  accentColorPreset: AccentColorPreset;
+  backgroundColorPreset: SurfaceColorPreset;
+  borderColorPreset: BorderColorPreset;
+  shadowPreset: ShadowPreset;
+  framingPreset: FramingPreset;
+  themePreset: ThemePreset;
+  uiStylePreset: UiStylePreset;
 };
 
 const DEFAULT_BUILD_TYPE = "premium";
@@ -173,6 +313,30 @@ function buildEnhancedPrompt(params: {
     .filter(Boolean)
     .join("\n");
 
+  const detailedSetup = [
+    `Typeface family: ${preferences.typefaceFamily}.`,
+    `Heading font preference: ${preferences.headingFont}.`,
+    `Body font preference: ${preferences.bodyFont}.`,
+    `Heading size preset: ${preferences.headingSizePreset}.`,
+    `Body size preset: ${preferences.bodySizePreset}.`,
+    `Heading weight preset: ${preferences.headingWeightPreset}.`,
+    `Heading letter spacing: ${preferences.letterSpacingPreset}.`,
+    `Animation type: ${preferences.animationType}.`,
+    `Animation scene: ${preferences.animationScene}.`,
+    `Animation duration: ${preferences.animationDuration}s.`,
+    `Animation delay: ${preferences.animationDelay}s.`,
+    `Animation timing: ${preferences.animationTiming}.`,
+    `Animation iterations: ${preferences.animationIterations}.`,
+    `Animation direction: ${preferences.animationDirection}.`,
+    `Accent color preset: ${preferences.accentColorPreset}.`,
+    `Background color preset: ${preferences.backgroundColorPreset}.`,
+    `Border color preset: ${preferences.borderColorPreset}.`,
+    `Shadow preset: ${preferences.shadowPreset}.`,
+    `Framing preset: ${preferences.framingPreset}.`,
+    `Theme preset: ${preferences.themePreset}.`,
+    `UI style preset: ${preferences.uiStylePreset}.`,
+  ].join("\n");
+
   return [
     prompt.trim(),
     "",
@@ -185,6 +349,7 @@ function buildEnhancedPrompt(params: {
     buttonStyleMap[preferences.buttonStyle],
     enhancerModeMap[preferences.promptEnhancerMode],
     colorLines,
+    detailedSetup,
     "Výsledek musí působit prémiově, promyšleně, vizuálně konzistentně a ne jako generická šablona.",
     "Hlídej silný spacing, kvalitní hero sekci, přehlednou navigaci, konzistentní tlačítka, kvalitní práci s obrázky, lepší celkovou art direction a výrazně lepší kompozici.",
   ]
@@ -211,6 +376,26 @@ function SettingCard(props: {
       </div>
       {props.children}
     </section>
+  );
+}
+
+function ChipOption(props: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={`rounded-[12px] border px-3 py-2 text-xs transition ${
+        props.active
+          ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
+          : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
+      }`}
+    >
+      {props.label}
+    </button>
   );
 }
 
@@ -242,6 +427,46 @@ export default function AiLandingPage() {
     useState<PromptEnhancerMode>("premium-brand");
   const [preferredPrimaryColor, setPreferredPrimaryColor] = useState("");
   const [preferredBackgroundColor, setPreferredBackgroundColor] = useState("");
+
+  const [typefaceFamily, setTypefaceFamily] =
+    useState<TypefaceFamily>("sans");
+  const [headingFont, setHeadingFont] = useState<FontChoice>("manrope");
+  const [bodyFont, setBodyFont] = useState<FontChoice>("manrope");
+  const [headingSizePreset, setHeadingSizePreset] =
+    useState<HeadingSizePreset>("lg");
+  const [bodySizePreset, setBodySizePreset] =
+    useState<BodySizePreset>("md");
+  const [headingWeightPreset, setHeadingWeightPreset] =
+    useState<HeadingWeightPreset>("semibold");
+  const [letterSpacingPreset, setLetterSpacingPreset] =
+    useState<LetterSpacingPreset>("tight");
+
+  const [animationType, setAnimationType] =
+    useState<AnimationType>("glow");
+  const [animationScene, setAnimationScene] =
+    useState<AnimationScene>("sequence");
+  const [animationDuration, setAnimationDuration] = useState(0.8);
+  const [animationDelay, setAnimationDelay] = useState(0);
+  const [animationTiming, setAnimationTiming] =
+    useState<TimingPreset>("ease-out");
+  const [animationIterations, setAnimationIterations] =
+    useState<IterationPreset>("once");
+  const [animationDirection, setAnimationDirection] =
+    useState<DirectionPreset>("normal");
+
+  const [accentColorPreset, setAccentColorPreset] =
+    useState<AccentColorPreset>("cyan");
+  const [backgroundColorPreset, setBackgroundColorPreset] =
+    useState<SurfaceColorPreset>("dark-navy");
+  const [borderColorPreset, setBorderColorPreset] =
+    useState<BorderColorPreset>("glass-cyan");
+  const [shadowPreset, setShadowPreset] = useState<ShadowPreset>("glow");
+  const [framingPreset, setFramingPreset] =
+    useState<FramingPreset>("full-screen");
+  const [themePreset, setThemePreset] =
+    useState<ThemePreset>("dark-premium");
+  const [uiStylePreset, setUiStylePreset] =
+    useState<UiStylePreset>("glass");
 
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -296,7 +521,7 @@ export default function AiLandingPage() {
       if (charIndex <= 0) {
         deleting = false;
         promptIndex = (promptIndex + 1) % TYPING_PROMPTS.length;
-        timeoutId = window.setTimeout(tick, 260);
+        timeoutId = window.setTimeout(tick, 20);
         return;
       }
 
@@ -369,6 +594,27 @@ export default function AiLandingPage() {
       promptEnhancerMode,
       preferredPrimaryColor,
       preferredBackgroundColor,
+      typefaceFamily,
+      headingFont,
+      bodyFont,
+      headingSizePreset,
+      bodySizePreset,
+      headingWeightPreset,
+      letterSpacingPreset,
+      animationType,
+      animationScene,
+      animationDuration,
+      animationDelay,
+      animationTiming,
+      animationIterations,
+      animationDirection,
+      accentColorPreset,
+      backgroundColorPreset,
+      borderColorPreset,
+      shadowPreset,
+      framingPreset,
+      themePreset,
+      uiStylePreset,
     };
   }
 
@@ -397,6 +643,41 @@ export default function AiLandingPage() {
     if (!enhancedPromptPreview.trim()) return;
     setPrompt(enhancedPromptPreview);
     setEnhanceModalOpen(false);
+  }
+
+  function resetCreativeSetup() {
+    setVisualStyle("premium");
+    setFontMood("auto");
+    setAnimationLevel("rich");
+    setLayoutPreference("auto");
+    setButtonStyle("auto");
+    setPromptEnhancerMode("premium-brand");
+    setPreferredPrimaryColor("");
+    setPreferredBackgroundColor("");
+
+    setTypefaceFamily("sans");
+    setHeadingFont("manrope");
+    setBodyFont("manrope");
+    setHeadingSizePreset("lg");
+    setBodySizePreset("md");
+    setHeadingWeightPreset("semibold");
+    setLetterSpacingPreset("tight");
+
+    setAnimationType("glow");
+    setAnimationScene("sequence");
+    setAnimationDuration(0.8);
+    setAnimationDelay(0);
+    setAnimationTiming("ease-out");
+    setAnimationIterations("once");
+    setAnimationDirection("normal");
+
+    setAccentColorPreset("cyan");
+    setBackgroundColorPreset("dark-navy");
+    setBorderColorPreset("glass-cyan");
+    setShadowPreset("glow");
+    setFramingPreset("full-screen");
+    setThemePreset("dark-premium");
+    setUiStylePreset("glass");
   }
 
   function startGenerating(customPrompt?: string) {
@@ -506,17 +787,6 @@ export default function AiLandingPage() {
           }
           50% {
             opacity: 0.2;
-          }
-        }
-
-        @keyframes zyviaCardFade {
-          0% {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
           }
         }
 
@@ -875,7 +1145,7 @@ export default function AiLandingPage() {
       {creativeSetupOpen && (
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md">
           <div
-            className="w-full max-w-6xl rounded-[28px] border border-white/10 bg-[#0A0A0D]/97 shadow-[0_40px_140px_rgba(0,0,0,0.55)]"
+            className="w-full max-w-7xl rounded-[28px] border border-white/10 bg-[#0A0A0D]/97 shadow-[0_40px_140px_rgba(0,0,0,0.55)]"
             style={{ animation: "zyviaModalIn 220ms ease-out" }}
           >
             <div className="flex items-center justify-between border-b border-white/8 px-5 py-4 md:px-6">
@@ -888,7 +1158,7 @@ export default function AiLandingPage() {
                     Creative setup
                   </div>
                   <div className="mt-0.5 text-xs text-zinc-500">
-                    Styl, typografie, layout, CTA, barvy a režim promptu
+                    Rozšířené nastavení art direction pro kvalitnější generování
                   </div>
                 </div>
               </div>
@@ -896,16 +1166,7 @@ export default function AiLandingPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setVisualStyle("premium");
-                    setFontMood("auto");
-                    setAnimationLevel("rich");
-                    setLayoutPreference("auto");
-                    setButtonStyle("auto");
-                    setPromptEnhancerMode("premium-brand");
-                    setPreferredPrimaryColor("");
-                    setPreferredBackgroundColor("");
-                  }}
+                  onClick={resetCreativeSetup}
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
                 >
                   <Icon icon="solar:restart-linear" width={14} />
@@ -926,7 +1187,7 @@ export default function AiLandingPage() {
               <div className="grid gap-4 xl:grid-cols-2">
                 <SettingCard
                   title="Art direction"
-                  subtitle="Celkový dojem a kompozice"
+                  subtitle="Celkový dojem, kompozice a UI styl"
                   icon="solar:palette-2-linear"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -973,15 +1234,75 @@ export default function AiLandingPage() {
                         <option value="luxury">Luxury</option>
                       </select>
                     </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Theme
+                      </label>
+                      <select
+                        value={themePreset}
+                        onChange={(e) =>
+                          setThemePreset(e.target.value as ThemePreset)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                        <option value="dark-premium">Dark premium</option>
+                        <option value="warm-light">Warm light</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Surface style
+                      </label>
+                      <select
+                        value={uiStylePreset}
+                        onChange={(e) =>
+                          setUiStylePreset(e.target.value as UiStylePreset)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="flat">Flat</option>
+                        <option value="outline">Outline</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="glass">Glass</option>
+                        <option value="soft-premium">Soft premium</option>
+                        <option value="editorial">Editorial</option>
+                      </select>
+                    </div>
                   </div>
                 </SettingCard>
 
                 <SettingCard
                   title="Typography"
-                  subtitle="Font nálada a čitelnost"
+                  subtitle="Typeface, velikost, váha, spacing"
                   icon="solar:text-field-focus-linear"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Typeface family
+                      </label>
+                      <select
+                        value={typefaceFamily}
+                        onChange={(e) =>
+                          setTypefaceFamily(e.target.value as TypefaceFamily)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="sans">Sans</option>
+                        <option value="serif">Serif</option>
+                        <option value="rounded">Rounded</option>
+                        <option value="condensed">Condensed</option>
+                        <option value="mono">Mono</option>
+                      </select>
+                    </div>
+
                     <div>
                       <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                         Font mood
@@ -1003,7 +1324,135 @@ export default function AiLandingPage() {
 
                     <div>
                       <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Animace
+                        Heading font
+                      </label>
+                      <select
+                        value={headingFont}
+                        onChange={(e) =>
+                          setHeadingFont(e.target.value as FontChoice)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="inter">Inter</option>
+                        <option value="manrope">Manrope</option>
+                        <option value="geist">Geist</option>
+                        <option value="playfair">Playfair Display</option>
+                        <option value="instrument-serif">Instrument Serif</option>
+                        <option value="plex-serif">Plex Serif</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Body font
+                      </label>
+                      <select
+                        value={bodyFont}
+                        onChange={(e) =>
+                          setBodyFont(e.target.value as FontChoice)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="inter">Inter</option>
+                        <option value="manrope">Manrope</option>
+                        <option value="geist">Geist</option>
+                        <option value="playfair">Playfair Display</option>
+                        <option value="instrument-serif">Instrument Serif</option>
+                        <option value="plex-serif">Plex Serif</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Heading size
+                      </label>
+                      <select
+                        value={headingSizePreset}
+                        onChange={(e) =>
+                          setHeadingSizePreset(
+                            e.target.value as HeadingSizePreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="sm">20–32px</option>
+                        <option value="md">32–40px</option>
+                        <option value="lg">48–64px</option>
+                        <option value="xl">64–80px</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Body size
+                      </label>
+                      <select
+                        value={bodySizePreset}
+                        onChange={(e) =>
+                          setBodySizePreset(e.target.value as BodySizePreset)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="sm">12–14px</option>
+                        <option value="md">14–16px</option>
+                        <option value="lg">16–18px</option>
+                        <option value="xl">18–20px</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Heading weight
+                      </label>
+                      <select
+                        value={headingWeightPreset}
+                        onChange={(e) =>
+                          setHeadingWeightPreset(
+                            e.target.value as HeadingWeightPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="light">Light</option>
+                        <option value="regular">Regular</option>
+                        <option value="medium">Medium</option>
+                        <option value="semibold">Semibold</option>
+                        <option value="bold">Bold</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Letter spacing
+                      </label>
+                      <select
+                        value={letterSpacingPreset}
+                        onChange={(e) =>
+                          setLetterSpacingPreset(
+                            e.target.value as LetterSpacingPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="tight">Tight</option>
+                        <option value="normal">Normal</option>
+                        <option value="wide">Wide</option>
+                      </select>
+                    </div>
+                  </div>
+                </SettingCard>
+
+                <SettingCard
+                  title="Motion system"
+                  subtitle="Typ animací, timing a intenzita"
+                  icon="solar:bolt-circle-linear"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Intenzita
                       </label>
                       <select
                         value={animationLevel}
@@ -1018,18 +1467,328 @@ export default function AiLandingPage() {
                         <option value="expressive">Expressive</option>
                       </select>
                     </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Animation type
+                      </label>
+                      <select
+                        value={animationType}
+                        onChange={(e) =>
+                          setAnimationType(e.target.value as AnimationType)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="scale">Scale</option>
+                        <option value="blur">Blur</option>
+                        <option value="rotate">Rotate</option>
+                        <option value="glow">Glow</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Scene
+                      </label>
+                      <select
+                        value={animationScene}
+                        onChange={(e) =>
+                          setAnimationScene(e.target.value as AnimationScene)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="all-at-once">All at once</option>
+                        <option value="sequence">Sequence</option>
+                        <option value="word-by-word">Word by word</option>
+                        <option value="letter-by-letter">Letter by letter</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Timing
+                      </label>
+                      <select
+                        value={animationTiming}
+                        onChange={(e) =>
+                          setAnimationTiming(e.target.value as TimingPreset)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="linear">Linear</option>
+                        <option value="ease">Ease</option>
+                        <option value="ease-in">Ease In</option>
+                        <option value="ease-out">Ease Out</option>
+                        <option value="ease-in-out">Ease In Out</option>
+                        <option value="spring">Spring</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Iterations
+                      </label>
+                      <select
+                        value={animationIterations}
+                        onChange={(e) =>
+                          setAnimationIterations(
+                            e.target.value as IterationPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="once">Once</option>
+                        <option value="twice">Twice</option>
+                        <option value="thrice">Thrice</option>
+                        <option value="infinite">Infinite</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Direction
+                      </label>
+                      <select
+                        value={animationDirection}
+                        onChange={(e) =>
+                          setAnimationDirection(
+                            e.target.value as DirectionPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="normal">Normal</option>
+                        <option value="reverse">Reverse</option>
+                        <option value="alternate">Alternate</option>
+                        <option value="alternate-reverse">
+                          Alternate reverse
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        <span>Duration</span>
+                        <span>{animationDuration.toFixed(1)}s</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.2}
+                        max={2.4}
+                        step={0.1}
+                        value={animationDuration}
+                        onChange={(e) =>
+                          setAnimationDuration(Number(e.target.value))
+                        }
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        <span>Delay</span>
+                        <span>{animationDelay.toFixed(1)}s</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1.5}
+                        step={0.1}
+                        value={animationDelay}
+                        onChange={(e) =>
+                          setAnimationDelay(Number(e.target.value))
+                        }
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                 </SettingCard>
 
                 <SettingCard
-                  title="CTA system"
-                  subtitle="Tlačítka a konverzní styl"
-                  icon="solar:cursor-linear"
+                  title="Color & surface system"
+                  subtitle="Akcent, pozadí, border, shadow, framing"
+                  icon="solar:stars-line-duotone"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Styl tlačítek
+                        Accent preset
+                      </label>
+                      <select
+                        value={accentColorPreset}
+                        onChange={(e) =>
+                          setAccentColorPreset(
+                            e.target.value as AccentColorPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="cyan">Cyan</option>
+                        <option value="blue">Blue</option>
+                        <option value="indigo">Indigo</option>
+                        <option value="violet">Violet</option>
+                        <option value="purple">Purple</option>
+                        <option value="fuchsia">Fuchsia</option>
+                        <option value="amber">Amber</option>
+                        <option value="emerald">Emerald</option>
+                        <option value="rose">Rose</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Background preset
+                      </label>
+                      <select
+                        value={backgroundColorPreset}
+                        onChange={(e) =>
+                          setBackgroundColorPreset(
+                            e.target.value as SurfaceColorPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="neutral">Neutral</option>
+                        <option value="slate">Slate</option>
+                        <option value="zinc">Zinc</option>
+                        <option value="stone">Stone</option>
+                        <option value="dark-navy">Dark navy</option>
+                        <option value="warm-black">Warm black</option>
+                        <option value="charcoal">Charcoal</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Border preset
+                      </label>
+                      <select
+                        value={borderColorPreset}
+                        onChange={(e) =>
+                          setBorderColorPreset(
+                            e.target.value as BorderColorPreset
+                          )
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="subtle">Subtle</option>
+                        <option value="neutral">Neutral</option>
+                        <option value="soft-white">Soft white</option>
+                        <option value="cool-gray">Cool gray</option>
+                        <option value="glass-cyan">Glass cyan</option>
+                        <option value="violet">Violet</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Shadow preset
+                      </label>
+                      <select
+                        value={shadowPreset}
+                        onChange={(e) =>
+                          setShadowPreset(e.target.value as ShadowPreset)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="none">None</option>
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                        <option value="xl">XL</option>
+                        <option value="glow">Glow</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Framing
+                      </label>
+                      <select
+                        value={framingPreset}
+                        onChange={(e) =>
+                          setFramingPreset(e.target.value as FramingPreset)
+                        }
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="full-screen">Full screen</option>
+                        <option value="card">Card</option>
+                        <option value="browser">Browser</option>
+                        <option value="device">Device</option>
+                        <option value="editorial-frame">Editorial frame</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Barva tlačítek
+                      </label>
+                      <input
+                        value={preferredPrimaryColor}
+                        onChange={(e) => setPreferredPrimaryColor(e.target.value)}
+                        placeholder="Např. champagne"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Barva pozadí
+                      </label>
+                      <input
+                        value={preferredBackgroundColor}
+                        onChange={(e) =>
+                          setPreferredBackgroundColor(e.target.value)
+                        }
+                        placeholder="Např. dark navy"
+                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                  </div>
+                </SettingCard>
+
+                <SettingCard
+                  title="Prompt strategy"
+                  subtitle="Jak agresivně se má prompt vylepšit"
+                  icon="solar:magic-stick-3-linear"
+                >
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <ChipOption
+                      active={promptEnhancerMode === "balanced"}
+                      label="Balanced"
+                      onClick={() => setPromptEnhancerMode("balanced")}
+                    />
+                    <ChipOption
+                      active={promptEnhancerMode === "conversion"}
+                      label="Conversion"
+                      onClick={() => setPromptEnhancerMode("conversion")}
+                    />
+                    <ChipOption
+                      active={promptEnhancerMode === "premium-brand"}
+                      label="Premium brand"
+                      onClick={() => setPromptEnhancerMode("premium-brand")}
+                    />
+                    <ChipOption
+                      active={promptEnhancerMode === "wow-creative"}
+                      label="Wow creative"
+                      onClick={() => setPromptEnhancerMode("wow-creative")}
+                    />
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                        Button system
                       </label>
                       <select
                         value={buttonStyle}
@@ -1046,60 +1805,6 @@ export default function AiLandingPage() {
                         <option value="gradient-glow">Gradient glow</option>
                       </select>
                     </div>
-
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Režim promptu
-                      </label>
-                      <select
-                        value={promptEnhancerMode}
-                        onChange={(e) =>
-                          setPromptEnhancerMode(
-                            e.target.value as PromptEnhancerMode
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
-                        <option value="balanced">Balanced</option>
-                        <option value="conversion">Conversion</option>
-                        <option value="premium-brand">Premium brand</option>
-                        <option value="wow-creative">Wow creative</option>
-                      </select>
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Color system"
-                  subtitle="Akcent a tonalita pozadí"
-                  icon="solar:pallete-2-linear"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Barva tlačítek
-                      </label>
-                      <input
-                        value={preferredPrimaryColor}
-                        onChange={(e) => setPreferredPrimaryColor(e.target.value)}
-                        placeholder="Např. champagne"
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Barva pozadí
-                      </label>
-                      <input
-                        value={preferredBackgroundColor}
-                        onChange={(e) =>
-                          setPreferredBackgroundColor(e.target.value)
-                        }
-                        placeholder="Např. dark navy"
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
                   </div>
                 </SettingCard>
               </div>
@@ -1107,7 +1812,7 @@ export default function AiLandingPage() {
 
             <div className="flex items-center justify-between border-t border-white/8 px-5 py-4 md:px-6">
               <div className="text-xs text-zinc-500">
-                Nastavení se použije i pro vylepšení promptu a další editor flow.
+                Toto nastavení se uloží pro generování, enhance prompt i další editor flow.
               </div>
 
               <button
