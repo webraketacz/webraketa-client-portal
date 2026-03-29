@@ -3,7 +3,7 @@ import { Manrope } from "next/font/google";
 import "./globals.css";
 
 const manrope = Manrope({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-manrope",
   display: "swap",
 });
@@ -19,10 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="cs">
-      <body className={`${manrope.variable} font-sans`}>
-        {children}
-      </body>
+    <html lang="cs" className={manrope.variable}>
+      <body className={manrope.className}>{children}</body>
     </html>
   );
 }
