@@ -133,14 +133,14 @@ type ReferenceSiteSummary = {
 };
 
 type ReferenceLayoutFingerprint = {
-  heroType?:
+  heroType:
     | "full-bleed-centered"
     | "split"
     | "editorial-cover"
     | "bottom-left-overlay"
     | "grid"
     | "unknown";
-  visualDominance?:
+  visualDominance:
     | "vehicle"
     | "architecture"
     | "product"
@@ -149,13 +149,13 @@ type ReferenceLayoutFingerprint = {
     | "people-service"
     | "mixed"
     | "unknown";
-  sectionSequence?: string[];
-  density?: "airy" | "balanced" | "dense";
-  navStyle?: "minimal" | "corporate" | "editorial" | "unknown";
-  likelyAccentStyle?: "lime" | "cyan" | "gold" | "white" | "unknown";
-  shouldUseStatsBandAfterHero?: boolean;
-  heroNeedsSingleDominantSubject?: boolean;
-  shouldAvoidSplitHero?: boolean;
+  sectionSequence: string[];
+  density: "airy" | "balanced" | "dense";
+  navStyle: "minimal" | "corporate" | "editorial" | "unknown";
+  likelyAccentStyle: "lime" | "cyan" | "gold" | "white" | "unknown";
+  shouldUseStatsBandAfterHero: boolean;
+  heroNeedsSingleDominantSubject: boolean;
+  shouldAvoidSplitHero: boolean;
 };
 
 type ReferenceScreenshotAnalysis = {

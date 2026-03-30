@@ -156,6 +156,31 @@ type GeneratedWebsiteBundle = {
   assetPlan: AssetPlanItem[];
 };
 
+type ReferenceLayoutFingerprint = {
+  heroType:
+    | "full-bleed-centered"
+    | "split"
+    | "editorial-cover"
+    | "bottom-left-overlay"
+    | "grid"
+    | "unknown";
+  visualDominance:
+    | "vehicle"
+    | "architecture"
+    | "product"
+    | "food"
+    | "software-ui"
+    | "people-service"
+    | "mixed"
+    | "unknown";
+  sectionSequence: string[];
+  density: "airy" | "balanced" | "dense";
+  navStyle: "minimal" | "corporate" | "editorial" | "unknown";
+  likelyAccentStyle: "lime" | "cyan" | "gold" | "white" | "unknown";
+  shouldUseStatsBandAfterHero: boolean;
+  heroNeedsSingleDominantSubject: boolean;
+  shouldAvoidSplitHero: boolean;
+};
 type ReferenceScreenshotAnalysis = {
   screenshotAvailable: boolean;
   aboveTheFoldType:
