@@ -569,168 +569,113 @@ async function captureReferenceScreenshot(
   referenceUrl: string,
   requestId: string
 ): Promise<string | null> {
-
   const startedAt = nowMs();
   const safeUrl = sanitizeReferenceUrl(referenceUrl);
-
   if (!safeUrl) return null;
 
   try {
-
     const executablePath = await chromium.executablePath();
 
     const browser = await puppeteer.launch({
-
       args: [
         ...chromium.args,
-
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--no-first-run",
         "--no-zygote",
-        "--single-process"
+        "--single-process",
+        "--hide-scrollbars",
+        "--disable-web-security",
       ],
-
       defaultViewport: {
-
         width: 1720,
         height: 2600,
-        deviceScaleFactor: 1
-
+        deviceScaleFactor: 1,
       },
-
       executablePath,
-
-      headless: true
-
+      headless: true,
     });
 
     try {
-
       const page = await browser.newPage();
 
       await page.setViewport({
-
         width: 1720,
-        height: 2600
-
+        height: 2600,
+        deviceScaleFactor: 1,
       });
 
       await page.goto(safeUrl, {
-
         waitUntil: "networkidle2",
-        timeout: 60000
-
+        timeout: 60000,
       });
 
-      // wait fonts
       await page.evaluate(async () => {
-
-        if (document.fonts) {
-
-          await document.fonts.ready;
-
-        }
-
+        // @ts-ignore
+        if (document.fonts) await document.fonts.ready;
       });
 
-      // trigger lazy load
+      await new Promise((r) => setTimeout(r, 2500));
+
       await page.evaluate(() => {
-
-        window.scrollBy(0, 400);
-
+        window.scrollTo(0, 500);
       });
 
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 900));
 
       await page.evaluate(() => {
-
         window.scrollTo(0, 0);
-
       });
 
-      // animation settle
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 2000));
 
       let buffer: Buffer | null = null;
 
-      // retry capture
       for (let i = 0; i < 3; i++) {
-
         try {
-
           const shot = await page.screenshot({
-
             type: "jpeg",
             quality: 82,
-            fullPage: false
-
+            fullPage: false,
           });
 
-          buffer = Buffer.isBuffer(shot)
-            ? shot
-            : Buffer.from(shot);
+          buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
 
-          if (buffer.length > 50000) {
-
-            break;
-
-          }
-
+          if (buffer.length > 50000) break;
         } catch {}
 
-        await new Promise(r => setTimeout(r, 800));
-
+        await new Promise((r) => setTimeout(r, 900));
       }
 
       if (!buffer) {
-
         throw new Error("Screenshot capture failed");
-
       }
 
-      const dataUrl =
-        `data:image/jpeg;base64,${buffer.toString("base64")}`;
+      const dataUrl = `data:image/jpeg;base64,${buffer.toString("base64")}`;
 
-      logStep(requestId,"capture-reference-screenshot",startedAt,{
-
-        referenceUrl:safeUrl,
-        screenshotBytes:buffer.length
-
+      logStep(requestId, "capture-reference-screenshot", startedAt, {
+        referenceUrl: safeUrl,
+        screenshotBytes: buffer.length,
       });
 
       return dataUrl;
-
-    }
-    finally {
-
+    } finally {
       await browser.close();
-
     }
-
-  }
-  catch(error:any){
-
+  } catch (error: any) {
     console.error(
-
       JSON.stringify({
-
-        scope:"api-generate",
+        scope: "api-generate",
         requestId,
-        step:"capture-reference-screenshot-error",
-        referenceUrl:safeUrl,
-        error:error?.message
-
+        step: "capture-reference-screenshot-error",
+        referenceUrl: safeUrl,
+        error: error?.message || "Screenshot capture failed",
       })
-
     );
-
     return null;
-
   }
-
 }
 
 function detectSectionSequence(summary: ReferenceSiteSummary): string[] {
@@ -2557,11 +2502,45 @@ export async function POST(req: Request) {
           )
         : null;
 
-    const referenceScreenshotDataUrl =
-      inputMode === "url" && referenceUrl
-        ? await captureReferenceScreenshot(referenceUrl, requestId)
-        : null;
+    let referenceScreenshotDataUrl: null | string = null;
 
+if (inputMode === "url" && referenceUrl) {
+  for (let i = 0; i < 3; i++) {
+    referenceScreenshotDataUrl = await captureReferenceScreenshot(
+      referenceUrl,
+      requestId
+    );
+
+    if (referenceScreenshotDataUrl) break;
+
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+}
+    if (
+  inputMode === "url" &&
+  referenceUrl &&
+  !referenceScreenshotDataUrl
+) {
+  console.error(
+    JSON.stringify({
+      scope: "api-generate",
+      requestId,
+      step: "url-mode-failed",
+      reason: "no screenshot",
+    })
+  );
+
+  return Response.json(
+    {
+      error: "Reference screenshot failed. URL mode requires screenshot.",
+      requestId,
+      inputMode,
+      referenceUrl,
+      hasReferenceScreenshot: false,
+    },
+    { status: 422 }
+  );
+}
     const screenshotAnalysis =
       referenceScreenshotDataUrl && inputMode === "url"
         ? await createVisionReferenceAnalysis({
