@@ -600,6 +600,44 @@ function mergeStoredPreferences(
   };
 }
 
+
+
+function getEffectivePrompt(params: {
+  prompt?: string;
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+}) {
+  const prompt = (params.prompt || "").trim();
+  const referenceUrl = (params.referenceUrl || "").trim();
+  const referenceHtml = (params.referenceHtml || "").trim();
+
+  if (prompt) return prompt;
+
+  if (params.inputMode === "url" && referenceUrl) {
+    return [
+      `Vytvoř nový web podle této URL reference: ${referenceUrl}`,
+      "URL je hlavní zdroj layoutu, hierarchie, kompozice a vizuálního směru.",
+      "Výsledek má být co nejpodobnější strukturou a dojmem, ale s vlastním brandem, vlastním obsahem a čistším prémiovým zpracováním.",
+      "Neudělej obecný generický web. Primárně se řiď poskytnutou URL referencí.",
+    ].join(" ");
+  }
+
+  if (params.inputMode === "html" && referenceHtml) {
+    return [
+      "Vytvoř nový web podle dodaného HTML základu.",
+      "HTML je hlavní zdroj struktury a rozložení.",
+      "Výsledek výrazně vizuálně i UX vylepši, ale neudělej generický web.",
+    ].join(" ");
+  }
+
+  if (params.inputMode === "screenshot") {
+    return "Vytvoř nový web podle přiložené screenshot reference. Screenshot je hlavní zdroj layoutu, hierarchie a vizuálního směru.";
+  }
+
+  return prompt;
+}
+
 function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
   const common: Otazka[] = [
     {
