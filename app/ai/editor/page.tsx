@@ -727,6 +727,59 @@ function getEffectivePrompt(params: {
   return prompt;
 }
 
+
+function sanitizeReferenceUrl(value?: string) {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+function getGenerationRequestInput(params: {
+  prompt?: string;
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments?: AttachmentItem[];
+}) {
+  const safeInputMode: InputMode =
+    params.inputMode === "url" ||
+    params.inputMode === "html" ||
+    params.inputMode === "screenshot"
+      ? params.inputMode
+      : "prompt";
+
+  const safeReferenceUrl =
+    safeInputMode === "url" ? sanitizeReferenceUrl(params.referenceUrl) : "";
+  const safeReferenceHtml =
+    safeInputMode === "html" ? (params.referenceHtml || "").trim() : "";
+  const safeAttachments = Array.isArray(params.attachments)
+    ? params.attachments.filter(Boolean)
+    : [];
+
+  const effectivePrompt = getEffectivePrompt({
+    prompt: params.prompt,
+    inputMode: safeInputMode,
+    referenceUrl: safeReferenceUrl,
+    referenceHtml: safeReferenceHtml,
+    attachments: safeAttachments,
+  }).trim();
+
+  return {
+    effectivePrompt,
+    inputMode: safeInputMode,
+    referenceUrl: safeReferenceUrl,
+    referenceHtml: safeReferenceHtml,
+    attachments: safeAttachments,
+  };
+}
+
 function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
   const common: Otazka[] = [
     {
