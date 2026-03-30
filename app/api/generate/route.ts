@@ -196,6 +196,45 @@ type ReferenceLayoutFingerprint = {
   shouldAvoidSplitHero: boolean;
 };
 
+type ReferenceScreenshotAnalysis = {
+  screenshotAvailable: boolean;
+  aboveTheFoldType:
+    | "cover-hero"
+    | "split-hero"
+    | "editorial-cover"
+    | "grid-hero"
+    | "unknown";
+  heroContentAlignment:
+    | "center"
+    | "left"
+    | "right"
+    | "bottom-left"
+    | "unknown";
+  navVisualWeight: "minimal" | "medium" | "heavy" | "unknown";
+  firstSectionAfterHero:
+    | "stats-band"
+    | "services"
+    | "gallery"
+    | "testimonials"
+    | "unknown";
+  dominantVisualSubject:
+    | "vehicle"
+    | "architecture"
+    | "product"
+    | "food"
+    | "ui"
+    | "portrait"
+    | "mixed"
+    | "unknown";
+  shouldKeepFullWidthHero: boolean;
+  shouldKeepSingleDominantSubject: boolean;
+  shouldAvoidSplitHero: boolean;
+  mustKeepMotifs: string[];
+  forbiddenMistakes: string[];
+  colorDirection: string;
+  compositionSummary: string;
+};
+
 function nowMs() {
   return Date.now();
 }
@@ -524,6 +563,75 @@ async function fetchReferenceSiteSummary(
   }
 }
 
+async function captureReferenceScreenshot(
+  referenceUrl: string,
+  requestId: string
+): Promise<string | null> {
+  const startedAt = nowMs();
+  const safeUrl = sanitizeReferenceUrl(referenceUrl);
+  if (!safeUrl) return null;
+
+  try {
+    const playwright = await import("playwright");
+    const browser = await playwright.chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 1440, height: 2200 },
+        deviceScaleFactor: 1,
+      });
+
+      await page.goto(safeUrl, {
+        waitUntil: "networkidle",
+        timeout: 45000,
+      });
+
+      await page.screenshot({
+        path: undefined,
+        type: "jpeg",
+        quality: 78,
+        fullPage: false,
+        animations: "disabled",
+      });
+
+      const buffer = await page.screenshot({
+        path: undefined,
+        type: "jpeg",
+        quality: 78,
+        fullPage: false,
+        animations: "disabled",
+      });
+
+      const dataUrl = `data:image/jpeg;base64,${Buffer.from(buffer).toString(
+        "base64"
+      )}`;
+
+      logStep(requestId, "capture-reference-screenshot", startedAt, {
+        referenceUrl: safeUrl,
+        screenshotBytes: buffer.length,
+      });
+
+      return dataUrl;
+    } finally {
+      await browser.close();
+    }
+  } catch (error: any) {
+    console.error(
+      JSON.stringify({
+        scope: "api-generate",
+        requestId,
+        step: "capture-reference-screenshot-error",
+        referenceUrl: safeUrl,
+        error: error?.message || "Screenshot capture failed",
+      })
+    );
+    return null;
+  }
+}
+
 function detectSectionSequence(summary: ReferenceSiteSummary): string[] {
   const haystack = normalizeText(
     [
@@ -758,6 +866,228 @@ function inferReferenceLayoutFingerprint(
       visualDominance === "product",
     shouldAvoidSplitHero,
   };
+}
+
+async function createStructuredObject<T>({
+  model,
+  system,
+  user,
+  schemaName,
+  schema,
+  requestId,
+}: {
+  model: string;
+  system: string;
+  user: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+  requestId: string;
+}): Promise<T> {
+  const startedAt = nowMs();
+
+  const completion = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: "developer", content: system },
+      { role: "user", content: user },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: schemaName,
+        schema,
+        strict: true,
+      },
+    },
+  });
+
+  logStep(requestId, `openai:${schemaName}`, startedAt, { model });
+
+  console.log(
+    JSON.stringify({
+      scope: "openai",
+      requestId,
+      schemaName,
+      model,
+      openaiRequestId: completion._request_id ?? null,
+    })
+  );
+
+  const content = completion.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(`Model nevrátil obsah pro schema ${schemaName}.`);
+  }
+
+  try {
+    return JSON.parse(content) as T;
+  } catch {
+    throw new Error(
+      `Structured output pro ${schemaName} není validní JSON. Začátek odpovědi: ${content.slice(
+        0,
+        180
+      )}`
+    );
+  }
+}
+
+async function createVisionReferenceAnalysis(params: {
+  requestId: string;
+  model: string;
+  screenshotDataUrl: string;
+  referenceSummary?: ReferenceSiteSummary | null;
+  fingerprint?: ReferenceLayoutFingerprint | null;
+}): Promise<ReferenceScreenshotAnalysis | null> {
+  const startedAt = nowMs();
+
+  try {
+    const schema = {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        screenshotAvailable: { type: "boolean" },
+        aboveTheFoldType: {
+          type: "string",
+          enum: [
+            "cover-hero",
+            "split-hero",
+            "editorial-cover",
+            "grid-hero",
+            "unknown",
+          ],
+        },
+        heroContentAlignment: {
+          type: "string",
+          enum: ["center", "left", "right", "bottom-left", "unknown"],
+        },
+        navVisualWeight: {
+          type: "string",
+          enum: ["minimal", "medium", "heavy", "unknown"],
+        },
+        firstSectionAfterHero: {
+          type: "string",
+          enum: ["stats-band", "services", "gallery", "testimonials", "unknown"],
+        },
+        dominantVisualSubject: {
+          type: "string",
+          enum: [
+            "vehicle",
+            "architecture",
+            "product",
+            "food",
+            "ui",
+            "portrait",
+            "mixed",
+            "unknown",
+          ],
+        },
+        shouldKeepFullWidthHero: { type: "boolean" },
+        shouldKeepSingleDominantSubject: { type: "boolean" },
+        shouldAvoidSplitHero: { type: "boolean" },
+        mustKeepMotifs: {
+          type: "array",
+          maxItems: 8,
+          items: { type: "string" },
+        },
+        forbiddenMistakes: {
+          type: "array",
+          maxItems: 10,
+          items: { type: "string" },
+        },
+        colorDirection: { type: "string" },
+        compositionSummary: { type: "string" },
+      },
+      required: [
+        "screenshotAvailable",
+        "aboveTheFoldType",
+        "heroContentAlignment",
+        "navVisualWeight",
+        "firstSectionAfterHero",
+        "dominantVisualSubject",
+        "shouldKeepFullWidthHero",
+        "shouldKeepSingleDominantSubject",
+        "shouldAvoidSplitHero",
+        "mustKeepMotifs",
+        "forbiddenMistakes",
+        "colorDirection",
+        "compositionSummary",
+      ],
+    };
+
+    const userText = `
+Analyze this homepage screenshot as a website reference for rebuilding.
+
+Your job:
+- determine the actual above-the-fold composition
+- determine if the hero is full-width cover-led or split
+- determine the dominant subject
+- determine if the first section after hero is a stats band
+- determine what MUST be preserved
+- determine what mistakes MUST be avoided in a rebuild
+
+REFERENCE SUMMARY:
+Title: ${params.referenceSummary?.title || "n/a"}
+Meta: ${params.referenceSummary?.metaDescription || "n/a"}
+Headings: ${(params.referenceSummary?.headings || []).join(" | ") || "n/a"}
+Nav: ${(params.referenceSummary?.navLinks || []).join(" | ") || "n/a"}
+CTAs: ${(params.referenceSummary?.ctas || []).join(" | ") || "n/a"}
+
+TEXT FINGERPRINT:
+Hero type: ${params.fingerprint?.heroType || "unknown"}
+Visual dominance: ${params.fingerprint?.visualDominance || "unknown"}
+Section sequence: ${(params.fingerprint?.sectionSequence || []).join(" -> ") || "unknown"}
+`;
+
+    const completion = await client.chat.completions.create({
+      model: params.model,
+      messages: [
+        {
+          role: "developer",
+          content:
+            "You are an expert website art director and UI layout analyst. Return only valid JSON.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userText },
+            {
+              type: "image_url",
+              image_url: {
+                url: params.screenshotDataUrl,
+              },
+            },
+          ] as any,
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "reference_screenshot_analysis_v1",
+          schema,
+          strict: true,
+        },
+      },
+    });
+
+    logStep(params.requestId, "openai:reference-screenshot-analysis", startedAt, {
+      model: params.model,
+    });
+
+    const content = completion.choices?.[0]?.message?.content;
+    if (!content) return null;
+
+    return JSON.parse(content) as ReferenceScreenshotAnalysis;
+  } catch (error: any) {
+    console.error(
+      JSON.stringify({
+        scope: "api-generate",
+        requestId: params.requestId,
+        step: "reference-screenshot-analysis-error",
+        error: error?.message || "Vision reference analysis failed",
+      })
+    );
+    return null;
+  }
 }
 
 function inferIndustryKind(prompt: string): IndustryKind {
@@ -1115,7 +1445,8 @@ function getIndustryDefaults(industry: IndustryKind) {
 function resolveCreativeDirection(
   prompt: string,
   prefs: GenerationPreferences,
-  fingerprint?: ReferenceLayoutFingerprint | null
+  fingerprint?: ReferenceLayoutFingerprint | null,
+  screenshotAnalysis?: ReferenceScreenshotAnalysis | null
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
@@ -1147,7 +1478,7 @@ function resolveCreativeDirection(
       "observability-hub-layout",
       "floating-control-room-hero",
     ],
-    realEstate: [
+    realEstateCover: [
       "full-bleed-editorial-property-cover",
       "centered-crest-navigation-with-cover-image",
       "bottom-left-copy-over-architecture-shot",
@@ -1221,13 +1552,18 @@ function resolveCreativeDirection(
     ],
   };
 
+  const hardAvoidSplit =
+    Boolean(fingerprint?.shouldAvoidSplitHero) ||
+    Boolean(screenshotAnalysis?.shouldAvoidSplitHero) ||
+    Boolean(screenshotAnalysis?.shouldKeepFullWidthHero);
+
   const seedChoices =
     industry === "fintech"
       ? layoutSeedPool.fintech
       : industry === "saas"
       ? layoutSeedPool.saas
       : industry === "real-estate"
-      ? layoutSeedPool.realEstate
+      ? layoutSeedPool.realEstateCover
       : industry === "resort"
       ? layoutSeedPool.resort
       : industry === "restaurant" || industry === "catering"
@@ -1235,7 +1571,7 @@ function resolveCreativeDirection(
       : industry === "food-product" || industry === "ecommerce-product"
       ? layoutSeedPool.product
       : industry === "autoservis" || industry === "car-dealer"
-      ? fingerprint?.shouldAvoidSplitHero
+      ? hardAvoidSplit
         ? layoutSeedPool.automotiveCover
         : layoutSeedPool.automotiveSplit
       : industry === "zednik"
@@ -1561,12 +1897,48 @@ ASSET CONSISTENCY RULES:
 - for architecture-led references, the main hero image slot must be architecture-led`;
 }
 
+function renderScreenshotAnalysis(
+  analysis?: ReferenceScreenshotAnalysis | null
+) {
+  if (!analysis) {
+    return `
+REFERENCE SCREENSHOT ANALYSIS:
+- unavailable`;
+  }
+
+  return `
+REFERENCE SCREENSHOT ANALYSIS:
+- Screenshot available: ${analysis.screenshotAvailable ? "yes" : "no"}
+- Above the fold type: ${analysis.aboveTheFoldType}
+- Hero content alignment: ${analysis.heroContentAlignment}
+- Nav visual weight: ${analysis.navVisualWeight}
+- First section after hero: ${analysis.firstSectionAfterHero}
+- Dominant visual subject: ${analysis.dominantVisualSubject}
+- Keep full width hero: ${analysis.shouldKeepFullWidthHero ? "yes" : "no"}
+- Keep single dominant subject: ${
+    analysis.shouldKeepSingleDominantSubject ? "yes" : "no"
+  }
+- Avoid split hero: ${analysis.shouldAvoidSplitHero ? "yes" : "no"}
+- Must keep motifs: ${analysis.mustKeepMotifs.join(" | ") || "n/a"}
+- Forbidden mistakes: ${analysis.forbiddenMistakes.join(" | ") || "n/a"}
+- Color direction: ${analysis.colorDirection || "n/a"}
+- Composition summary: ${analysis.compositionSummary || "n/a"}
+
+SCREENSHOT REBUILD LOCK RULES:
+- follow the screenshot composition more strongly than generic industry defaults
+- if the screenshot reads as a cover hero, keep a cover hero
+- if the screenshot reads as centered text over one dominant visual, preserve that family
+- if the screenshot reads as a stats band after hero, keep that band after hero
+- do not drift into unrelated photo themes or card layouts`;
+}
+
 function renderInputModeContext(params: {
   inputMode: InputMode;
   referenceUrl?: string;
   referenceHtml?: string;
   referenceSummary?: ReferenceSiteSummary | null;
   layoutFingerprint?: ReferenceLayoutFingerprint | null;
+  screenshotAnalysis?: ReferenceScreenshotAnalysis | null;
   attachments: AttachmentInput[];
 }) {
   const lines: string[] = [];
@@ -1602,6 +1974,7 @@ function renderInputModeContext(params: {
   if (params.inputMode === "url") {
     lines.push(renderReferenceSummary(params.referenceSummary));
     lines.push(renderLayoutFingerprint(params.layoutFingerprint));
+    lines.push(renderScreenshotAnalysis(params.screenshotAnalysis));
   }
 
   lines.push(`
@@ -1647,10 +2020,12 @@ function renderPrompt(params: {
   referenceHtml?: string;
   referenceSummary?: ReferenceSiteSummary | null;
   layoutFingerprint?: ReferenceLayoutFingerprint | null;
+  screenshotAnalysis?: ReferenceScreenshotAnalysis | null;
   attachments: AttachmentInput[];
 }) {
   const isAutomotiveReference =
     params.layoutFingerprint?.visualDominance === "vehicle" ||
+    params.screenshotAnalysis?.dominantVisualSubject === "vehicle" ||
     params.preferences.industry === "autoservis" ||
     params.preferences.industry === "car-dealer";
 
@@ -1736,6 +2111,7 @@ ${renderInputModeContext({
   referenceHtml: params.referenceHtml,
   referenceSummary: params.referenceSummary,
   layoutFingerprint: params.layoutFingerprint,
+  screenshotAnalysis: params.screenshotAnalysis,
   attachments: params.attachments,
 })}
 
@@ -1794,10 +2170,12 @@ HERO STABILITY RULES:
 
 REFERENCE HERO LOCK RULES:
 - if reference fingerprint says avoid split hero, you MUST NOT use a left-copy / right-card split hero
-- if reference hero is full-bleed-centered, prefer a centered or cover-led hero
+- if screenshot analysis says cover-hero, you MUST keep a cover-led or full-width hero
 - if reference uses one dominant subject, keep one dominant dominant subject in the hero
 - if reference uses a stats band after hero, preserve that pattern immediately under hero
 - if reference nav is minimal, keep the nav minimal and clean
+- if screenshot says centered hero copy, keep centered or near-centered hero copy
+- do not downgrade a cinematic or editorial hero into a boxed generic card layout
 
 ${
   isAutomotiveReference
@@ -1859,6 +2237,7 @@ IMAGE RULES:
 - queries must be concrete and in English
 - if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
 - assetPlan must follow the reference motif and may not drift into unrelated image themes
+- the first asset slot should support the hero motif when the reference hero is image-led
 
 MANDATORY CSS IMPLEMENTATION DETAILS:
 - define a container utility in CSS
@@ -1898,69 +2277,6 @@ FINAL QA:
 - uploaded logo constrained by a logo shell
 - hero remains structurally stable
 - if the reference is cover-led, do not output a generic split hero`;
-}
-
-async function createStructuredObject<T>({
-  model,
-  system,
-  user,
-  schemaName,
-  schema,
-  requestId,
-}: {
-  model: string;
-  system: string;
-  user: string;
-  schemaName: string;
-  schema: Record<string, unknown>;
-  requestId: string;
-}): Promise<T> {
-  const startedAt = nowMs();
-
-  const completion = await client.chat.completions.create({
-    model,
-    messages: [
-      { role: "developer", content: system },
-      { role: "user", content: user },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: schemaName,
-        schema,
-        strict: true,
-      },
-    },
-  });
-
-  logStep(requestId, `openai:${schemaName}`, startedAt, { model });
-
-  console.log(
-    JSON.stringify({
-      scope: "openai",
-      requestId,
-      schemaName,
-      model,
-      openaiRequestId: completion._request_id ?? null,
-    })
-  );
-
-  const content = completion.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error(`Model nevrátil obsah pro schema ${schemaName}.`);
-  }
-
-  try {
-    return JSON.parse(content) as T;
-  } catch {
-    throw new Error(
-      `Structured output pro ${schemaName} není validní JSON. Začátek odpovědi: ${content.slice(
-        0,
-        180
-      )}`
-    );
-  }
 }
 
 const generatedWebsiteSchema = {
@@ -2140,6 +2456,22 @@ export async function POST(req: Request) {
           )
         : null;
 
+    const referenceScreenshotDataUrl =
+      inputMode === "url" && referenceUrl
+        ? await captureReferenceScreenshot(referenceUrl, requestId)
+        : null;
+
+    const screenshotAnalysis =
+      referenceScreenshotDataUrl && inputMode === "url"
+        ? await createVisionReferenceAnalysis({
+            requestId,
+            model: WEB_MODEL,
+            screenshotDataUrl: referenceScreenshotDataUrl,
+            referenceSummary,
+            fingerprint: layoutFingerprint,
+          })
+        : null;
+
     const promptForDirection =
       effectivePrompt +
       (referenceSummary
@@ -2147,12 +2479,16 @@ export async function POST(req: Request) {
         : "") +
       (layoutFingerprint
         ? ` hero:${layoutFingerprint.heroType} visual:${layoutFingerprint.visualDominance} nav:${layoutFingerprint.navStyle} density:${layoutFingerprint.density} sections:${layoutFingerprint.sectionSequence.join(" ")}`
+        : "") +
+      (screenshotAnalysis
+        ? ` screenshotHero:${screenshotAnalysis.aboveTheFoldType} screenshotSubject:${screenshotAnalysis.dominantVisualSubject} screenshotAfterHero:${screenshotAnalysis.firstSectionAfterHero} screenshotAvoidSplit:${screenshotAnalysis.shouldAvoidSplitHero}`
         : "");
 
     const resolvedPreferences = resolveCreativeDirection(
       promptForDirection,
       rawPreferences,
-      layoutFingerprint
+      layoutFingerprint,
+      screenshotAnalysis
     );
 
     console.log(
@@ -2167,6 +2503,8 @@ export async function POST(req: Request) {
         referenceUrl: referenceUrl || null,
         hasReferenceHtml: Boolean(referenceHtml),
         hasReferenceSummary: Boolean(referenceSummary),
+        hasReferenceScreenshot: Boolean(referenceScreenshotDataUrl),
+        hasScreenshotAnalysis: Boolean(screenshotAnalysis),
         layoutFingerprint,
         attachmentCount: attachments.length,
         generationPreferences: resolvedPreferences,
@@ -2192,9 +2530,10 @@ export async function POST(req: Request) {
         referenceHtml,
         referenceSummary,
         layoutFingerprint,
+        screenshotAnalysis,
         attachments,
       }),
-      schemaName: "website_bundle_creative_setup_v15",
+      schemaName: "website_bundle_creative_setup_v16",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -2244,6 +2583,8 @@ export async function POST(req: Request) {
       referenceUrl,
       referenceSummary,
       layoutFingerprint,
+      screenshotAnalysis,
+      hasReferenceScreenshot: Boolean(referenceScreenshotDataUrl),
     });
   } catch (e: any) {
     console.error(
