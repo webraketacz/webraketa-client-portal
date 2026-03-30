@@ -697,31 +697,41 @@ function getEffectivePrompt(params: {
   const prompt = (params.prompt || "").trim();
   const referenceUrl = (params.referenceUrl || "").trim();
   const referenceHtml = (params.referenceHtml || "").trim();
-
-  if (prompt) return prompt;
+  const hasScreenshot =
+    params.inputMode === "screenshot" ||
+    (params.attachments || []).some((item) => item.kind === "screenshot");
 
   if (params.inputMode === "url" && referenceUrl) {
     return [
-      `Vytvoř nový web podle této URL reference: ${referenceUrl}`,
-      "URL je hlavní zdroj layoutu, hierarchie, kompozice a vizuálního směru.",
-      "Výsledek má být co nejpodobnější strukturou a dojmem, ale s vlastním brandem, vlastním obsahem a čistším prémiovým zpracováním.",
-      "Neudělej obecný generický web. Primárně se řiď poskytnutou URL referencí.",
-    ].join(" ");
+      `Vytvoř nový web podle této URL reference: ${referenceUrl}.`,
+      "URL reference je PRIMÁRNÍ zdroj layoutu, struktury, hierarchie, vizuálního směru, kompozice a rytmu sekcí.",
+      prompt ? `Doplňující instrukce od uživatele: ${prompt}` : "",
+      "Nevytvářej generický web podle oboru. Primárně se řiď URL referencí a použij prompt jen jako sekundární vrstvu.",
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   if (params.inputMode === "html" && referenceHtml) {
     return [
       "Vytvoř nový web podle dodaného HTML základu.",
-      "HTML je hlavní zdroj struktury a rozložení.",
+      "HTML je PRIMÁRNÍ zdroj struktury, pořadí sekcí a layoutu.",
+      prompt ? `Doplňující instrukce od uživatele: ${prompt}` : "",
       "Výsledek výrazně vizuálně i UX vylepši, ale neudělej generický web.",
-    ].join(" ");
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
-  if (
-    params.inputMode === "screenshot" ||
-    (params.attachments || []).some((item) => item.kind === "screenshot")
-  ) {
-    return "Vytvoř nový web podle přiložené screenshot reference. Screenshot je hlavní zdroj layoutu, hierarchie a vizuálního směru.";
+  if (hasScreenshot) {
+    return [
+      "Vytvoř nový web podle přiložené screenshot reference.",
+      "Screenshot je PRIMÁRNÍ zdroj layoutu, hierarchie, kompozice a vizuálního směru.",
+      prompt ? `Doplňující instrukce od uživatele: ${prompt}` : "",
+      "Nevytvářej generický web podle oboru. Primárně se řiď screenshot referencí.",
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   return prompt;
@@ -2262,7 +2272,29 @@ export default function AiEditorPage() {
       attachments,
     });
     const finalPrompt = requestInput.effectivePrompt;
-    if (finalPrompt.length < 8) return;
+
+    if (finalPrompt.length < 8) {
+      setError("Chybí zadání. Zadejte prompt nebo vložte validní URL / HTML / screenshot.");
+      return;
+    }
+
+    if (requestInput.inputMode === "url" && !requestInput.referenceUrl) {
+      setError("V URL režimu vložte prosím validní URL včetně http:// nebo https://.");
+      return;
+    }
+
+    if (requestInput.inputMode === "html" && !requestInput.referenceHtml.trim()) {
+      setError("V HTML režimu chybí referenční HTML.");
+      return;
+    }
+
+    if (
+      requestInput.inputMode === "screenshot" &&
+      !requestInput.attachments.some((item) => item.kind === "screenshot")
+    ) {
+      setError("V režimu screenshot chybí nahraný screenshot.");
+      return;
+    }
 
     const effectivePreferences = {
       ...(forcedPreferences || generationPreferences),
@@ -2313,7 +2345,9 @@ export default function AiEditorPage() {
         throw new Error("API /api/generate nevrátilo validní HTML/CSS.");
       }
 
-      const detectedIndustry = inferIndustryKind(finalPrompt);
+      const detectedIndustry =
+        (data.brief?.industry as IndustryKind | undefined) ||
+        inferIndustryKind(finalPrompt);
       const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
 
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
@@ -2618,7 +2652,14 @@ export default function AiEditorPage() {
       {
         id: `skip-questions-${Date.now()}`,
         role: "system",
-        text: "Otázky byly přeskočeny. Generuji web podle promptu, loga a automatického rozpoznání oboru.",
+        text:
+          inputMode === "url" && referenceUrl
+            ? "Otázky byly přeskočeny. Generuji web primárně podle URL reference, její struktury, screenshot analýzy a layout fingerprintu. Prompt a obor slouží jen jako doplněk."
+            : inputMode === "html"
+            ? "Otázky byly přeskočeny. Generuji web primárně podle dodaného HTML a jeho struktury."
+            : inputMode === "screenshot"
+            ? "Otázky byly přeskočeny. Generuji web primárně podle screenshot reference."
+            : "Otázky byly přeskočeny. Generuji web podle promptu a zvoleného kreativního směru.",
       },
     ]);
     void handleGenerate(prompt, generationPreferences);
