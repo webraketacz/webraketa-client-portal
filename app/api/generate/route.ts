@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import chromium from "@sparticuz/chromium-min";
+import puppeteer from "puppeteer-core";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -572,46 +574,42 @@ async function captureReferenceScreenshot(
   if (!safeUrl) return null;
 
   try {
-    const playwright = await import("playwright");
-    const browser = await playwright.chromium.launch({
+    const executablePath = await chromium.executablePath();
+
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: { width: 1440, height: 2200, deviceScaleFactor: 1 },
+      executablePath,
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     try {
-      const page = await browser.newPage({
-        viewport: { width: 1440, height: 2200 },
-        deviceScaleFactor: 1,
-      });
+      const page = await browser.newPage();
 
       await page.goto(safeUrl, {
-        waitUntil: "networkidle",
+        waitUntil: "networkidle2",
         timeout: 45000,
       });
 
-      await page.screenshot({
-        path: undefined,
-        type: "jpeg",
-        quality: 78,
-        fullPage: false,
-        animations: "disabled",
-      });
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const buffer = await page.screenshot({
-        path: undefined,
         type: "jpeg",
         quality: 78,
         fullPage: false,
-        animations: "disabled",
       });
 
-      const dataUrl = `data:image/jpeg;base64,${Buffer.from(buffer).toString(
+      const normalizedBuffer = Buffer.isBuffer(buffer)
+        ? buffer
+        : Buffer.from(buffer);
+
+      const dataUrl = `data:image/jpeg;base64,${normalizedBuffer.toString(
         "base64"
       )}`;
 
       logStep(requestId, "capture-reference-screenshot", startedAt, {
         referenceUrl: safeUrl,
-        screenshotBytes: buffer.length,
+        screenshotBytes: normalizedBuffer.length,
       });
 
       return dataUrl;
