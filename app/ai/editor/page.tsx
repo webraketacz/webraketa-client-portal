@@ -1809,9 +1809,18 @@ export default function AiEditorPage() {
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
-    const storedInputMode = sessionStorage.getItem("ai_webgen_input_mode") ?? "prompt";
-    const storedReferenceUrl = sessionStorage.getItem("ai_webgen_reference_url") ?? "";
-    const storedReferenceHtml = sessionStorage.getItem("ai_webgen_reference_html") ?? "";
+    const storedInputMode =
+      sessionStorage.getItem("ai_webgen_source_mode") ??
+      sessionStorage.getItem("ai_webgen_input_mode") ??
+      "prompt";
+    const storedReferenceUrl =
+      sessionStorage.getItem("ai_webgen_source_url") ??
+      sessionStorage.getItem("ai_webgen_reference_url") ??
+      "";
+    const storedReferenceHtml =
+      sessionStorage.getItem("ai_webgen_source_html") ??
+      sessionStorage.getItem("ai_webgen_reference_html") ??
+      "";
     const storedAttachments = sessionStorage.getItem("ai_webgen_attachments") ?? "[]";
     const storedLandingPreferences =
       sessionStorage.getItem("ai_webgen_landing_preferences") ??
@@ -1832,17 +1841,6 @@ export default function AiEditorPage() {
       });
     }
 
-    if (initialPrompt) {
-      setPrompt(initialPrompt);
-      setGenerationPreferences((prev) =>
-        mergeStoredPreferences(createDefaultPreferences(initialPrompt), prev)
-      );
-      setMessages((prev) => [
-        ...prev,
-        { id: `user-initial-${Date.now()}`, role: "user", text: initialPrompt },
-      ]);
-    }
-
     if (
       storedInputMode === "prompt" ||
       storedInputMode === "url" ||
@@ -1854,6 +1852,30 @@ export default function AiEditorPage() {
 
     setReferenceUrl(storedReferenceUrl);
     setReferenceHtml(storedReferenceHtml);
+
+    const bootPrompt = getEffectivePrompt({
+      prompt: initialPrompt,
+      inputMode:
+        storedInputMode === "prompt" ||
+        storedInputMode === "url" ||
+        storedInputMode === "screenshot" ||
+        storedInputMode === "html"
+          ? storedInputMode
+          : "prompt",
+      referenceUrl: storedReferenceUrl,
+      referenceHtml: storedReferenceHtml,
+    });
+
+    if (bootPrompt) {
+      setPrompt(bootPrompt);
+      setGenerationPreferences((prev) =>
+        mergeStoredPreferences(createDefaultPreferences(bootPrompt), prev)
+      );
+      setMessages((prev) => [
+        ...prev,
+        { id: `user-initial-${Date.now()}`, role: "user", text: bootPrompt },
+      ]);
+    }
 
     try {
       const parsedAttachments = JSON.parse(storedAttachments);
@@ -1872,10 +1894,23 @@ export default function AiEditorPage() {
       );
     } catch {}
 
-    if (autostart && initialPrompt && !autostartRef.current) {
+    const autostartPrompt = getEffectivePrompt({
+      prompt: initialPrompt,
+      inputMode:
+        storedInputMode === "prompt" ||
+        storedInputMode === "url" ||
+        storedInputMode === "screenshot" ||
+        storedInputMode === "html"
+          ? storedInputMode
+          : "prompt",
+      referenceUrl: storedReferenceUrl,
+      referenceHtml: storedReferenceHtml,
+    });
+
+    if (autostart && autostartPrompt && !autostartRef.current) {
       autostartRef.current = true;
       sessionStorage.removeItem("ai_webgen_autostart");
-      setTimeout(() => startQuestionFlow(initialPrompt), 250);
+      setTimeout(() => startQuestionFlow(autostartPrompt), 250);
     }
   }, []);
 
@@ -2031,8 +2066,14 @@ export default function AiEditorPage() {
     customPrompt?: string,
     forcedPreferences?: GenerationPreferences
   ) {
-    const finalPrompt = (customPrompt ?? prompt).trim();
-    if (finalPrompt.length < 12) return;
+    const finalPrompt = getEffectivePrompt({
+      prompt: customPrompt ?? prompt,
+      inputMode,
+      referenceUrl,
+      referenceHtml,
+      attachments,
+    }).trim();
+    if (finalPrompt.length < 8) return;
 
     const effectivePreferences = forcedPreferences || generationPreferences;
 
