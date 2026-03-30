@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 
 export const runtime = "nodejs";
@@ -574,7 +574,9 @@ async function captureReferenceScreenshot(
   if (!safeUrl) return null;
 
   try {
-    const executablePath = await chromium.executablePath();
+    const executablePath = await chromium.executablePath(
+  process.env.CHROMIUM_PATH
+);
 
     const browser = await puppeteer.launch({
       args: [
