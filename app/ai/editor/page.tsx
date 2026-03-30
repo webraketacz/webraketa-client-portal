@@ -116,6 +116,22 @@ type GenerationPreferences = {
   sourcePrompt?: string;
 };
 
+type ReferenceSiteSummary = {
+  referenceUrl?: string;
+  finalUrl?: string;
+  title?: string;
+  metaDescription?: string;
+  headings?: string[];
+  navLinks?: string[];
+  ctas?: string[];
+  firstParagraphs?: string[];
+  sectionCount?: number;
+  classHints?: string[];
+  idHints?: string[];
+  textSample?: string;
+  htmlSnippet?: string;
+};
+
 type GeneratorResponse = {
   html: string;
   css: string;
@@ -133,6 +149,7 @@ type GeneratorResponse = {
   changedOnlySelectedSection?: boolean;
   twoStepMode?: boolean;
   generationPreferences?: Partial<GenerationPreferences>;
+  referenceSummary?: ReferenceSiteSummary | null;
 };
 
 type AssetResolveResponse = {
@@ -601,6 +618,52 @@ function mergeStoredPreferences(
 }
 
 
+function sanitizeReferenceUrl(value?: string) {
+  const raw = (value || "").trim();
+  if (!raw) return "";
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function getGenerationRequestInput(params: {
+  prompt?: string;
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments?: AttachmentItem[];
+}) {
+  const safeInputMode =
+    params.inputMode === "url" ||
+    params.inputMode === "screenshot" ||
+    params.inputMode === "html"
+      ? params.inputMode
+      : "prompt";
+
+  const safeReferenceUrl = sanitizeReferenceUrl(params.referenceUrl);
+  const safeReferenceHtml = (params.referenceHtml || "").trim();
+  const safeAttachments = Array.isArray(params.attachments) ? params.attachments : [];
+  const effectivePrompt = getEffectivePrompt({
+    prompt: params.prompt,
+    inputMode: safeInputMode,
+    referenceUrl: safeReferenceUrl,
+    referenceHtml: safeReferenceHtml,
+    attachments: safeAttachments,
+  }).trim();
+
+  return {
+    inputMode: safeInputMode,
+    referenceUrl: safeReferenceUrl,
+    referenceHtml: safeReferenceHtml,
+    attachments: safeAttachments,
+    effectivePrompt,
+  };
+}
 
 function getEffectivePrompt(params: {
   prompt?: string;
@@ -1895,7 +1958,7 @@ export default function AiEditorPage() {
     setReferenceUrl(storedReferenceUrl);
     setReferenceHtml(storedReferenceHtml);
 
-    const bootPrompt = getEffectivePrompt({
+    const bootPrompt = getGenerationRequestInput({
       prompt: initialPrompt,
       inputMode:
         storedInputMode === "prompt" ||
@@ -1906,7 +1969,7 @@ export default function AiEditorPage() {
           : "prompt",
       referenceUrl: storedReferenceUrl,
       referenceHtml: storedReferenceHtml,
-    });
+    }).effectivePrompt;
 
     if (bootPrompt) {
       setPrompt(bootPrompt);
@@ -1936,7 +1999,7 @@ export default function AiEditorPage() {
       );
     } catch {}
 
-    const autostartPrompt = getEffectivePrompt({
+    const autostartPrompt = getGenerationRequestInput({
       prompt: initialPrompt,
       inputMode:
         storedInputMode === "prompt" ||
@@ -1947,7 +2010,8 @@ export default function AiEditorPage() {
           : "prompt",
       referenceUrl: storedReferenceUrl,
       referenceHtml: storedReferenceHtml,
-    });
+      attachments,
+    }).effectivePrompt;
 
     if (autostart && autostartPrompt && !autostartRef.current) {
       autostartRef.current = true;
@@ -2108,14 +2172,42 @@ export default function AiEditorPage() {
     customPrompt?: string,
     forcedPreferences?: GenerationPreferences
   ) {
-    const finalPrompt = getEffectivePrompt({
+    const generationInput = getGenerationRequestInput({
       prompt: customPrompt ?? prompt,
       inputMode,
       referenceUrl,
       referenceHtml,
       attachments,
-    }).trim();
-    if (finalPrompt.length < 8) return;
+    });
+
+    const finalPrompt = generationInput.effectivePrompt;
+    const finalInputMode = generationInput.inputMode;
+    const finalReferenceUrl = generationInput.referenceUrl;
+    const finalReferenceHtml = generationInput.referenceHtml;
+    const finalAttachments = generationInput.attachments;
+
+    if (finalPrompt.length < 8) {
+      setError("Chybí zadání. Zadejte prompt nebo vložte validní URL / HTML / screenshot.");
+      return;
+    }
+
+    if (finalInputMode === "url" && !finalReferenceUrl) {
+      setError("V URL režimu vložte prosím validní URL včetně http:// nebo https://.");
+      return;
+    }
+
+    if (finalInputMode === "html" && !finalReferenceHtml.trim()) {
+      setError("V HTML režimu chybí referenční HTML.");
+      return;
+    }
+
+    if (
+      finalInputMode === "screenshot" &&
+      !finalAttachments.some((item) => item.kind === "screenshot")
+    ) {
+      setError("V režimu screenshot chybí nahraný screenshot.");
+      return;
+    }
 
     const effectivePreferences = forcedPreferences || generationPreferences;
 
@@ -2142,12 +2234,18 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: finalPrompt,
-          inputMode,
-          referenceUrl,
-          referenceHtml,
-          attachments,
-          generationPreferences: effectivePreferences,
-          landingPreferences: effectivePreferences,
+          inputMode: finalInputMode,
+          referenceUrl: finalReferenceUrl,
+          referenceHtml: finalReferenceHtml,
+          attachments: finalAttachments,
+          generationPreferences: {
+            ...effectivePreferences,
+            sourcePrompt: finalPrompt,
+          },
+          landingPreferences: {
+            ...effectivePreferences,
+            sourcePrompt: finalPrompt,
+          },
           chatHistory: getChatHistoryPayload(),
           brandLogo: uploadedLogo,
         }),
