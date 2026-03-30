@@ -295,7 +295,7 @@ function buildEnhancedPrompt(params: {
 
   const sourceModeLine =
     sourceMode === "url" && sourceUrl.trim()
-      ? `Jde o generování podle URL reference: ${sourceUrl.trim()}. Zachovej celkový dojem, hierarchii a kompozici, ale výsledek musí být čistý, vlastní a připravený pro nový brand.`
+      ? `Jde o generování podle URL reference: ${sourceUrl.trim()}. Tato URL je hlavní zdroj layoutu, hierarchie, kompozice a vizuální inspirace. Textové zadání ber jen jako doplněk.`
       : sourceMode === "html" && sourceHtml.trim()
       ? "Jde o generování nebo redesign podle vloženého HTML. Zachovej silné části struktury, ale vizuál i UX výrazně vylepši."
       : sourceMode === "screenshot"
@@ -474,15 +474,22 @@ export default function AiLandingPage() {
 
   const canContinue = useMemo(() => {
     if (sourceMode === "url") {
-      return prompt.trim().length >= 8 && sourceUrl.trim().length >= 8;
+      return sourceUrl.trim().length >= 8;
     }
 
     if (sourceMode === "html") {
-      return prompt.trim().length >= 8 || sourceHtml.trim().length >= 20;
+      return sourceHtml.trim().length >= 20 || prompt.trim().length >= 8;
+    }
+
+    if (sourceMode === "screenshot") {
+      return (
+        attachments.some((item) => item.kind === "screenshot") ||
+        prompt.trim().length >= 8
+      );
     }
 
     return prompt.trim().length >= 12;
-  }, [prompt, sourceMode, sourceUrl, sourceHtml]);
+  }, [prompt, sourceMode, sourceUrl, sourceHtml, attachments]);
 
   useEffect(() => {
     const shouldShowTyping =
@@ -680,9 +687,27 @@ export default function AiLandingPage() {
     setUiStylePreset("glass");
   }
 
+  function buildAutoPromptForSourceMode() {
+    if (sourceMode === "url" && sourceUrl.trim()) {
+      return `Vytvoř nový web podle této URL reference: ${sourceUrl.trim()}. URL je hlavní zdroj layoutu, hierarchie, kompozice a vizuálního směru. Výsledek má být co nejpodobnější strukturou a dojmem, ale s vlastním brandem, vlastním logem, vlastními obrázky a čistším prémiovým zpracováním.`;
+    }
+
+    if (sourceMode === "html" && sourceHtml.trim()) {
+      return "Vytvoř nový prémiový web podle dodaného HTML souboru. Zachovej nejsilnější strukturu a layout logiku, ale výrazně vylepši vizuál, spacing, typografii, CTA a celkový dojem.";
+    }
+
+    if (sourceMode === "screenshot") {
+      return "Vytvoř nový web podle dodaného screenshotu nebo vizuální reference. Zachovej co nejvíce layout, rytmus, kompozici a vizuální směr, ale výsledek udělej čistší, modernější a připravený pro nový brand.";
+    }
+
+    return prompt.trim();
+  }
+
   function startGenerating(customPrompt?: string) {
-    const finalPrompt = (customPrompt ?? prompt).trim();
-    if (!finalPrompt && sourceMode !== "html") return;
+    const manualPrompt = (customPrompt ?? prompt).trim();
+    const finalPrompt = manualPrompt || buildAutoPromptForSourceMode();
+
+    if (!finalPrompt.trim()) return;
 
     const landingPreferences = getLandingPreferences();
 
@@ -1019,7 +1044,15 @@ export default function AiLandingPage() {
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="relative z-[2] h-48 w-full resize-none rounded-[25px] border-0 bg-transparent px-5 py-5 text-[15px] text-white outline-none placeholder:text-transparent md:h-52 md:px-6 md:py-6 md:text-base"
-                    placeholder="Popište, co chcete vytvořit..."
+                    placeholder={
+                      sourceMode === "url"
+                        ? "Volitelně doplňte poznámku k URL, např. co zachovat nebo změnit…"
+                        : sourceMode === "screenshot"
+                        ? "Volitelně doplňte, co má návrh zachovat nebo vylepšit…"
+                        : sourceMode === "html"
+                        ? "Volitelně doplňte požadovaný redesign nebo změny…"
+                        : "Popište, co chcete vytvořit..."
+                    }
                   />
 
                   <div className="absolute bottom-4 left-4 z-[3] flex flex-wrap items-center gap-2 md:left-5">
