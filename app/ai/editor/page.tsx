@@ -607,6 +607,7 @@ function getEffectivePrompt(params: {
   inputMode: InputMode;
   referenceUrl?: string;
   referenceHtml?: string;
+  attachments?: AttachmentItem[];
 }) {
   const prompt = (params.prompt || "").trim();
   const referenceUrl = (params.referenceUrl || "").trim();
@@ -631,7 +632,10 @@ function getEffectivePrompt(params: {
     ].join(" ");
   }
 
-  if (params.inputMode === "screenshot") {
+  if (
+    params.inputMode === "screenshot" ||
+    (params.attachments || []).some((item) => item.kind === "screenshot")
+  ) {
     return "Vytvoř nový web podle přiložené screenshot reference. Screenshot je hlavní zdroj layoutu, hierarchie a vizuálního směru.";
   }
 
