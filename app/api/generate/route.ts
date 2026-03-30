@@ -569,65 +569,168 @@ async function captureReferenceScreenshot(
   referenceUrl: string,
   requestId: string
 ): Promise<string | null> {
+
   const startedAt = nowMs();
   const safeUrl = sanitizeReferenceUrl(referenceUrl);
+
   if (!safeUrl) return null;
 
   try {
+
     const executablePath = await chromium.executablePath();
 
     const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: { width: 1440, height: 2200, deviceScaleFactor: 1 },
+
+      args: [
+        ...chromium.args,
+
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process"
+      ],
+
+      defaultViewport: {
+
+        width: 1720,
+        height: 2600,
+        deviceScaleFactor: 1
+
+      },
+
       executablePath,
-      headless: true,
+
+      headless: true
+
     });
 
     try {
+
       const page = await browser.newPage();
 
+      await page.setViewport({
+
+        width: 1720,
+        height: 2600
+
+      });
+
       await page.goto(safeUrl, {
+
         waitUntil: "networkidle2",
-        timeout: 45000,
+        timeout: 60000
+
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // wait fonts
+      await page.evaluate(async () => {
 
-      const buffer = await page.screenshot({
-        type: "jpeg",
-        quality: 78,
-        fullPage: false,
+        if (document.fonts) {
+
+          await document.fonts.ready;
+
+        }
+
       });
 
-      const normalizedBuffer = Buffer.isBuffer(buffer)
-        ? buffer
-        : Buffer.from(buffer);
+      // trigger lazy load
+      await page.evaluate(() => {
 
-      const dataUrl = `data:image/jpeg;base64,${normalizedBuffer.toString(
-        "base64"
-      )}`;
+        window.scrollBy(0, 400);
 
-      logStep(requestId, "capture-reference-screenshot", startedAt, {
-        referenceUrl: safeUrl,
-        screenshotBytes: normalizedBuffer.length,
+      });
+
+      await new Promise(r => setTimeout(r, 800));
+
+      await page.evaluate(() => {
+
+        window.scrollTo(0, 0);
+
+      });
+
+      // animation settle
+      await new Promise(r => setTimeout(r, 2000));
+
+      let buffer: Buffer | null = null;
+
+      // retry capture
+      for (let i = 0; i < 3; i++) {
+
+        try {
+
+          const shot = await page.screenshot({
+
+            type: "jpeg",
+            quality: 82,
+            fullPage: false
+
+          });
+
+          buffer = Buffer.isBuffer(shot)
+            ? shot
+            : Buffer.from(shot);
+
+          if (buffer.length > 50000) {
+
+            break;
+
+          }
+
+        } catch {}
+
+        await new Promise(r => setTimeout(r, 800));
+
+      }
+
+      if (!buffer) {
+
+        throw new Error("Screenshot capture failed");
+
+      }
+
+      const dataUrl =
+        `data:image/jpeg;base64,${buffer.toString("base64")}`;
+
+      logStep(requestId,"capture-reference-screenshot",startedAt,{
+
+        referenceUrl:safeUrl,
+        screenshotBytes:buffer.length
+
       });
 
       return dataUrl;
-    } finally {
-      await browser.close();
+
     }
-  } catch (error: any) {
-    console.error(
-      JSON.stringify({
-        scope: "api-generate",
-        requestId,
-        step: "capture-reference-screenshot-error",
-        referenceUrl: safeUrl,
-        error: error?.message || "Screenshot capture failed",
-      })
-    );
-    return null;
+    finally {
+
+      await browser.close();
+
+    }
+
   }
+  catch(error:any){
+
+    console.error(
+
+      JSON.stringify({
+
+        scope:"api-generate",
+        requestId,
+        step:"capture-reference-screenshot-error",
+        referenceUrl:safeUrl,
+        error:error?.message
+
+      })
+
+    );
+
+    return null;
+
+  }
+
 }
 
 function detectSectionSequence(summary: ReferenceSiteSummary): string[] {
