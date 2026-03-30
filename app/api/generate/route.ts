@@ -686,7 +686,9 @@ function getIndustryDefaults(industry: IndustryKind) {
 
 function resolveCreativeDirection(
   prompt: string,
-  prefs: GenerationPreferences
+  prefs: GenerationPreferences,
+  fingerprint?: ReferenceLayoutFingerprint | null,
+  screenshotAnalysis?: ReferenceScreenshotAnalysis | null
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
