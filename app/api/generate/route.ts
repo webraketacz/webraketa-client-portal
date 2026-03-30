@@ -982,18 +982,12 @@ function renderInputModeContext(params: {
 
   if (params.inputMode === "url" && params.referenceUrl?.trim()) {
     lines.push(`REFERENCE URL: ${params.referenceUrl.trim()}`);
-    lines.push(
-      "The user wants strong inspiration from the supplied URL. Match structure and hierarchy where useful, but do not blindly clone."
-    );
   }
 
   if (params.inputMode === "html" && params.referenceHtml?.trim()) {
     lines.push("REFERENCE HTML PROVIDED: yes");
     lines.push(
       `REFERENCE HTML SNIPPET:\n${params.referenceHtml.trim().slice(0, 6000)}`
-    );
-    lines.push(
-      "Use the supplied HTML as structural inspiration, but return a cleaner and more premium result."
     );
   }
 
@@ -1002,9 +996,6 @@ function renderInputModeContext(params: {
     params.attachments.some((item) => item.kind === "screenshot")
   ) {
     lines.push("SCREENSHOT ATTACHMENTS PROVIDED: yes");
-    lines.push(
-      "The user likely wants the layout vibe, visual hierarchy or composition to be inspired by screenshots."
-    );
   }
 
   if (params.attachments.length > 0) {
@@ -1014,6 +1005,33 @@ function renderInputModeContext(params: {
         .join(", ")}`
     );
   }
+
+  lines.push(`
+PRIMARY SOURCE PRIORITY:
+- if input mode is "url", the reference URL is the PRIMARY source of layout and visual direction
+- if input mode is "html", the provided HTML is the PRIMARY source of structure and section logic
+- if input mode is "screenshot", screenshot attachments are the PRIMARY source of visual composition
+- if input mode is "prompt", the text prompt is the PRIMARY source
+
+URL MODE RULES:
+- when input mode is "url", do NOT generate a generic website based mainly on the text prompt
+- use the text prompt only as a SECONDARY instruction layer
+- recreate a similar layout logic, section rhythm, spacing, hierarchy, density, navigation style, hero composition and overall art direction inspired by the reference URL
+- do NOT copy the original brand, logo, company name, product names or exact text
+- do NOT clone the original website literally
+- create a fresh branded version with the user's own content, logo and direction
+
+HTML MODE RULES:
+- use the provided HTML as the main structural reference
+- preserve the strongest layout logic and section ordering where sensible
+- improve quality, spacing, consistency and premium feel
+- do not simply echo raw HTML patterns without refinement
+
+SCREENSHOT MODE RULES:
+- use screenshots as the main source of composition, mood and hierarchy
+- infer structure from the screenshot
+- reproduce the visual direction in a cleaner and more production-ready way
+`);
 
   return lines.join("\n");
 }
@@ -1153,7 +1171,7 @@ HERO STABILITY RULES:
 - hero content must never collide with navigation
 - hero must have a predictable content wrapper
 - the first screen must feel complete and intentional
-- avoid giant accidental empty black gaps
+- avoid giant accidental empty gaps
 
 TYPOGRAPHY RULES:
 - enforce clear H1 / H2 / H3 hierarchy
@@ -1384,7 +1402,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     logStep(requestId, "parse-body", bodyStartedAt);
 
-    const prompt =
+    const rawPrompt =
       typeof body?.prompt === "string" ? body.prompt.trim().slice(0, 6000) : "";
     const buildType =
       typeof body?.buildType === "string" ? body.buildType : "";
@@ -1420,14 +1438,42 @@ export async function POST(req: Request) {
 
     const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
-    if (!prompt || prompt.length < 8) {
+    const hasPrompt = rawPrompt.length >= 8;
+    const hasUrlReference = inputMode === "url" && referenceUrl.length > 0;
+    const hasHtmlReference =
+      inputMode === "html" && referenceHtml.trim().length > 0;
+    const hasScreenshotReference =
+      inputMode === "screenshot" &&
+      attachments.some((item) => item.kind === "screenshot");
+
+    if (
+      !hasPrompt &&
+      !hasUrlReference &&
+      !hasHtmlReference &&
+      !hasScreenshotReference
+    ) {
       return Response.json(
-        { error: "Missing or invalid prompt" },
+        {
+          error: "Chybí zadání. Zadejte prompt nebo referenční vstup.",
+        },
         { status: 400 }
       );
     }
 
-    const resolvedPreferences = resolveCreativeDirection(prompt, rawPreferences);
+    const effectivePrompt =
+      rawPrompt ||
+      (inputMode === "url" && referenceUrl
+        ? `Vytvoř nový web podle reference URL ${referenceUrl}.`
+        : inputMode === "html" && referenceHtml.trim()
+        ? "Vytvoř nový web podle dodaného HTML souboru."
+        : inputMode === "screenshot"
+        ? "Vytvoř nový web podle dodaného screenshotu."
+        : "");
+
+    const resolvedPreferences = resolveCreativeDirection(
+      effectivePrompt,
+      rawPreferences
+    );
 
     console.log(
       JSON.stringify({
@@ -1435,7 +1481,7 @@ export async function POST(req: Request) {
         requestId,
         step: "start",
         model: WEB_MODEL,
-        promptLength: prompt.length,
+        promptLength: effectivePrompt.length,
         chatHistoryCount: chatHistory.length,
         inputMode,
         referenceUrl: referenceUrl || null,
@@ -1453,7 +1499,7 @@ export async function POST(req: Request) {
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
       user: renderPrompt({
-        prompt,
+        prompt: effectivePrompt,
         buildType,
         model,
         chatHistory,
@@ -1464,7 +1510,7 @@ export async function POST(req: Request) {
         referenceHtml,
         attachments,
       }),
-      schemaName: "website_bundle_creative_setup_v12",
+      schemaName: "website_bundle_creative_setup_v13",
       schema: generatedWebsiteSchema,
       requestId,
     });
