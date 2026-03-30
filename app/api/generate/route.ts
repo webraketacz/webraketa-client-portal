@@ -574,28 +574,10 @@ async function captureReferenceScreenshot(
   if (!safeUrl) return null;
 
   try {
-    const executablePath = await chromium.executablePath(
-  process.env.CHROMIUM_PATH
-);
+    const executablePath = await chromium.executablePath();
 
     const browser = await puppeteer.launch({
-      args: [
-        ...chromium.args,
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--hide-scrollbars",
-        "--disable-web-security",
-      ],
-      defaultViewport: {
-        width: 1720,
-        height: 2600,
-        deviceScaleFactor: 1,
-      },
+      args: chromium.args,
       executablePath,
       headless: true,
     });
@@ -609,57 +591,46 @@ async function captureReferenceScreenshot(
         deviceScaleFactor: 1,
       });
 
+      await page.setUserAgent(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0)"
+      );
+
       await page.goto(safeUrl, {
         waitUntil: "networkidle2",
         timeout: 60000,
       });
 
       await page.evaluate(async () => {
-        // @ts-ignore
-        if (document.fonts) await document.fonts.ready;
+        if (document.fonts) {
+          await document.fonts.ready;
+        }
       });
 
-      await new Promise((r) => setTimeout(r, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 2500));
 
-      await page.evaluate(() => {
-        window.scrollTo(0, 500);
-      });
-
-      await new Promise((r) => setTimeout(r, 900));
-
-      await page.evaluate(() => {
+      await page.evaluate(async () => {
+        window.scrollTo(0, 600);
+        await new Promise((resolve) => setTimeout(resolve, 700));
         window.scrollTo(0, 0);
       });
 
-      await new Promise((r) => setTimeout(r, 2000));
+      const buffer = await page.screenshot({
+        type: "jpeg",
+        quality: 90,
+        fullPage: false,
+      });
 
-      let buffer: Buffer | null = null;
+      const normalizedBuffer = Buffer.isBuffer(buffer)
+        ? buffer
+        : Buffer.from(buffer);
 
-      for (let i = 0; i < 3; i++) {
-        try {
-          const shot = await page.screenshot({
-            type: "jpeg",
-            quality: 82,
-            fullPage: false,
-          });
-
-          buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
-
-          if (buffer.length > 50000) break;
-        } catch {}
-
-        await new Promise((r) => setTimeout(r, 900));
-      }
-
-      if (!buffer) {
-        throw new Error("Screenshot capture failed");
-      }
-
-      const dataUrl = `data:image/jpeg;base64,${buffer.toString("base64")}`;
+      const dataUrl = `data:image/jpeg;base64,${normalizedBuffer.toString(
+        "base64"
+      )}`;
 
       logStep(requestId, "capture-reference-screenshot", startedAt, {
         referenceUrl: safeUrl,
-        screenshotBytes: buffer.length,
+        screenshotBytes: normalizedBuffer.length,
       });
 
       return dataUrl;
