@@ -154,6 +154,22 @@ type GeneratedWebsiteBundle = {
   assetPlan: AssetPlanItem[];
 };
 
+type ReferenceSiteSummary = {
+  referenceUrl: string;
+  finalUrl: string;
+  title: string;
+  metaDescription: string;
+  headings: string[];
+  navLinks: string[];
+  ctas: string[];
+  firstParagraphs: string[];
+  sectionCount: number;
+  classHints: string[];
+  idHints: string[];
+  textSample: string;
+  htmlSnippet: string;
+};
+
 function nowMs() {
   return Date.now();
 }
@@ -260,6 +276,222 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
             : undefined,
       };
     });
+}
+
+function stripHtml(value: string) {
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniqStrings(items: string[], max = 12) {
+  const seen = new Set<string>();
+  const output: string[] = [];
+
+  for (const item of items) {
+    const value = item.trim();
+    const key = value.toLowerCase();
+
+    if (!value || seen.has(key)) continue;
+    seen.add(key);
+    output.push(value);
+
+    if (output.length >= max) break;
+  }
+
+  return output;
+}
+
+function sanitizeReferenceUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+function matchTexts(html: string, regex: RegExp, max = 12) {
+  const results: string[] = [];
+
+  for (const match of html.matchAll(regex)) {
+    const text = stripHtml(match[1] || "");
+    if (!text) continue;
+    results.push(text);
+    if (results.length >= max) break;
+  }
+
+  return uniqStrings(results, max);
+}
+
+function extractAttributeValues(html: string, attribute: "class" | "id", max = 16) {
+  const regex = new RegExp(`${attribute}=["']([^"']+)["']`, "gi");
+  const results: string[] = [];
+
+  for (const match of html.matchAll(regex)) {
+    const raw = (match[1] || "").trim();
+    if (!raw) continue;
+
+    const parts = raw
+      .split(/\s+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    for (const part of parts) {
+      if (part.length < 3) continue;
+      if (/^(js-|is-|has-|aria-|sr-|swiper|slick|embla)/i.test(part)) continue;
+      results.push(part);
+      if (results.length >= max) {
+        return uniqStrings(results, max);
+      }
+    }
+  }
+
+  return uniqStrings(results, max);
+}
+
+async function fetchReferenceSiteSummary(
+  referenceUrl: string,
+  requestId: string
+): Promise<ReferenceSiteSummary | null> {
+  const startedAt = nowMs();
+  const safeUrl = sanitizeReferenceUrl(referenceUrl);
+
+  if (!safeUrl) return null;
+
+  try {
+    const res = await fetch(safeUrl, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; ZyviaReferenceBot/1.0; +https://example.com/bot)",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "cs,en;q=0.9",
+        "Cache-Control": "no-cache",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Reference URL returned ${res.status}`);
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("text/html")) {
+      throw new Error(`Reference URL is not HTML (${contentType || "unknown"})`);
+    }
+
+    const html = await res.text();
+    const compactHtml = html.replace(/\s+/g, " ");
+    const textOnly = stripHtml(html);
+
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const metaDescMatch =
+      html.match(
+        /<meta[^>]+name=["']description["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i
+      ) ||
+      html.match(
+        /<meta[^>]+content=["']([\s\S]*?)["'][^>]+name=["']description["'][^>]*>/i
+      );
+
+    const headings = matchTexts(html, /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi, 14);
+
+    const navLinks = uniqStrings(
+      [
+        ...matchTexts(
+          html,
+          /<(?:nav[\s\S]*?)?<a[^>]*href=["'][^"']+["'][^>]*>([\s\S]*?)<\/a>/gi,
+          24
+        ),
+        ...matchTexts(
+          html,
+          /<header[\s\S]*?<a[^>]*href=["'][^"']+["'][^>]*>([\s\S]*?)<\/a>/gi,
+          24
+        ),
+      ].filter((item) => item.length >= 2 && item.length <= 30),
+      12
+    );
+
+    const ctas = uniqStrings(
+      [
+        ...matchTexts(
+          html,
+          /<(?:a|button)[^>]*>([\s\S]*?)<\/(?:a|button)>/gi,
+          40
+        ),
+      ].filter((item) => item.length >= 2 && item.length <= 42),
+      16
+    );
+
+    const firstParagraphs = matchTexts(html, /<p[^>]*>([\s\S]*?)<\/p>/gi, 8)
+      .filter((item) => item.length >= 40)
+      .slice(0, 5);
+
+    const sectionCount =
+      (html.match(/<section\b/gi) || []).length ||
+      (html.match(
+        /<(div|section)[^>]+(?:hero|section|container|wrapper|grid|feature|content)/gi
+      ) || []).length;
+
+    const classHints = extractAttributeValues(html, "class", 18);
+    const idHints = extractAttributeValues(html, "id", 12);
+
+    const summary: ReferenceSiteSummary = {
+      referenceUrl: safeUrl,
+      finalUrl: res.url || safeUrl,
+      title: stripHtml(titleMatch?.[1] || ""),
+      metaDescription: stripHtml(metaDescMatch?.[1] || ""),
+      headings,
+      navLinks,
+      ctas,
+      firstParagraphs,
+      sectionCount,
+      classHints,
+      idHints,
+      textSample: textOnly.slice(0, 2500),
+      htmlSnippet: compactHtml.slice(0, 18000),
+    };
+
+    logStep(requestId, "fetch-reference-summary", startedAt, {
+      referenceUrl: safeUrl,
+      finalUrl: summary.finalUrl,
+      titleLength: summary.title.length,
+      headingCount: summary.headings.length,
+      navCount: summary.navLinks.length,
+      ctaCount: summary.ctas.length,
+      sectionCount: summary.sectionCount,
+    });
+
+    return summary;
+  } catch (error: any) {
+    console.error(
+      JSON.stringify({
+        scope: "api-generate",
+        requestId,
+        step: "fetch-reference-summary-error",
+        referenceUrl: safeUrl,
+        error: error?.message || "Unknown reference fetch error",
+      })
+    );
+
+    return null;
+  }
 }
 
 function inferIndustryKind(prompt: string): IndustryKind {
@@ -970,10 +1202,48 @@ function formatChatHistory(history: ChatHistoryItem[]) {
     .join("\n");
 }
 
+function renderReferenceSummary(summary?: ReferenceSiteSummary | null) {
+  if (!summary) {
+    return `
+REFERENCE SITE ANALYSIS:
+- unavailable
+- if URL fetch fails, use prompt only as a fallback source`;
+  }
+
+  return `
+REFERENCE SITE ANALYSIS:
+- Requested URL: ${summary.referenceUrl}
+- Final URL after redirects: ${summary.finalUrl}
+- Title: ${summary.title || "n/a"}
+- Meta description: ${summary.metaDescription || "n/a"}
+- Main headings: ${summary.headings.length ? summary.headings.join(" | ") : "n/a"}
+- Navigation labels: ${summary.navLinks.length ? summary.navLinks.join(" | ") : "n/a"}
+- CTA labels: ${summary.ctas.length ? summary.ctas.join(" | ") : "n/a"}
+- First paragraphs: ${
+    summary.firstParagraphs.length ? summary.firstParagraphs.join(" | ") : "n/a"
+  }
+- Estimated section count: ${summary.sectionCount || 0}
+- CSS class hints: ${summary.classHints.length ? summary.classHints.join(", ") : "n/a"}
+- ID hints: ${summary.idHints.length ? summary.idHints.join(", ") : "n/a"}
+- Text sample:
+${summary.textSample || "n/a"}
+
+REFERENCE REBUILD RULES:
+- the reference site analysis is the PRIMARY layout source
+- rebuild a website that is structurally and visually close to the reference
+- preserve the hero logic, navigation logic, CTA placement, section rhythm, spacing density and composition
+- preserve the approximate section ordering when useful
+- preserve the overall visual energy and dominant motif if present
+- do NOT collapse into a generic industry template
+- do NOT copy the original brand, company name, logo or exact copy
+- create a fresh branded website inspired by the reference structure`;
+}
+
 function renderInputModeContext(params: {
   inputMode: InputMode;
   referenceUrl?: string;
   referenceHtml?: string;
+  referenceSummary?: ReferenceSiteSummary | null;
   attachments: AttachmentInput[];
 }) {
   const lines: string[] = [];
@@ -1006,9 +1276,13 @@ function renderInputModeContext(params: {
     );
   }
 
+  if (params.inputMode === "url") {
+    lines.push(renderReferenceSummary(params.referenceSummary));
+  }
+
   lines.push(`
 PRIMARY SOURCE PRIORITY:
-- if input mode is "url", the reference URL is the PRIMARY source of layout and visual direction
+- if input mode is "url", the fetched and analyzed reference URL is the PRIMARY source of layout and visual direction
 - if input mode is "html", the provided HTML is the PRIMARY source of structure and section logic
 - if input mode is "screenshot", screenshot attachments are the PRIMARY source of visual composition
 - if input mode is "prompt", the text prompt is the PRIMARY source
@@ -1016,7 +1290,8 @@ PRIMARY SOURCE PRIORITY:
 URL MODE RULES:
 - when input mode is "url", do NOT generate a generic website based mainly on the text prompt
 - use the text prompt only as a SECONDARY instruction layer
-- recreate a similar layout logic, section rhythm, spacing, hierarchy, density, navigation style, hero composition and overall art direction inspired by the reference URL
+- rebuild from the fetched reference analysis first
+- preserve section hierarchy, spacing rhythm, visual density, hero composition, navigation style and CTA placement
 - do NOT copy the original brand, logo, company name, product names or exact text
 - do NOT clone the original website literally
 - create a fresh branded version with the user's own content, logo and direction
@@ -1046,6 +1321,7 @@ function renderPrompt(params: {
   inputMode: InputMode;
   referenceUrl?: string;
   referenceHtml?: string;
+  referenceSummary?: ReferenceSiteSummary | null;
   attachments: AttachmentInput[];
 }) {
   return `
@@ -1128,6 +1404,7 @@ ${renderInputModeContext({
   inputMode: params.inputMode,
   referenceUrl: params.referenceUrl,
   referenceHtml: params.referenceHtml,
+  referenceSummary: params.referenceSummary,
   attachments: params.attachments,
 })}
 
@@ -1137,6 +1414,15 @@ HARD TECHNICAL LAYOUT CONSTRAINTS:
 - avoid fragile absolute positioning for primary readable copy
 - every section must remain visually stable at desktop, tablet and mobile
 - no section may look unfinished when content length changes moderately
+
+MANDATORY SAFE CONTAINER RULES:
+- all main content must sit inside a max-width container
+- desktop content width target: width: min(1200px, calc(100% - 48px))
+- tablet content width target: width: min(1200px, calc(100% - 32px))
+- mobile content width target: width: calc(100% - 24px)
+- no primary text block may sit flush against the viewport edge
+- no meaningful content may be edge-to-edge without gutters unless intentionally decorative
+- every hero and section must have protected horizontal gutters
 
 NAV HEIGHT RULES:
 - navigation should usually stay within min-height: 72px to max-height: 112px on desktop
@@ -1172,18 +1458,26 @@ HERO STABILITY RULES:
 - hero must have a predictable content wrapper
 - the first screen must feel complete and intentional
 - avoid giant accidental empty gaps
+- hero text and CTA group must live inside a bounded wrapper with explicit max-width
+- if hero uses background media, foreground copy must still remain readable and padded
 
 TYPOGRAPHY RULES:
 - enforce clear H1 / H2 / H3 hierarchy
 - headings must not always use extreme weight
 - default body copy should usually live around weight 400 to 500
 - display headlines may be strong, but keep them refined
+- long text blocks must use bounded max-width for readability
 
 BUTTON AND CONTRAST RULES:
 - primary CTA must be clearly visible
 - navigation links and CTA button must not visually merge
 - if button style is gradient-glow, keep it elegant
 - if button style is solid-premium, prioritize clarity and conversion
+- CTA buttons must always have readable text contrast
+- never use dark text on dark CTA buttons
+- never use accent buttons whose label becomes unreadable
+- nav CTA text must remain readable in all states
+- hover states must not reduce readability
 
 MOBILE NAV RULES:
 - logo on the left, hamburger fully on the far right
@@ -1463,15 +1757,31 @@ export async function POST(req: Request) {
     const effectivePrompt =
       rawPrompt ||
       (inputMode === "url" && referenceUrl
-        ? `Vytvoř nový web podle reference URL ${referenceUrl}.`
+        ? [
+            `Vytvoř nový web podle této URL reference: ${referenceUrl}.`,
+            "URL je hlavní zdroj layoutu, hierarchie, kompozice a vizuálního směru.",
+            "Výsledek má být co nejpodobnější strukturou a dojmem, ale s vlastním brandem, vlastním obsahem a čistším prémiovým zpracováním.",
+            "Neudělej obecný generický web. Primárně se řiď poskytnutou URL referencí.",
+          ].join(" ")
         : inputMode === "html" && referenceHtml.trim()
         ? "Vytvoř nový web podle dodaného HTML souboru."
         : inputMode === "screenshot"
         ? "Vytvoř nový web podle dodaného screenshotu."
         : "");
 
+    const referenceSummary =
+      inputMode === "url" && referenceUrl
+        ? await fetchReferenceSiteSummary(referenceUrl, requestId)
+        : null;
+
+    const promptForDirection =
+      effectivePrompt +
+      (referenceSummary
+        ? ` ${referenceSummary.title} ${referenceSummary.headings.join(" ")} ${referenceSummary.navLinks.join(" ")}`
+        : "");
+
     const resolvedPreferences = resolveCreativeDirection(
-      effectivePrompt,
+      promptForDirection,
       rawPreferences
     );
 
@@ -1486,6 +1796,7 @@ export async function POST(req: Request) {
         inputMode,
         referenceUrl: referenceUrl || null,
         hasReferenceHtml: Boolean(referenceHtml),
+        hasReferenceSummary: Boolean(referenceSummary),
         attachmentCount: attachments.length,
         generationPreferences: resolvedPreferences,
         hasBrandLogo: Boolean(brandLogo),
@@ -1508,9 +1819,10 @@ export async function POST(req: Request) {
         inputMode,
         referenceUrl,
         referenceHtml,
+        referenceSummary,
         attachments,
       }),
-      schemaName: "website_bundle_creative_setup_v13",
+      schemaName: "website_bundle_creative_setup_v14",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -1558,6 +1870,7 @@ export async function POST(req: Request) {
       generationPreferences: resolvedPreferences,
       inputMode,
       referenceUrl,
+      referenceSummary,
     });
   } catch (e: any) {
     console.error(
