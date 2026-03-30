@@ -30,7 +30,14 @@ type BrandLogoAsset = {
   dataUrl: string;
 };
 
+type AttachmentInput = {
+  id?: string;
+  name?: string;
+  kind?: "screenshot" | "file";
+};
+
 type SpeedMode = "fast" | "balanced" | "premium";
+
 type LayoutPreference =
   | "auto"
   | "editorial"
@@ -67,6 +74,20 @@ type IconStyle =
   | "solid"
   | "custom";
 
+type ButtonStyle =
+  | "auto"
+  | "soft-pill"
+  | "glass"
+  | "solid-premium"
+  | "outline-elegant"
+  | "gradient-glow";
+
+type PromptEnhancerMode =
+  | "balanced"
+  | "conversion"
+  | "premium-brand"
+  | "wow-creative";
+
 type DesignReference =
   | "auto"
   | "fintech-neon"
@@ -80,6 +101,8 @@ type DesignReference =
   | "barber-premium"
   | "clean-automotive"
   | "service-trades";
+
+type InputMode = "prompt" | "url" | "screenshot" | "html";
 
 type IndustryKind =
   | "fintech"
@@ -116,6 +139,10 @@ type GenerationPreferences = {
   fontMood?: FontMood;
   iconStyle?: IconStyle;
   designReference?: DesignReference;
+  buttonStyle?: ButtonStyle;
+  promptEnhancerMode?: PromptEnhancerMode;
+  preferredPrimaryColor?: string;
+  preferredBackgroundColor?: string;
   contactItems?: string[];
   clientAnswers?: ClientAnswers;
 };
@@ -178,7 +205,7 @@ function sanitizeBrandLogoAsset(value: unknown): BrandLogoAsset | null {
     typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
 
   if (!dataUrl.startsWith("data:image/")) return null;
-  if (dataUrl.length > 4_000_000) return null;
+  if (dataUrl.length > 1_500_000) return null;
 
   return {
     name: name || "logo",
@@ -213,6 +240,25 @@ function makeDeterministicChoice<T>(input: string, items: T[]): T {
   }
 
   return items[hash % items.length];
+}
+
+function sanitizeAttachments(value: unknown): AttachmentInput[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(0, 8)
+    .filter((item) => item && typeof item === "object")
+    .map((item) => {
+      const candidate = item as AttachmentInput;
+      return {
+        id: typeof candidate.id === "string" ? candidate.id : undefined,
+        name: typeof candidate.name === "string" ? candidate.name : undefined,
+        kind:
+          candidate.kind === "screenshot" || candidate.kind === "file"
+            ? candidate.kind
+            : undefined,
+      };
+    });
 }
 
 function inferIndustryKind(prompt: string): IndustryKind {
@@ -320,12 +366,11 @@ function inferIndustryKind(prompt: string): IndustryKind {
   if (
     text.includes("restaurant") ||
     text.includes("restaurace") ||
-    text.includes("fine dining") ||
-    text.includes("degustac") ||
     text.includes("bistro") ||
     text.includes("cafe") ||
     text.includes("kavarna") ||
     text.includes("gastro") ||
+    text.includes("fine dining") ||
     text.includes("osteria")
   ) {
     return "restaurant";
@@ -630,8 +675,6 @@ function resolveCreativeDirection(
       "floating-reservation-panel",
       "hero-top-right-copy-over-image",
       "stacked-gallery-cover-hero",
-      "centered-editorial-hero-with-photo-band",
-      "immersive-dining-cover",
     ],
     product: [
       "product-hero-with-packshot",
@@ -701,7 +744,7 @@ function resolveCreativeDirection(
   return {
     industry,
     imageMode: industryDefaults.imageMode,
-    speedMode: prefs.speedMode || "balanced",
+    speedMode: prefs.speedMode || "premium",
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
         ? prefs.layoutPreference
@@ -723,6 +766,10 @@ function resolveCreativeDirection(
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
         : industryDefaults.designReference,
+    buttonStyle: prefs.buttonStyle || "auto",
+    promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
+    preferredPrimaryColor: prefs.preferredPrimaryColor?.trim() || "",
+    preferredBackgroundColor: prefs.preferredBackgroundColor?.trim() || "",
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
     clientAnswers: prefs.clientAnswers || {},
     layoutSeed,
@@ -773,7 +820,12 @@ REFERENCE FAMILY: LUXURY EDITORIAL
 - refined serif or contrast typography
 - strong image-led sections
 - asymmetry, generous spacing, layered cards and elegant separators
-- full-bleed interiors or architectural photography
+- for premium real estate or development projects, this may include:
+  - centered or split navigation with refined logo treatment
+  - huge elegant serif headlines
+  - airy white sections after the hero
+  - thin dividers, muted palette, restrained luxury
+  - full-bleed interiors or architectural photography
 `;
     case "product-commerce":
       return `
@@ -789,7 +841,6 @@ REFERENCE FAMILY: RESTAURANT EDITORIAL
 - immersive food photography
 - elegant dining mood
 - refined editorial typography
-- premium hospitality composition
 - reservation CTA, menu highlights, atmosphere and story
 - can include subtle map and visit section
 `;
@@ -831,20 +882,7 @@ REFERENCE FAMILY: AUTO
   }
 }
 
-function getIndustrySpecificRules(
-  industry: IndustryKind,
-  imageMode: string,
-  rawPrompt: string
-) {
-  const prompt = normalizeText(rawPrompt);
-  const wantsSaasStyleForRestaurant =
-    industry === "restaurant" &&
-    (prompt.includes("saas style") ||
-      prompt.includes("saas dashboard") ||
-      prompt.includes("dashboard styl") ||
-      prompt.includes("glass efekt") ||
-      prompt.includes("gradienty"));
-
+function getIndustrySpecificRules(industry: IndustryKind, imageMode: string) {
   switch (industry) {
     case "food-product":
       return `
@@ -863,31 +901,13 @@ INDUSTRY RULES: FOOD PRODUCT / SUGAR / PACKAGED GOODS
   - contact or order CTA
 `;
     case "restaurant":
-      return wantsSaasStyleForRestaurant
-        ? `
-INDUSTRY RULES: RESTAURANT WITH MODERN GLASS / DIGITAL LUXURY DIRECTION
-- this is STILL a premium restaurant website, not a startup SaaS landing page
-- hospitality and atmosphere remain primary
-- glass surfaces, gradients, glow and micro-interactions are allowed only as styling language
-- never turn the page into KPI cards, dashboards, fake analytics or fintech blocks
-- food / interior photography remains central
-- reservation CTA must be strong and obvious
-- required sections should feel relevant to fine dining:
-  - hero with strong atmosphere
-  - concept / story
-  - signature menu cards with prices
-  - gallery
-  - references or guest experience
-  - contact / reservation / footer
-- if using glass cards, they must frame hospitality content, not replace it
-`
-        : `
+      return `
 INDUSTRY RULES: RESTAURANT
 - food photography is central
 - reservation CTA should be clear
 - menu highlights, atmosphere, story, visit section and map make sense
 - avoid product dashboard style
-- for fine dining, the result should feel elegant, atmospheric, editorial and hospitality-first
+- for fine dining, prefer restraint, typography, editorial rhythm, dark warm palette or refined neutral luxury palette
 `;
     case "catering":
       return `
@@ -949,8 +969,7 @@ INDUSTRY RULES: REAL ESTATE / DEVELOPMENT PROJECT
 - premium editorial composition
 - large full-bleed property visuals are welcome
 - oversized elegant serif headlines are welcome
-- airy white sections with restrained palette are welcome
-- thin dividers, calm rhythm and strong premium spacing are welcome
+- airy sections with restrained palette are welcome
 - navigation may be centered, split around a logo, or refined and minimal
 - avoid generic corporate cards if a calmer premium editorial system is more fitting
 `;
@@ -964,6 +983,7 @@ INDUSTRY RULES: FINTECH
       return `
 INDUSTRY RULES: SAAS / SOFTWARE
 - dashboard / orchestration / interface-led design is appropriate
+- allow richer gradients, glows, animated borders, product UI cards, premium loading states and polished microinteractions
 `;
     default:
       return `
@@ -1117,9 +1137,61 @@ function formatChatHistory(history: ChatHistoryItem[]) {
   if (!history?.length) return "Žádná historie chatu.";
 
   return history
-    .slice(-8)
+    .slice(-4)
     .map((item, index) => `${index + 1}. [${item.role}] ${item.text}`)
     .join("\n");
+}
+
+function renderInputModeContext(params: {
+  inputMode: InputMode;
+  prompt: string;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments: AttachmentInput[];
+}) {
+  const lines: string[] = [];
+
+  lines.push(`INPUT MODE: ${params.inputMode}`);
+
+  if (params.inputMode === "url" && params.referenceUrl?.trim()) {
+    lines.push(`REFERENCE URL: ${params.referenceUrl.trim()}`);
+    lines.push(
+      "The user wants a redesign or strong inspiration from the supplied URL."
+    );
+    lines.push(
+      "Match the general structure, density, content hierarchy and premium feel where useful, but do not clone blindly."
+    );
+  }
+
+  if (params.inputMode === "html" && params.referenceHtml?.trim()) {
+    lines.push("REFERENCE HTML PROVIDED: yes");
+    lines.push(
+      `REFERENCE HTML SNIPPET:\n${params.referenceHtml.trim().slice(0, 6000)}`
+    );
+    lines.push(
+      "Use the supplied HTML as structural inspiration, but return a cleaner, more premium and improved result."
+    );
+  }
+
+  if (
+    params.inputMode === "screenshot" ||
+    params.attachments.some((item) => item.kind === "screenshot")
+  ) {
+    lines.push("SCREENSHOT ATTACHMENTS PROVIDED: yes");
+    lines.push(
+      "The user likely wants the layout vibe, visual hierarchy or composition to be inspired by screenshots."
+    );
+  }
+
+  if (params.attachments.length > 0) {
+    lines.push(
+      `ATTACHMENTS: ${params.attachments
+        .map((item) => `${item.kind || "file"}:${item.name || "unknown"}`)
+        .join(", ")}`
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function renderPrompt(params: {
@@ -1129,6 +1201,10 @@ function renderPrompt(params: {
   chatHistory?: ChatHistoryItem[];
   preferences: ReturnType<typeof resolveCreativeDirection>;
   brandLogo?: BrandLogoAsset | null;
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments: AttachmentInput[];
 }) {
   return `
 You are a world-class commercial web designer, art director and senior frontend developer.
@@ -1198,6 +1274,10 @@ SELECTED CREATIVE DIRECTION:
 - Font mood: ${params.preferences.fontMood}
 - Icon style: ${params.preferences.iconStyle}
 - Design reference: ${params.preferences.designReference}
+- Button style: ${params.preferences.buttonStyle}
+- Prompt enhancer mode: ${params.preferences.promptEnhancerMode}
+- Preferred primary color: ${params.preferences.preferredPrimaryColor || "auto"}
+- Preferred background color: ${params.preferences.preferredBackgroundColor || "auto"}
 - Layout seed: ${params.preferences.layoutSeed}
 - Contact items to show: ${
     params.preferences.contactItems.length
@@ -1209,9 +1289,17 @@ ${getDesignReferenceRecipe(params.preferences.designReference)}
 
 ${getIndustrySpecificRules(
     params.preferences.industry,
-    params.preferences.imageMode,
-    params.prompt
+    params.preferences.imageMode
   )}
+
+INPUT CONTEXT:
+${renderInputModeContext({
+  inputMode: params.inputMode,
+  prompt: params.prompt,
+  referenceUrl: params.referenceUrl,
+  referenceHtml: params.referenceHtml,
+  attachments: params.attachments,
+})}
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must be built with stable wrappers and predictable layout primitives
@@ -1242,9 +1330,6 @@ NAV HEIGHT RULES:
 - keep nav inner padding controlled and symmetrical
 - prevent giant vertical padding in navigation
 - menu links must align to the visual center of the nav row
-- sticky navigation must not overlap following sections without compensation
-- if nav is sticky, add correct top spacing / structural flow so the next section never starts underneath it
-- do not leave a giant empty dead zone below sticky nav
 
 LOGO FIT RULES:
 - uploaded logos must NEVER render at natural uncontrolled size
@@ -1284,14 +1369,6 @@ SPACING AND COMPOSITION RULES:
   - desktop: clamp(24px, 4vw, 56px)
   - tablet: clamp(20px, 5vw, 40px)
   - mobile: clamp(16px, 5vw, 24px)
-- if copy is anchored bottom-left, bottom-center or over media, wrap it in a padded container
-- if the user asks for text low in the hero, it must still have protected padding from the bottom and left edges
-- if you use a grid or bento layout, make it disciplined and visually aligned
-- do not let one card have 18px padding and another similar card 44px unless clearly intentional
-- use a visible spacing rhythm and repeat it consistently
-- icons, micro badges and card headers must never feel glued to edges
-- icons inside cards need their own safe zone and visible breathing room
-- content inside cards must never be vertically cramped
 
 OPTICAL ALIGNMENT RULES:
 - text may not be only mathematically centered; it must also feel optically centered
@@ -1301,9 +1378,6 @@ OPTICAL ALIGNMENT RULES:
   - text-align: center
   - max-width on the text block
   - margin-inline: auto
-- if a section uses left-aligned copy, use a clear column width instead of a loose floating text block
-- never let a headline look visually detached from its supporting paragraph
-- avoid awkward half-centered layouts where CTA row or paragraph is visually offset from the heading
 
 HERO STABILITY RULES:
 - hero sections must feel intentional and structurally stable
@@ -1325,8 +1399,8 @@ HERO STABILITY RULES:
   - ensure contrast is strong enough
 - if using KPI or floating cards, those cards must support the hero, not break it
 - hero section must not feel broken at first glance
-- the first meaningful hero content should appear without an excessive empty gap beneath navigation
-- avoid giant blank bands before the headline or media
+- avoid giant accidental black empty hero gaps above the first meaningful copy
+- the first screen must feel complete and intentional
 
 TYPOGRAPHY HIERARCHY RULES:
 - enforce a clear H1 / H2 / H3 / H4 hierarchy
@@ -1339,7 +1413,6 @@ TYPOGRAPHY HIERARCHY RULES:
 
 FONT VARIATION RULES:
 - create more visible font variety between projects
-- do not keep using the same 2 generic stacks for most outputs
 - use CSS variables for font stacks, for example --font-display and --font-body
 - choose CSS stacks that clearly differ by mood
 - headings must not always use extremely heavy weights
@@ -1347,16 +1420,6 @@ FONT VARIATION RULES:
 - default body copy should usually live around 400 to 500
 - secondary headings often work better at 500 to 700 instead of 800+
 - display headlines may be strong, but keep them refined and not always ultra-bold
-- vary font weight rhythm intentionally across hero, section titles, buttons and microcopy
-
-RADIUS SYSTEM RULES:
-- do NOT use the same radius everywhere by default
-- establish a radius system per design family:
-  - large hero panels / feature wrappers may use larger radius
-  - cards use medium radius
-  - pills / chips use full or small rounded radius
-  - tables and menus can use smaller cleaner radius where appropriate
-- keep the radius system coherent and repeated intentionally
 
 BUTTON AND CONTRAST RULES:
 - primary CTA must be highly visible against its background
@@ -1364,18 +1427,10 @@ BUTTON AND CONTRAST RULES:
 - if the menu text is light and subtle, the CTA must have stronger fill / outline / contrast
 - secondary buttons must still be readable
 - never create low-contrast CTA text against similarly colored fills
-
-MENU VARIATION RULES:
-- do not always use the same menu pattern
-- choose a menu style that fits the design family, for example:
-  - central floating navigation bar with rounded shell
-  - split navigation with logo left, menu centered, CTA right
-  - glass pill navigation over hero
-  - clean enterprise top bar with CTA anchored right
-  - editorial top navigation with lighter structure
-  - centered premium real-estate navigation with logo emphasis
-- menu must have balanced internal padding and a deliberate silhouette
-- hamburger must be visually clear and functional on mobile
+- match button treatment to the chosen Button style
+- if Button style is gradient-glow, use elegant glow not cheap neon
+- if Button style is glass, keep CTA readable and premium
+- if Button style is solid-premium, prioritize conversion and clarity
 
 MOBILE NAV RULES:
 - mobile navigation must be designed intentionally, not treated as an afterthought
@@ -1387,110 +1442,39 @@ MOBILE NAV RULES:
   - align-items: center
   - justify-content: space-between
   - gap: 12px to 20px
-- the logo wrapper should usually be flex: 0 1 auto and min-width: 0
 - the toggle wrapper should usually be flex: 0 0 auto and margin-left: auto
 - minimum tap target for the toggle is 44px by 44px
-- the toggle must preserve the style of the site, not look generic
 - use a proper animated hamburger-to-X transition
-- use three bars or an equally premium line construction
-- when open:
-  - bar 1 rotates into 45deg
-  - middle bar fades or scales out
-  - bar 3 rotates into -45deg
-- animate open/close smoothly with transform, opacity and timing that feels premium
 - add aria-expanded handling in JS
 - the mobile menu panel should open with a refined fade, slide or scale transition
-- desktop nav and mobile nav must both look resolved and production-ready
 
 BENTO / CARD SYSTEM RULES:
 - if using bento or feature cards, cards should look intentionally designed as one family
 - match border color, padding logic, heading scale, icon size and internal spacing
 - avoid one visually weak card next to one very dense card unless it is part of the intended layout rhythm
-
-BENTO COMPLETENESS RULES:
 - if a bento grid is used, it must feel complete and balanced
 - never leave the impression that one expected card is missing
 - do not create ragged empty holes unless they are clearly intentional and compositionally strong
-- use disciplined CSS grid areas or a very clear column/row system
-- if the layout suggests 4 cards, provide 4 cards
-- if the layout suggests 3 cards, balance them intentionally
-- avoid accidental asymmetry caused by content omission
-- cards in the same family should have similar baseline height logic
-- card headings, icon placements and body copy spacing must align across sibling cards
-- do not generate one lonely tiny card next to two large panels unless clearly premium and intentional
 
-CARD CONTENT RULES:
-- no card may feel unfinished
-- every feature / benefit / stat card needs:
-  - a visible internal padding system
-  - a clear heading
-  - readable body copy
-  - stable alignment
-- if icons are used, place them inside a bounded icon holder
-- card content must not stick to top-left corners without breathing room
-- cards must visually feel designed, not dumped
-
-LAYOUT SYSTEM RULES:
-- use the layout seed "${params.preferences.layoutSeed}" as a compositional guide
-- the layout seed is not decorative text; it is a hard directional clue for hero composition and section rhythm
-- examples of acceptable layout systems:
-  - centered hero + control panel below
-  - immersive full-bleed photo with padded bottom-left copy
-  - hero with framed window and floating stat cards
-  - bottom-anchored product copy with overlapping packshot
-  - layered narrative flow with alternating section directions
-  - asymmetrical luxury panel rhythm
-  - editorial cover layout with text overlay inside safe padded wrapper
-  - clean service hero with trust grid below
-  - real-estate project cover with huge serif title and airy sections after hero
-- do not flatten everything into the same rectangular rhythm
-- do not silently convert unusual hero requests into left-text/right-image fallback
-
-FONT DIRECTION RULES:
-- use CSS font stacks that visually suggest the chosen mood
-- geometric: clean modern sans
-- editorial: elegant serif headlines + neutral body
-- luxury: refined contrast display feeling
-- trustworthy: calm professional humanist feeling
-- tech: precise UI-driven modern feel
-- friendly: softer approachable tone
-
-ICON RULES:
-- create elegant inline SVG icons directly in the HTML where useful
-- icon style must match: ${params.preferences.iconStyle}
-- icons should feel custom and premium
-- use icons in benefits, trust points, process, stats or contact where meaningful
-
-ANIMATION RULES:
+ANIMATION AND WOW RULES:
 - use ${params.preferences.animationLevel} animation intensity
-- minimal: mainly hover and tiny transitions
-- subtle: tasteful reveal and CTA motion
-- rich: reveal effects, animated highlights, gradient movement, card motion
-- expressive: stronger motion, animated borders, layered glows, premium hero movement
-- keep animations performant and elegant
-- use IntersectionObserver for reveal effects when useful
-
-VISUAL DEVICE RULES:
-- use stronger decorative systems where appropriate:
-  - moving gradient orbs
-  - soft light columns / light beams
-  - grid overlays
-  - glass surfaces
-  - radial arcs
-  - orbital glow rings
-  - angled separators
-  - cinematic overlays
-  - floating UI cards
-  - premium bordered chips
-- not all at once; choose a coherent set for the selected family
-
-COPY RULES:
-- use Czech copy
-- hero headline must be short, premium and easy to scan
-- prefer roughly 3 to 8 words in the main hero headline
-- supporting text should stay concise
-- avoid lorem ipsum
-- make sections relevant to the business, not filler
+- animations must feel premium, not gimmicky
+- include more polished motion than before when fitting the industry
+- allowed motion ideas:
+  - gradient drift
+  - subtle glow pulse
+  - reveal on scroll
+  - card hover lift
+  - animated border shimmer
+  - loading skeleton shimmer
+  - staggered text reveal
+  - animated underline / highlight pass
+  - floating UI drift
+- for SaaS / AI / product sites, richer motion is welcome
+- for luxury / real estate / restaurant, motion should be more restrained, softer and more elegant
+- if prompt enhancer mode is wow-creative, push animation quality, composition and visual drama further
+- if prompt enhancer mode is conversion, prioritize clarity and conversion over decorative complexity
+- if prompt enhancer mode is premium-brand, prioritize polish, balance and premium consistency
 
 IMAGE RULES:
 - also return assetPlan with at most 4 realistic images
@@ -1499,16 +1483,7 @@ IMAGE RULES:
 - use image slots only where visually meaningful
 - queries must be concrete and in English
 - if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
-- if industry is restaurant or fine dining:
-  - at least one hero / atmosphere / interior / dish image must be used
-  - menu cards should not use irrelevant imagery like city skyline, snow road, random couple in boat, generic landscape, or unrelated lifestyle shot
-  - images must feel hospitality-relevant
-- if no image is needed, return an empty assetPlan array only for interface-led or text-led business types where that truly makes sense
-
-CONTACT RULES:
-- if the client provided direct contact details, use them exactly in contact and footer
-- if contact items were requested, reflect them in the contact section and footer
-- make the contact section useful, not placeholder-like
+- if input mode is url, screenshot or html and the structure suggests image-led sections, preserve that image-led rhythm
 
 MANDATORY CSS IMPLEMENTATION DETAILS:
 - define a global container utility in the CSS for the generated page, for example:
@@ -1543,118 +1518,14 @@ FINAL QA:
 - custom-feeling icons
 - richer motion and detail
 - disciplined spacing
-- coherent radius system
 - strong heading hierarchy
 - strong CTA contrast
-- polished bento and cards
-- short strong hero headline
-- varied hero composition, not repetitive left-text/right-image fallback
-- safe padding around all overlayed or edge-near text
-- more varied font stacks and more refined font-weight usage
-- mobile nav toggle fully right-aligned on small screens
-- hamburger animates into X and back cleanly
+- polished cards
 - navigation stays within controlled height
 - uploaded logo is always constrained by a logo shell
 - hero remains structurally stable
 - centered text must also feel optically centered
-- bento grids must feel complete with no accidental missing card impression
-`;
-}
-
-function refinePrompt(params: {
-  prompt: string;
-  chatHistory?: ChatHistoryItem[];
-  preferences: ReturnType<typeof resolveCreativeDirection>;
-  brandLogo?: BrandLogoAsset | null;
-  firstPass: GeneratedWebsiteBundle;
-}) {
-  return `
-You are a strict senior design QA engineer and frontend rescue specialist.
-
-Return ONLY a structured JSON object matching the schema.
-
-Your task:
-Repair and improve the generated website so it looks production-ready.
-Keep the same overall business, style direction and section intent, but fix structural and visual problems.
-
-IMPORTANT:
-- preserve the same site concept and same business type
-- improve layout quality, stability and relevance
-- you may rewrite html/css/js fully if needed
-- final output must still follow all original rules:
-  - html body markup only
-  - css complete
-  - js vanilla only
-  - semantic sections
-  - navigation section with data-section-id="navigation"
-  - footer section with data-section-id="footer"
-  - stable unique section ids
-  - working mobile nav
-  - valid assetPlan with max 4 items
-
-FOCUS ON FIXING THESE COMMON FAILURES:
-- giant empty blank space between navigation and hero
-- sticky nav overlapping following content
-- nav too tall
-- logo too large or unconstrained
-- hero text visually offset or not optically centered
-- unfinished hero with weak rhythm
-- layout that feels like content starts too low
-- random floating navigation visually detached from page flow
-- bento / card grid that looks incomplete or missing a card
-- irrelevant images for the industry
-- restaurant websites accidentally looking like SaaS dashboards instead of hospitality pages
-- menu cards using irrelevant photos
-- glass / gradient effects overpowering the actual business content
-- sections that feel broken on first scroll
-
-IMAGE RELEVANCE RULES:
-- restaurant / fine dining images must show dishes, interiors, dining atmosphere, service details or hospitality scenes
-- never use random landscape, city skyline, snowy road, generic lifestyle couple, or irrelevant stock image for menu or gallery cards
-- if a wrong image category was implied, fix the assetPlan queries too
-
-NAV / HERO CORRECTION RULES:
-- navigation must sit in a stable structural position
-- do not leave dead black space below nav
-- the first hero content should appear promptly after nav with intentional spacing
-- if sticky nav is used, ensure the next content is compensated properly
-- nav height must remain controlled
-- hero must feel like the real first section of the site, not pushed away
-
-RESTAURANT SANITY RULE:
-- if the project is a premium / fine dining restaurant, the final result must feel like hospitality luxury, atmosphere, cuisine and reservation
-- styling may be modern and glassy, but it must not read like fintech or startup software
-
-ORIGINAL PROMPT:
-${params.prompt}
-
-CREATIVE DIRECTION:
-- industry: ${params.preferences.industry}
-- layout preference: ${params.preferences.layoutPreference}
-- visual style: ${params.preferences.visualStyle}
-- animation level: ${params.preferences.animationLevel}
-- font mood: ${params.preferences.fontMood}
-- icon style: ${params.preferences.iconStyle}
-- design reference: ${params.preferences.designReference}
-- layout seed: ${params.preferences.layoutSeed}
-
-CHAT HISTORY:
-${formatChatHistory(params.chatHistory || [])}
-
-FIRST PASS HTML:
-${params.firstPass.html}
-
-FIRST PASS CSS:
-${params.firstPass.css}
-
-FIRST PASS JS:
-${params.firstPass.js}
-
-FIRST PASS ASSET PLAN:
-${JSON.stringify(params.firstPass.assetPlan, null, 2)}
-
-FINAL REQUIREMENT:
-Return a corrected, more stable, more relevant, more polished version.
+- first screen must not feel broken or empty
 `;
 }
 
@@ -1667,31 +1538,49 @@ export async function POST(req: Request) {
     const body = await req.json();
     logStep(requestId, "parse-body", bodyStartedAt);
 
-    const prompt = typeof body?.prompt === "string" ? body.prompt : "";
+    const prompt =
+      typeof body?.prompt === "string" ? body.prompt.trim().slice(0, 6000) : "";
     const buildType =
       typeof body?.buildType === "string" ? body.buildType : "";
     const model = typeof body?.model === "string" ? body.model : "";
+    const inputMode: InputMode =
+      body?.inputMode === "url" ||
+      body?.inputMode === "screenshot" ||
+      body?.inputMode === "html"
+        ? body.inputMode
+        : "prompt";
+
+    const referenceUrl =
+      typeof body?.referenceUrl === "string" ? body.referenceUrl.trim() : "";
+    const referenceHtml =
+      typeof body?.referenceHtml === "string"
+        ? body.referenceHtml.trim().slice(0, 12000)
+        : "";
+
+    const attachments = sanitizeAttachments(body?.attachments);
+
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
-    const generationPreferences =
+
+    const rawPreferences =
       body?.generationPreferences &&
       typeof body.generationPreferences === "object"
         ? (body.generationPreferences as GenerationPreferences)
+        : body?.landingPreferences && typeof body.landingPreferences === "object"
+        ? (body.landingPreferences as GenerationPreferences)
         : {};
+
     const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
-    if (!prompt || prompt.trim().length < 8) {
+    if (!prompt || prompt.length < 8) {
       return Response.json(
         { error: "Missing or invalid prompt" },
         { status: 400 }
       );
     }
 
-    const resolvedPreferences = resolveCreativeDirection(
-      prompt,
-      generationPreferences
-    );
+    const resolvedPreferences = resolveCreativeDirection(prompt, rawPreferences);
 
     console.log(
       JSON.stringify({
@@ -1701,14 +1590,18 @@ export async function POST(req: Request) {
         model: WEB_MODEL,
         promptLength: prompt.length,
         chatHistoryCount: chatHistory.length,
+        inputMode,
+        referenceUrl: referenceUrl || null,
+        hasReferenceHtml: Boolean(referenceHtml),
+        attachmentCount: attachments.length,
         generationPreferences: resolvedPreferences,
         hasBrandLogo: Boolean(brandLogo),
       })
     );
 
-    const firstPassStartedAt = nowMs();
+    const renderStartedAt = nowMs();
 
-    const firstPassBundle = await createStructuredObject<GeneratedWebsiteBundle>({
+    const renderedBundle = await createStructuredObject<GeneratedWebsiteBundle>({
       model: WEB_MODEL,
       system:
         "You are an elite web designer and frontend engineer. Return only valid JSON.",
@@ -1719,48 +1612,25 @@ export async function POST(req: Request) {
         chatHistory,
         preferences: resolvedPreferences,
         brandLogo,
+        inputMode,
+        referenceUrl,
+        referenceHtml,
+        attachments,
       }),
-      schemaName: "website_bundle_layout_guardrails_v11",
+      schemaName: "website_bundle_creative_setup_v11",
       schema: generatedWebsiteSchema,
       requestId,
     });
 
-    logStep(requestId, "first-pass-finished", firstPassStartedAt, {
-      htmlLength: firstPassBundle?.html?.length || 0,
-      cssLength: firstPassBundle?.css?.length || 0,
-      jsLength: firstPassBundle?.js?.length || 0,
-      assetPlanCount: firstPassBundle?.assetPlan?.length || 0,
-    });
-
-    const safeFirstPass = sanitizeBundle(firstPassBundle);
-
-    const refineStartedAt = nowMs();
-
-    const refinedBundle = await createStructuredObject<GeneratedWebsiteBundle>({
-      model: WEB_MODEL,
-      system:
-        "You are a strict design QA engineer and frontend fixer. Return only valid JSON.",
-      user: refinePrompt({
-        prompt,
-        chatHistory,
-        preferences: resolvedPreferences,
-        brandLogo,
-        firstPass: safeFirstPass,
-      }),
-      schemaName: "website_bundle_refined_layout_guardrails_v11",
-      schema: generatedWebsiteSchema,
-      requestId,
-    });
-
-    logStep(requestId, "refine-pass-finished", refineStartedAt, {
-      htmlLength: refinedBundle?.html?.length || 0,
-      cssLength: refinedBundle?.css?.length || 0,
-      jsLength: refinedBundle?.js?.length || 0,
-      assetPlanCount: refinedBundle?.assetPlan?.length || 0,
+    logStep(requestId, "render-finished", renderStartedAt, {
+      htmlLength: renderedBundle?.html?.length || 0,
+      cssLength: renderedBundle?.css?.length || 0,
+      jsLength: renderedBundle?.js?.length || 0,
+      assetPlanCount: renderedBundle?.assetPlan?.length || 0,
     });
 
     const sanitizeStartedAt = nowMs();
-    const safeRendered = sanitizeBundle(refinedBundle);
+    const safeRendered = sanitizeBundle(renderedBundle);
 
     const htmlWithBrandLogo = injectBrandLogoMarkup(
       safeRendered.html,
@@ -1793,6 +1663,8 @@ export async function POST(req: Request) {
       modelUsed: WEB_MODEL,
       requestId,
       generationPreferences: resolvedPreferences,
+      inputMode,
+      referenceUrl,
     });
   } catch (e: any) {
     console.error(
