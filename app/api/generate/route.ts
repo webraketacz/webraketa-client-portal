@@ -170,6 +170,32 @@ type ReferenceSiteSummary = {
   htmlSnippet: string;
 };
 
+type ReferenceLayoutFingerprint = {
+  heroType:
+    | "full-bleed-centered"
+    | "split"
+    | "editorial-cover"
+    | "bottom-left-overlay"
+    | "grid"
+    | "unknown";
+  visualDominance:
+    | "vehicle"
+    | "architecture"
+    | "product"
+    | "food"
+    | "software-ui"
+    | "people-service"
+    | "mixed"
+    | "unknown";
+  sectionSequence: string[];
+  density: "airy" | "balanced" | "dense";
+  navStyle: "minimal" | "corporate" | "editorial" | "unknown";
+  likelyAccentStyle: "lime" | "cyan" | "gold" | "white" | "unknown";
+  shouldUseStatsBandAfterHero: boolean;
+  heroNeedsSingleDominantSubject: boolean;
+  shouldAvoidSplitHero: boolean;
+};
+
 function nowMs() {
   return Date.now();
 }
@@ -339,7 +365,11 @@ function matchTexts(html: string, regex: RegExp, max = 12) {
   return uniqStrings(results, max);
 }
 
-function extractAttributeValues(html: string, attribute: "class" | "id", max = 16) {
+function extractAttributeValues(
+  html: string,
+  attribute: "class" | "id",
+  max = 16
+) {
   const regex = new RegExp(`${attribute}=["']([^"']+)["']`, "gi");
   const results: string[] = [];
 
@@ -494,6 +524,242 @@ async function fetchReferenceSiteSummary(
   }
 }
 
+function detectSectionSequence(summary: ReferenceSiteSummary): string[] {
+  const haystack = normalizeText(
+    [
+      summary.title,
+      summary.metaDescription,
+      ...summary.headings,
+      ...summary.navLinks,
+      ...summary.ctas,
+      ...summary.firstParagraphs,
+      ...summary.classHints,
+      ...summary.idHints,
+      summary.textSample,
+    ].join(" ")
+  );
+
+  const items: string[] = ["hero"];
+
+  if (
+    /stat|cisla|čisla|results|vysledk|reference-count|metric|numbers|let zkusenosti|zakaznik/.test(
+      haystack
+    )
+  ) {
+    items.push("stats");
+  }
+
+  if (/sluzb|services|offer|nabidka|co delame|co umime/.test(haystack)) {
+    items.push("services");
+  }
+
+  if (/galer|gallery|realizac|portfolio|ukazk/.test(haystack)) {
+    items.push("gallery");
+  }
+
+  if (/proces|process|jak to funguje|how it works|postup/.test(haystack)) {
+    items.push("process");
+  }
+
+  if (/reference|testimonials|hodnocen|reviews/.test(haystack)) {
+    items.push("testimonials");
+  }
+
+  if (/faq|otazky|question/.test(haystack)) {
+    items.push("faq");
+  }
+
+  if (/kontakt|contact|mapa|adresa|rezerv/.test(haystack)) {
+    items.push("contact");
+  }
+
+  return uniqStrings(items, 8);
+}
+
+function inferReferenceLayoutFingerprint(
+  summary: ReferenceSiteSummary | null,
+  industry: IndustryKind
+): ReferenceLayoutFingerprint {
+  if (!summary) {
+    return {
+      heroType: "unknown",
+      visualDominance:
+        industry === "autoservis" || industry === "car-dealer"
+          ? "vehicle"
+          : industry === "real-estate"
+          ? "architecture"
+          : industry === "restaurant" || industry === "catering"
+          ? "food"
+          : industry === "food-product" || industry === "ecommerce-product"
+          ? "product"
+          : industry === "saas" || industry === "fintech"
+          ? "software-ui"
+          : "unknown",
+      sectionSequence: ["hero", "services", "contact"],
+      density: "balanced",
+      navStyle: "unknown",
+      likelyAccentStyle: "unknown",
+      shouldUseStatsBandAfterHero: false,
+      heroNeedsSingleDominantSubject: false,
+      shouldAvoidSplitHero: false,
+    };
+  }
+
+  const haystack = normalizeText(
+    [
+      summary.title,
+      summary.metaDescription,
+      ...summary.headings,
+      ...summary.navLinks,
+      ...summary.ctas,
+      ...summary.firstParagraphs,
+      ...summary.classHints,
+      ...summary.idHints,
+      summary.textSample,
+      summary.htmlSnippet.slice(0, 6000),
+    ].join(" ")
+  );
+
+  const vehicleScore =
+    (haystack.match(
+      /auto|car|vehicle|detailing|lak|interier|interi[eé]r|ceramic|keramick|vuz|vůz|myti|myt[ií]|servis/g
+    ) || []).length;
+  const architectureScore =
+    (haystack.match(
+      /rezidence|apartman|byt|villa|vila|developer|nemovit|projekt|interier|exterier|lokalita|architecture/g
+    ) || []).length;
+  const foodScore =
+    (haystack.match(
+      /menu|rezervace|jidlo|gastro|restaur|bistro|kava|káva|brunch|food|chef/g
+    ) || []).length;
+  const productScore =
+    (haystack.match(/produkt|product|shop|variant|baleni|pack|benefit/g) || [])
+      .length;
+  const softwareUiScore =
+    (haystack.match(
+      /dashboard|platform|analytics|workflow|api|software|saas|ui|orchestration|signal/g
+    ) || []).length;
+  const peopleServiceScore =
+    (haystack.match(
+      /tym|team|specialista|expert|specialist|owner|zakladatel|people|portrait/g
+    ) || []).length;
+
+  let visualDominance: ReferenceLayoutFingerprint["visualDominance"] = "mixed";
+  const maxScore = Math.max(
+    vehicleScore,
+    architectureScore,
+    foodScore,
+    productScore,
+    softwareUiScore,
+    peopleServiceScore
+  );
+
+  if (maxScore <= 1) {
+    visualDominance =
+      industry === "autoservis" || industry === "car-dealer"
+        ? "vehicle"
+        : industry === "real-estate"
+        ? "architecture"
+        : industry === "restaurant" || industry === "catering"
+        ? "food"
+        : industry === "food-product" || industry === "ecommerce-product"
+        ? "product"
+        : industry === "saas" || industry === "fintech"
+        ? "software-ui"
+        : "unknown";
+  } else if (maxScore === vehicleScore) {
+    visualDominance = "vehicle";
+  } else if (maxScore === architectureScore) {
+    visualDominance = "architecture";
+  } else if (maxScore === foodScore) {
+    visualDominance = "food";
+  } else if (maxScore === productScore) {
+    visualDominance = "product";
+  } else if (maxScore === softwareUiScore) {
+    visualDominance = "software-ui";
+  } else if (maxScore === peopleServiceScore) {
+    visualDominance = "people-service";
+  }
+
+  const likelyMinimalNav =
+    summary.navLinks.length > 0 && summary.navLinks.length <= 5;
+  const likelyEditorial =
+    /editorial|cover|story|gallery|full|hero|showcase/.test(haystack) ||
+    summary.headings.some((h) => h.length > 40);
+  const likelyCorporate =
+    summary.navLinks.length >= 5 || /services|faq|contact|process|about/.test(haystack);
+
+  const navStyle: ReferenceLayoutFingerprint["navStyle"] = likelyMinimalNav
+    ? "minimal"
+    : likelyEditorial
+    ? "editorial"
+    : likelyCorporate
+    ? "corporate"
+    : "unknown";
+
+  const density: ReferenceLayoutFingerprint["density"] =
+    summary.sectionCount >= 9 || summary.navLinks.length >= 6
+      ? "dense"
+      : summary.sectionCount <= 4
+      ? "airy"
+      : "balanced";
+
+  const likelyAccentStyle: ReferenceLayoutFingerprint["likelyAccentStyle"] =
+    /lime|green|yellow|rezervovat|book|book now|book a service/.test(haystack)
+      ? "lime"
+      : /cyan|teal|blue|sky|signal|glow/.test(haystack)
+      ? "cyan"
+      : /gold|luxury|champagne|beige/.test(haystack)
+      ? "gold"
+      : /white|clean|minimal/.test(haystack)
+      ? "white"
+      : "unknown";
+
+  const shouldUseStatsBandAfterHero =
+    detectSectionSequence(summary)[1] === "stats" ||
+    /let zkusenosti|zakaznik|vycistenych|vyčištěných|metric|numbers|results/.test(
+      haystack
+    );
+
+  const shouldAvoidSplitHero =
+    visualDominance === "vehicle" ||
+    visualDominance === "architecture" ||
+    navStyle === "minimal" ||
+    shouldUseStatsBandAfterHero;
+
+  let heroType: ReferenceLayoutFingerprint["heroType"] = "unknown";
+
+  if (
+    shouldAvoidSplitHero &&
+    (visualDominance === "vehicle" || visualDominance === "architecture")
+  ) {
+    heroType = "full-bleed-centered";
+  } else if (/bottom left|overlay|cover|immersive/.test(haystack)) {
+    heroType = "bottom-left-overlay";
+  } else if (likelyEditorial) {
+    heroType = "editorial-cover";
+  } else if (!shouldAvoidSplitHero && summary.sectionCount >= 5) {
+    heroType = "split";
+  } else if (summary.sectionCount >= 7) {
+    heroType = "grid";
+  }
+
+  return {
+    heroType,
+    visualDominance,
+    sectionSequence: detectSectionSequence(summary),
+    density,
+    navStyle,
+    likelyAccentStyle,
+    shouldUseStatsBandAfterHero,
+    heroNeedsSingleDominantSubject:
+      visualDominance === "vehicle" ||
+      visualDominance === "architecture" ||
+      visualDominance === "product",
+    shouldAvoidSplitHero,
+  };
+}
+
 function inferIndustryKind(prompt: string): IndustryKind {
   const text = normalizeText(prompt);
 
@@ -622,7 +888,8 @@ function inferIndustryKind(prompt: string): IndustryKind {
     text.includes("servis aut") ||
     text.includes("oprava aut") ||
     text.includes("mechanik") ||
-    text.includes("vymena oleje")
+    text.includes("vymena oleje") ||
+    text.includes("detailing")
   ) {
     return "autoservis";
   }
@@ -847,7 +1114,8 @@ function getIndustryDefaults(industry: IndustryKind) {
 
 function resolveCreativeDirection(
   prompt: string,
-  prefs: GenerationPreferences
+  prefs: GenerationPreferences,
+  fingerprint?: ReferenceLayoutFingerprint | null
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
@@ -911,7 +1179,15 @@ function resolveCreativeDirection(
       "bottom-anchored-product-copy",
       "hero-with-overlap-packshot-cards",
     ],
-    automotive: [
+    automotiveCover: [
+      "full-bleed-vehicle-cover",
+      "clean-automotive-hero-cover",
+      "centered-vehicle-showcase",
+      "bottom-left-copy-over-car-shot",
+      "angled-vehicle-cover-layout",
+      "wide-vehicle-silhouette-hero",
+    ],
+    automotiveSplit: [
       "clean-automotive-hero",
       "trust-led-service-grid",
       "split-vehicle-showcase",
@@ -959,7 +1235,9 @@ function resolveCreativeDirection(
       : industry === "food-product" || industry === "ecommerce-product"
       ? layoutSeedPool.product
       : industry === "autoservis" || industry === "car-dealer"
-      ? layoutSeedPool.automotive
+      ? fingerprint?.shouldAvoidSplitHero
+        ? layoutSeedPool.automotiveCover
+        : layoutSeedPool.automotiveSplit
       : industry === "zednik"
       ? layoutSeedPool.trades
       : industry === "luxury-service" || industry === "beauty"
@@ -1138,14 +1416,16 @@ INDUSTRY RULES: HAIR SALON
 INDUSTRY RULES: AUTOSERVIS
 - clean trustworthy company site
 - use garage, mechanic, service bay or car maintenance imagery
-- focus on služby, ceník, objednání, důvěra, kontakt`;
+- focus on služby, ceník, objednání, důvěra, kontakt
+- if the reference is vehicle-led, the hero must be vehicle-led too`;
 
     case "car-dealer":
       return `
 INDUSTRY RULES: CAR DEALER
 - clean corporate vehicle sales site
 - vehicle images are important
-- structure can include nabídka vozů, výhody, financování, reference, kontakt`;
+- structure can include nabídka vozů, výhody, financování, reference, kontakt
+- if the reference is vehicle-led, the hero must be vehicle-led too`;
 
     case "zednik":
       return `
@@ -1239,11 +1519,54 @@ REFERENCE REBUILD RULES:
 - create a fresh branded website inspired by the reference structure`;
 }
 
+function renderLayoutFingerprint(
+  fingerprint?: ReferenceLayoutFingerprint | null
+) {
+  if (!fingerprint) {
+    return `
+REFERENCE LAYOUT FINGERPRINT:
+- unavailable`;
+  }
+
+  return `
+REFERENCE LAYOUT FINGERPRINT:
+- Hero type: ${fingerprint.heroType}
+- Visual dominance: ${fingerprint.visualDominance}
+- Section sequence: ${
+    fingerprint.sectionSequence.length
+      ? fingerprint.sectionSequence.join(" -> ")
+      : "unknown"
+  }
+- Density: ${fingerprint.density}
+- Navigation style: ${fingerprint.navStyle}
+- Likely accent style: ${fingerprint.likelyAccentStyle}
+- Stats band after hero: ${fingerprint.shouldUseStatsBandAfterHero ? "yes" : "no"}
+- Single dominant hero subject: ${
+    fingerprint.heroNeedsSingleDominantSubject ? "yes" : "no"
+  }
+- Avoid split hero: ${fingerprint.shouldAvoidSplitHero ? "yes" : "no"}
+
+ANTI-GENERIC REBUILD RULES:
+- if the reference hero is full-bleed or cover-led, you MUST NOT switch to a left-text-right-image split hero
+- if the reference uses one dominant subject across the hero, keep one dominant subject across the hero
+- if the reference places stats directly under the hero, preserve a stats band immediately after the hero
+- do not replace a wide-cover composition with a boxed side-image composition
+- do not turn a minimal navigation reference into a heavy corporate nav
+
+ASSET CONSISTENCY RULES:
+- image queries must follow the detected industry AND the reference motif
+- do not use unrelated lifestyle imagery
+- for automotive references, never use coffee, restaurant, hotel, office or generic indoor imagery
+- for vehicle-led references, the main hero image slot must be vehicle-led
+- for architecture-led references, the main hero image slot must be architecture-led`;
+}
+
 function renderInputModeContext(params: {
   inputMode: InputMode;
   referenceUrl?: string;
   referenceHtml?: string;
   referenceSummary?: ReferenceSiteSummary | null;
+  layoutFingerprint?: ReferenceLayoutFingerprint | null;
   attachments: AttachmentInput[];
 }) {
   const lines: string[] = [];
@@ -1278,6 +1601,7 @@ function renderInputModeContext(params: {
 
   if (params.inputMode === "url") {
     lines.push(renderReferenceSummary(params.referenceSummary));
+    lines.push(renderLayoutFingerprint(params.layoutFingerprint));
   }
 
   lines.push(`
@@ -1322,8 +1646,14 @@ function renderPrompt(params: {
   referenceUrl?: string;
   referenceHtml?: string;
   referenceSummary?: ReferenceSiteSummary | null;
+  layoutFingerprint?: ReferenceLayoutFingerprint | null;
   attachments: AttachmentInput[];
 }) {
+  const isAutomotiveReference =
+    params.layoutFingerprint?.visualDominance === "vehicle" ||
+    params.preferences.industry === "autoservis" ||
+    params.preferences.industry === "car-dealer";
+
   return `
 You are a world-class commercial web designer, art director and senior frontend developer.
 
@@ -1405,6 +1735,7 @@ ${renderInputModeContext({
   referenceUrl: params.referenceUrl,
   referenceHtml: params.referenceHtml,
   referenceSummary: params.referenceSummary,
+  layoutFingerprint: params.layoutFingerprint,
   attachments: params.attachments,
 })}
 
@@ -1461,6 +1792,25 @@ HERO STABILITY RULES:
 - hero text and CTA group must live inside a bounded wrapper with explicit max-width
 - if hero uses background media, foreground copy must still remain readable and padded
 
+REFERENCE HERO LOCK RULES:
+- if reference fingerprint says avoid split hero, you MUST NOT use a left-copy / right-card split hero
+- if reference hero is full-bleed-centered, prefer a centered or cover-led hero
+- if reference uses one dominant subject, keep one dominant dominant subject in the hero
+- if reference uses a stats band after hero, preserve that pattern immediately under hero
+- if reference nav is minimal, keep the nav minimal and clean
+
+${
+  isAutomotiveReference
+    ? `
+AUTOMOTIVE LOCK RULES:
+- hero imagery MUST be automotive
+- do not use coffee, food, lounge, restaurant, office desk, hotel or generic indoor lifestyle imagery
+- hero should feel vehicle-led and premium
+- if the reference feels like a wide automotive silhouette cover, preserve that cover composition family
+- the main image slot must describe a premium car detailing / vehicle hero image in English`
+    : ""
+}
+
 TYPOGRAPHY RULES:
 - enforce clear H1 / H2 / H3 hierarchy
 - headings must not always use extreme weight
@@ -1508,6 +1858,7 @@ IMAGE RULES:
 - slot values in html must exactly match assetPlan.slot values
 - queries must be concrete and in English
 - if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
+- assetPlan must follow the reference motif and may not drift into unrelated image themes
 
 MANDATORY CSS IMPLEMENTATION DETAILS:
 - define a container utility in CSS
@@ -1545,7 +1896,8 @@ FINAL QA:
 - strong hierarchy
 - strong CTA contrast
 - uploaded logo constrained by a logo shell
-- hero remains structurally stable`;
+- hero remains structurally stable
+- if the reference is cover-led, do not output a generic split hero`;
 }
 
 async function createStructuredObject<T>({
@@ -1774,15 +2126,33 @@ export async function POST(req: Request) {
         ? await fetchReferenceSiteSummary(referenceUrl, requestId)
         : null;
 
+    const layoutFingerprint =
+      inputMode === "url"
+        ? inferReferenceLayoutFingerprint(
+            referenceSummary,
+            inferIndustryKind(
+              [
+                effectivePrompt,
+                referenceSummary?.title || "",
+                ...(referenceSummary?.headings || []),
+              ].join(" ")
+            )
+          )
+        : null;
+
     const promptForDirection =
       effectivePrompt +
       (referenceSummary
         ? ` ${referenceSummary.title} ${referenceSummary.headings.join(" ")} ${referenceSummary.navLinks.join(" ")}`
+        : "") +
+      (layoutFingerprint
+        ? ` hero:${layoutFingerprint.heroType} visual:${layoutFingerprint.visualDominance} nav:${layoutFingerprint.navStyle} density:${layoutFingerprint.density} sections:${layoutFingerprint.sectionSequence.join(" ")}`
         : "");
 
     const resolvedPreferences = resolveCreativeDirection(
       promptForDirection,
-      rawPreferences
+      rawPreferences,
+      layoutFingerprint
     );
 
     console.log(
@@ -1797,6 +2167,7 @@ export async function POST(req: Request) {
         referenceUrl: referenceUrl || null,
         hasReferenceHtml: Boolean(referenceHtml),
         hasReferenceSummary: Boolean(referenceSummary),
+        layoutFingerprint,
         attachmentCount: attachments.length,
         generationPreferences: resolvedPreferences,
         hasBrandLogo: Boolean(brandLogo),
@@ -1820,9 +2191,10 @@ export async function POST(req: Request) {
         referenceUrl,
         referenceHtml,
         referenceSummary,
+        layoutFingerprint,
         attachments,
       }),
-      schemaName: "website_bundle_creative_setup_v14",
+      schemaName: "website_bundle_creative_setup_v15",
       schema: generatedWebsiteSchema,
       requestId,
     });
@@ -1871,6 +2243,7 @@ export async function POST(req: Request) {
       inputMode,
       referenceUrl,
       referenceSummary,
+      layoutFingerprint,
     });
   } catch (e: any) {
     console.error(
