@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 export const runtime = "nodejs";
@@ -181,6 +181,7 @@ type ReferenceLayoutFingerprint = {
   heroNeedsSingleDominantSubject: boolean;
   shouldAvoidSplitHero: boolean;
 };
+
 type ReferenceScreenshotAnalysis = {
   screenshotAvailable: boolean;
   aboveTheFoldType:
@@ -1074,19 +1075,21 @@ async function captureReferenceScreenshot(
 ): Promise<string | null> {
   const startedAt = nowMs();
   const safeUrl = sanitizeReferenceUrl(referenceUrl);
-
   if (!safeUrl) return null;
 
-  const attemptCapture = async (attempt: number) => {
-    const executablePath = await chromium.executablePath();
+  try {
+    const packUrl = process.env.CHROMIUM_PACK_URL?.trim();
+
+    if (!packUrl) {
+      throw new Error("Missing CHROMIUM_PACK_URL");
+    }
+
+    const executablePath = await chromium.executablePath(packUrl);
 
     const browser = await puppeteer.launch({
-      args: puppeteer.defaultArgs({
-        args: chromium.args,
-        headless: "shell",
-      }),
+      args: chromium.args,
       executablePath,
-      headless: "shell",
+      headless: true,
     });
 
     try {
@@ -1138,37 +1141,24 @@ async function captureReferenceScreenshot(
       logStep(requestId, "capture-reference-screenshot", startedAt, {
         referenceUrl: safeUrl,
         screenshotBytes: normalizedBuffer.length,
-        attempt,
       });
 
       return dataUrl;
     } finally {
       await browser.close();
     }
-  };
-
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      return await attemptCapture(attempt);
-    } catch (error: any) {
-      console.error(
-        JSON.stringify({
-          scope: "api-generate",
-          requestId,
-          step: "capture-reference-screenshot-error",
-          referenceUrl: safeUrl,
-          attempt,
-          error: error?.message || "Screenshot capture failed",
-        })
-      );
-
-      if (attempt < 3) {
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-      }
-    }
+  } catch (error: any) {
+    console.error(
+      JSON.stringify({
+        scope: "api-generate",
+        requestId,
+        step: "capture-reference-screenshot-error",
+        referenceUrl: safeUrl,
+        error: error?.message || "Screenshot capture failed",
+      })
+    );
+    return null;
   }
-
-  return null;
 }
 
 async function createVisionReferenceAnalysis(params: {
