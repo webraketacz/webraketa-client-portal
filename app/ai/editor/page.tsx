@@ -27,6 +27,12 @@ type BrandLogoAsset = {
   dataUrl: string;
 };
 
+type AttachmentItem = {
+  id?: string;
+  name?: string;
+  kind?: "screenshot" | "file";
+};
+
 type SpeedMode = "fast" | "balanced" | "premium";
 type LayoutPreference =
   | "auto"
@@ -59,6 +65,18 @@ type IconStyle =
   | "outlined"
   | "solid"
   | "custom";
+type ButtonStyle =
+  | "auto"
+  | "soft-pill"
+  | "glass"
+  | "solid-premium"
+  | "outline-elegant"
+  | "gradient-glow";
+type PromptEnhancerMode =
+  | "balanced"
+  | "conversion"
+  | "premium-brand"
+  | "wow-creative";
 type DesignReference =
   | "auto"
   | "fintech-neon"
@@ -72,6 +90,7 @@ type DesignReference =
   | "barber-premium"
   | "clean-automotive"
   | "service-trades";
+type InputMode = "prompt" | "url" | "screenshot" | "html";
 
 type ClientAnswers = {
   contactDetails?: string;
@@ -88,6 +107,10 @@ type GenerationPreferences = {
   fontMood: FontMood;
   iconStyle: IconStyle;
   designReference: DesignReference;
+  buttonStyle?: ButtonStyle;
+  promptEnhancerMode?: PromptEnhancerMode;
+  preferredPrimaryColor?: string;
+  preferredBackgroundColor?: string;
   contactItems: string[];
   clientAnswers: ClientAnswers;
   sourcePrompt?: string;
@@ -109,6 +132,7 @@ type GeneratorResponse = {
   selectedSectionId?: string;
   changedOnlySelectedSection?: boolean;
   twoStepMode?: boolean;
+  generationPreferences?: Partial<GenerationPreferences>;
 };
 
 type AssetResolveResponse = {
@@ -261,7 +285,8 @@ function inferIndustryKind(prompt: string): IndustryKind {
     text.includes("restaurace") ||
     text.includes("bistro") ||
     text.includes("osteria") ||
-    text.includes("kavarna")
+    text.includes("kavarna") ||
+    text.includes("fine dining")
   ) {
     return "restaurant";
   }
@@ -479,7 +504,7 @@ function createDefaultPreferences(prompt = ""): GenerationPreferences {
   const industry = inferIndustryKind(prompt);
 
   return {
-    speedMode: "balanced",
+    speedMode: "premium",
     layoutPreference: getDefaultLayout(industry),
     visualStyle: getDefaultVisualStyle(industry),
     animationLevel:
@@ -490,6 +515,10 @@ function createDefaultPreferences(prompt = ""): GenerationPreferences {
         ? "solid"
         : "minimal",
     designReference: getDefaultDesignReference(industry),
+    buttonStyle: "auto",
+    promptEnhancerMode: "premium-brand",
+    preferredPrimaryColor: "",
+    preferredBackgroundColor: "",
     contactItems: getDefaultContactItems(industry),
     clientAnswers: {
       contactDetails: "",
@@ -501,14 +530,83 @@ function createDefaultPreferences(prompt = ""): GenerationPreferences {
   };
 }
 
+function mergeStoredPreferences(
+  base: GenerationPreferences,
+  incoming: unknown
+): GenerationPreferences {
+  if (!incoming || typeof incoming !== "object") return base;
+  const value = incoming as Partial<GenerationPreferences>;
+
+  return {
+    ...base,
+    speedMode:
+      value.speedMode === "fast" ||
+      value.speedMode === "balanced" ||
+      value.speedMode === "premium"
+        ? value.speedMode
+        : base.speedMode,
+    layoutPreference:
+      typeof value.layoutPreference === "string"
+        ? (value.layoutPreference as LayoutPreference)
+        : base.layoutPreference,
+    visualStyle:
+      typeof value.visualStyle === "string"
+        ? (value.visualStyle as VisualStyle)
+        : base.visualStyle,
+    animationLevel:
+      typeof value.animationLevel === "string"
+        ? (value.animationLevel as AnimationLevel)
+        : base.animationLevel,
+    fontMood:
+      typeof value.fontMood === "string"
+        ? (value.fontMood as FontMood)
+        : base.fontMood,
+    iconStyle:
+      typeof value.iconStyle === "string"
+        ? (value.iconStyle as IconStyle)
+        : base.iconStyle,
+    designReference:
+      typeof value.designReference === "string"
+        ? (value.designReference as DesignReference)
+        : base.designReference,
+    buttonStyle:
+      typeof value.buttonStyle === "string"
+        ? (value.buttonStyle as ButtonStyle)
+        : base.buttonStyle,
+    promptEnhancerMode:
+      typeof value.promptEnhancerMode === "string"
+        ? (value.promptEnhancerMode as PromptEnhancerMode)
+        : base.promptEnhancerMode,
+    preferredPrimaryColor:
+      typeof value.preferredPrimaryColor === "string"
+        ? value.preferredPrimaryColor
+        : base.preferredPrimaryColor,
+    preferredBackgroundColor:
+      typeof value.preferredBackgroundColor === "string"
+        ? value.preferredBackgroundColor
+        : base.preferredBackgroundColor,
+    contactItems: Array.isArray(value.contactItems)
+      ? value.contactItems.filter((item): item is string => typeof item === "string")
+      : base.contactItems,
+    clientAnswers:
+      value.clientAnswers && typeof value.clientAnswers === "object"
+        ? {
+            ...base.clientAnswers,
+            ...value.clientAnswers,
+          }
+        : base.clientAnswers,
+    sourcePrompt:
+      typeof value.sourcePrompt === "string" ? value.sourcePrompt : base.sourcePrompt,
+  };
+}
+
 function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
   const common: Otazka[] = [
     {
       id: "contactDetails",
       appendLabel: "Kontakty",
       text: "Jaké kontaktní údaje chcete na webu zobrazit?",
-      placeholder:
-        "Např. telefon, e-mail, adresa, otevírací doba, formulář…",
+      placeholder: "Např. telefon, e-mail, adresa, otevírací doba, formulář…",
     },
     {
       id: "offerNotes",
@@ -551,13 +649,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
           placeholder:
             "Např. velké full-bleed interiéry, tenké linky, jemná serif typografie, hodně vzduchu, velmi prémiové…",
         },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Co na webu nesmí chybět?",
-          placeholder:
-            "Např. lokalita, galerie, standardy, financování, další projekty, kontakt, dostupnost bytů…",
-        },
       ];
 
     case "healthcare":
@@ -569,13 +660,6 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
           text: "Jaké služby nebo specializace chcete nejvíc zdůraznit?",
           placeholder:
             "Např. praktický lékař, prevence, očkování, vstupní prohlídky, objednání…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Důvěra a obsah",
-          text: "Má být na webu něco navíc pro důvěryhodnost?",
-          placeholder:
-            "Např. tým lékařů, reference, ordinační hodiny, FAQ, mapa, pojišťovny…",
         },
       ];
 
@@ -589,169 +673,10 @@ function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
           placeholder:
             "Např. degustační menu, rezervace, brunch, rodinná atmosféra…",
         },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být něco navíc?",
-          placeholder:
-            "Např. denní menu, rezervace, mapa, galerie, eventy, dárkové poukazy…",
-        },
-      ];
-
-    case "catering":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Hlavní nabídka",
-          text: "Jaké služby cateringu chcete nejvíc prodat?",
-          placeholder:
-            "Např. svatby, firemní eventy, coffee breaky, rozvoz, fine dining catering…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Co ještě musí na webu být?",
-          placeholder:
-            "Např. poptávkový formulář, galerie realizací, balíčky, reference…",
-        },
-      ];
-
-    case "barber":
-    case "hair-salon":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby nebo styl salonu chcete vypíchnout?",
-          placeholder:
-            "Např. pánské střihy, vousy, blond specialistka, moderní salon…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Chcete zdůraznit rezervace, tým, ceník nebo galerii?",
-          placeholder:
-            "Např. online rezervace, galerie proměn, tým, ceník, kosmetika…",
-        },
-      ];
-
-    case "autoservis":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby autoservisu jsou nejdůležitější?",
-          placeholder:
-            "Např. diagnostika, pneuservis, detailing, klimatizace, servis vozů…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být ceník, objednání nebo něco dalšího?",
-          placeholder:
-            "Např. objednávkový formulář, reference, otevírací doba, FAQ, značky aut…",
-        },
-      ];
-
-    case "car-dealer":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Hlavní nabídka",
-          text: "Co chcete na prodeji aut zdůraznit?",
-          placeholder:
-            "Např. prověřené vozy, financování, dovoz, záruka, flotily…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má web obsahovat nabídku vozů, financování nebo reference?",
-          placeholder:
-            "Např. filtrování aut, reference, financování, kontakt, showroom…",
-        },
-      ];
-
-    case "zednik":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Služby",
-          text: "Jaké služby nebo realizace chcete vypíchnout?",
-          placeholder:
-            "Např. rekonstrukce, fasády, obklady, rodinné domy…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být něco navíc?",
-          placeholder:
-            "Např. reference, fotky realizací, postup spolupráce, rychlá poptávka…",
-        },
-      ];
-
-    case "fintech":
-    case "saas":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Produkt",
-          text: "Jaký hlavní produkt nebo výhodu chcete zdůraznit?",
-          placeholder:
-            "Např. AI automatizace, reporting, API, platby, onboarding…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Chcete zdůraznit něco navíc?",
-          placeholder:
-            "Např. integrace, pricing, dashboard preview, case studies, bezpečnost…",
-        },
-      ];
-
-    case "food-product":
-    case "ecommerce-product":
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Produkt",
-          text: "Jaký produkt nebo benefit chcete nejvíc prodat?",
-          placeholder:
-            "Např. přírodní složení, balení, chuť, kvalita surovin, edice…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být FAQ, balení, recepty nebo něco dalšího?",
-          placeholder:
-            "Např. FAQ, varianty balení, recepty, výhody produktu, objednávka…",
-        },
       ];
 
     default:
-      return [
-        ...common,
-        {
-          id: "offerNotes",
-          appendLabel: "Hlavní nabídka",
-          text: "Co je hlavní služba nebo nabídka, kterou má web prodávat?",
-          placeholder:
-            "Např. konzultace, rezervace, prodej produktu, developerský projekt…",
-        },
-        {
-          id: "extras",
-          appendLabel: "Sekce navíc",
-          text: "Má tam být ještě něco důležitého?",
-          placeholder:
-            "Např. reference, galerie, FAQ, tým, mapa, ceník…",
-        },
-      ];
+      return common;
   }
 }
 
@@ -787,22 +712,18 @@ function getPostGenerateSuggestions(industry: IndustryKind) {
         "Vylepši hero na luxusnější editorial prezentaci projektu.",
         "Uprav navigaci a menu do prémiovější real-estate podoby.",
         "Zesil důraz na lokalitu, galerii a standardy projektu.",
-        "Zjemni typografii a přidej víc vzduchu mezi bloky.",
-        "Přidej důvěryhodnější sekci kontaktu a poptávky.",
       ];
     case "healthcare":
       return [
         "Zpřehledni služby a ordinační hodiny.",
         "Uprav web na důvěryhodnější a klidnější styl.",
         "Posil sekci objednání a kontaktu.",
-        "Přidej víc lidského a profesionálního tónu do textů.",
       ];
     case "saas":
     case "fintech":
       return [
         "Vylepši hero na výraznější wow produktovou sekci.",
         "Uprav pricing a CTA pro vyšší konverzi.",
-        "Zpřehledni benefity a dashboard preview.",
         "Přidej silnější social proof a reference.",
       ];
     case "restaurant":
@@ -810,14 +731,12 @@ function getPostGenerateSuggestions(industry: IndustryKind) {
       return [
         "Vylepši sekci nabídky a rezervace.",
         "Přidej atmosféru a výraznější food vizuály.",
-        "Zpřehledni kontakt, mapu a otevírací dobu.",
         "Uprav texty, aby působily víc prémiově a chutně.",
       ];
     default:
       return [
         "Vylepši hero a první dojem webu.",
         "Zpřehledni hlavní nabídku a CTA.",
-        "Uprav texty na přesvědčivější prodejní styl.",
         "Posil kontakt a důvěryhodnost.",
       ];
   }
@@ -1088,8 +1007,7 @@ ${
   box-shadow: 0 8px 22px rgba(0,0,0,.20);
   transform: translateY(-10px);
   white-space: nowrap;
-}
-`
+}`
     : `
 a,
 button,
@@ -1208,21 +1126,17 @@ ${
   function extractBackgroundImageUrl(el) {
     const backgroundImage = window.getComputedStyle(el).backgroundImage || "";
     if (!backgroundImage || backgroundImage === "none") return "";
-
     const normalized = backgroundImage.trim();
     if (!normalized.toLowerCase().startsWith("url(")) return "";
-
     let value = normalized.slice(4, -1).trim();
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-
     return value;
   }
 
   document.addEventListener("mouseover", function (event) {
     clearHoverStates();
-
     const editableText = getEditableTextFromEventTarget(event.target);
     if (editableText) {
       editableText.classList.add("zyvia-text-hover");
@@ -1433,13 +1347,6 @@ function BuilderPlaceholder({ status }: { status: string }) {
                   <div className="h-7 w-[78%] rounded-[10px] bg-white/10" />
                   <div className="h-7 w-[62%] rounded-[10px] bg-white/10" />
                 </div>
-
-                <div className="mt-8 space-y-3">
-                  <div className="h-4 w-[88%] rounded-[10px] bg-white/6" />
-                  <div className="h-4 w-[81%] rounded-[10px] bg-white/6" />
-                  <div className="h-4 w-[72%] rounded-[10px] bg-white/6" />
-                </div>
-
                 <div className="mt-8 flex gap-3">
                   <div className="h-11 w-32 rounded-[10px] border border-cyan-400/20 bg-cyan-400/15" />
                   <div className="h-11 w-36 rounded-[10px] border border-white/10 bg-white/[0.04]" />
@@ -1451,7 +1358,6 @@ function BuilderPlaceholder({ status }: { status: string }) {
                 <div className="space-y-3">
                   <div className="h-5 w-36 rounded-[10px] bg-white/10" />
                   <div className="h-4 w-[92%] rounded-[10px] bg-white/6" />
-                  <div className="h-4 w-[84%] rounded-[10px] bg-white/6" />
                 </div>
               </div>
             </div>
@@ -1485,6 +1391,11 @@ export default function AiEditorPage() {
   const [css, setCss] = useState("");
   const [js, setJs] = useState("");
 
+  const [inputMode, setInputMode] = useState<InputMode>("prompt");
+  const [referenceUrl, setReferenceUrl] = useState("");
+  const [referenceHtml, setReferenceHtml] = useState("");
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [improving, setImproving] = useState(false);
@@ -1508,12 +1419,8 @@ export default function AiEditorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-  null
-);
-  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(
-    null
-  );
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionType, setSelectedSectionType] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -1526,21 +1433,15 @@ export default function AiEditorPage() {
   const [chatInput, setChatInput] = useState("");
 
   const [textModalOpen, setTextModalOpen] = useState(false);
-  const [selectedText, setSelectedText] =
-    useState<EditableTextSelection | null>(null);
+  const [selectedText, setSelectedText] = useState<EditableTextSelection | null>(null);
   const [editedTextValue, setEditedTextValue] = useState("");
   const [editedHrefValue, setEditedHrefValue] = useState("");
 
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] =
-    useState<EditableImageSelection | null>(null);
-  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">(
-    "search"
-  );
+  const [selectedImage, setSelectedImage] = useState<EditableImageSelection | null>(null);
+  const [imagePickerTab, setImagePickerTab] = useState<"search" | "upload">("search");
   const [imageSearchQuery, setImageSearchQuery] = useState("");
-  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>(
-    []
-  );
+  const [imageSearchResults, setImageSearchResults] = useState<ResolvedAsset[]>([]);
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
@@ -1554,11 +1455,8 @@ export default function AiEditorPage() {
   const [odpovedInput, setOdpovedInput] = useState("");
   const [otazkyDokonceny, setOtazkyDokonceny] = useState(false);
 
-  const [generatedIndustry, setGeneratedIndustry] =
-    useState<IndustryKind | null>(null);
-  const [postGenerateSuggestions, setPostGenerateSuggestions] = useState<
-    string[]
-  >([]);
+  const [generatedIndustry, setGeneratedIndustry] = useState<IndustryKind | null>(null);
+  const [postGenerateSuggestions, setPostGenerateSuggestions] = useState<string[]>([]);
 
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
@@ -1644,7 +1542,10 @@ export default function AiEditorPage() {
   }
 
   function startQuestionFlow(currentPrompt: string) {
-    const prefs = createDefaultPreferences(currentPrompt);
+    const prefs = mergeStoredPreferences(
+      createDefaultPreferences(currentPrompt),
+      generationPreferences
+    );
     const industry = inferIndustryKind(currentPrompt);
     const nextOtazky = getQuestionsForIndustry(industry);
 
@@ -1908,6 +1809,14 @@ export default function AiEditorPage() {
   useEffect(() => {
     const initialPrompt = sessionStorage.getItem("ai_webgen_prompt") ?? "";
     const autostart = sessionStorage.getItem("ai_webgen_autostart") === "1";
+    const storedInputMode = sessionStorage.getItem("ai_webgen_input_mode") ?? "prompt";
+    const storedReferenceUrl = sessionStorage.getItem("ai_webgen_reference_url") ?? "";
+    const storedReferenceHtml = sessionStorage.getItem("ai_webgen_reference_html") ?? "";
+    const storedAttachments = sessionStorage.getItem("ai_webgen_attachments") ?? "[]";
+    const storedLandingPreferences =
+      sessionStorage.getItem("ai_webgen_landing_preferences") ??
+      sessionStorage.getItem("ai_webgen_generation_preferences") ??
+      "{}";
 
     const storedLogoDataUrl =
       sessionStorage.getItem("ai_webgen_logo_data_url") ?? "";
@@ -1925,11 +1834,43 @@ export default function AiEditorPage() {
 
     if (initialPrompt) {
       setPrompt(initialPrompt);
+      setGenerationPreferences((prev) =>
+        mergeStoredPreferences(createDefaultPreferences(initialPrompt), prev)
+      );
       setMessages((prev) => [
         ...prev,
         { id: `user-initial-${Date.now()}`, role: "user", text: initialPrompt },
       ]);
     }
+
+    if (
+      storedInputMode === "prompt" ||
+      storedInputMode === "url" ||
+      storedInputMode === "screenshot" ||
+      storedInputMode === "html"
+    ) {
+      setInputMode(storedInputMode);
+    }
+
+    setReferenceUrl(storedReferenceUrl);
+    setReferenceHtml(storedReferenceHtml);
+
+    try {
+      const parsedAttachments = JSON.parse(storedAttachments);
+      if (Array.isArray(parsedAttachments)) {
+        setAttachments(parsedAttachments);
+      }
+    } catch {}
+
+    try {
+      const parsedPrefs = JSON.parse(storedLandingPreferences);
+      setGenerationPreferences((prev) =>
+        mergeStoredPreferences(
+          initialPrompt ? createDefaultPreferences(initialPrompt) : prev,
+          parsedPrefs
+        )
+      );
+    } catch {}
 
     if (autostart && initialPrompt && !autostartRef.current) {
       autostartRef.current = true;
@@ -2118,7 +2059,12 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: finalPrompt,
+          inputMode,
+          referenceUrl,
+          referenceHtml,
+          attachments,
           generationPreferences: effectivePreferences,
+          landingPreferences: effectivePreferences,
           chatHistory: getChatHistoryPayload(),
           brandLogo: uploadedLogo,
         }),
@@ -2140,12 +2086,18 @@ export default function AiEditorPage() {
       setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
 
+      if (data.generationPreferences) {
+        setGenerationPreferences((prev) =>
+          mergeStoredPreferences(prev, data.generationPreferences)
+        );
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           id: `assistant-generate-${Date.now()}`,
           role: "assistant",
-          text: "Návrh je připraven. Klikněte na sekci, text nebo obrázek v náhledu a pokračujte v úpravách.",
+          text: "Návrh je připraven. Klikněte na sekci, text nebo obrázek v editoru a pokračujte v úpravách.",
         },
         {
           id: `assistant-followup-${Date.now() + 1}`,
@@ -2199,6 +2151,11 @@ export default function AiEditorPage() {
           css,
           js,
           selectedSectionId,
+          inputMode,
+          referenceUrl,
+          referenceHtml,
+          attachments,
+          generationPreferences,
           chatHistory: getChatHistoryPayload(),
           brandLogo: uploadedLogo,
         }),
@@ -2287,19 +2244,6 @@ export default function AiEditorPage() {
     }
   }
 
-  function focusEditInput() {
-    if (isFullscreen) {
-      setIsFullscreen(false);
-      setTimeout(() => chatInputRef.current?.focus(), 200);
-      return;
-    }
-
-    setTimeout(() => {
-      chatInputRef.current?.focus();
-      scrollChatToBottom(true);
-    }, 50);
-  }
-
   function onChatKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -2318,16 +2262,6 @@ export default function AiEditorPage() {
     };
 
     setChatInput(prompts[type]);
-
-    if (isFullscreen) {
-      setIsFullscreen(false);
-      setTimeout(() => {
-        chatInputRef.current?.focus();
-        scrollChatToBottom(true);
-      }, 200);
-      return;
-    }
-
     setTimeout(() => {
       chatInputRef.current?.focus();
       scrollChatToBottom(true);
@@ -2559,6 +2493,16 @@ export default function AiEditorPage() {
                     )}
                   </div>
 
+                  <div className="mb-3 rounded-[10px] border border-white/8 bg-white/[0.03] p-3 text-[11px] leading-5 text-zinc-400">
+                    <div>Zdroj: <span className="text-white">{inputMode}</span></div>
+                    {referenceUrl && <div className="truncate">URL: {referenceUrl}</div>}
+                    {attachments.length > 0 && (
+                      <div className="truncate">
+                        Přílohy: {attachments.map((item) => item.name).filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -2640,7 +2584,7 @@ export default function AiEditorPage() {
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
                           : selectedSectionMeta
-                          ? "Kliknutím v náhledu vybíráte konkrétní sekce, texty i obrázky pro úpravy."
+                          ? "Kliknutím v editoru vybíráte konkrétní sekce, texty i obrázky pro úpravy."
                           : "V Editoru vybíráte sekce, texty i obrázky. Náhled slouží jen pro čisté zobrazení."}
                       </div>
                     </div>
@@ -2740,7 +2684,7 @@ export default function AiEditorPage() {
                           Další rychlé úpravy
                         </div>
                         <div className="mb-3 text-[11px] leading-5 text-zinc-300">
-                          Vyberte sekci v náhledu a jedním klikem si připravte další zadání.
+                          Vyberte sekci v editoru a jedním klikem si připravte další zadání.
                         </div>
                         <div className="flex flex-col gap-2">
                           {postGenerateSuggestions.map((item) => (
@@ -2842,7 +2786,7 @@ export default function AiEditorPage() {
                       placeholder={
                         selectedSectionMeta
                           ? `Napište úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
-                          : "Nejdřív klikněte v náhledu na konkrétní sekci, kterou chcete upravit."
+                          : "Nejdřív klikněte v editoru na konkrétní sekci, kterou chcete upravit."
                       }
                       className="h-14 w-full resize-none bg-transparent text-[13px] text-white outline-none placeholder:text-zinc-500"
                     />
@@ -2984,9 +2928,7 @@ export default function AiEditorPage() {
                         }
                         width={14}
                       />
-                      {isFullscreen
-                        ? "Ukončit"
-                        : "Celá obrazovka"}
+                      {isFullscreen ? "Ukončit" : "Celá obrazovka"}
                     </button>
 
                     <button
@@ -3159,9 +3101,6 @@ export default function AiEditorPage() {
                     className="w-full rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                     placeholder="napr-klinika-praha"
                   />
-                  <div className="mt-2 text-xs text-zinc-500">
-                    Použije se pro název deploymentu. Vlastní doména přijde později v placeném balíčku.
-                  </div>
                 </div>
 
                 <div>
@@ -3179,24 +3118,6 @@ export default function AiEditorPage() {
                     className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                     placeholder="Např. první testovací verze pro klienta"
                   />
-                </div>
-
-                <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-medium text-white">Vlastní doména</div>
-                      <div className="mt-1 text-sm text-zinc-500">
-                        Bude dostupná v placeném balíčku.
-                      </div>
-                    </div>
-                    <div className="rounded-[10px] border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
-                      PRO
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-[10px] border border-dashed border-white/10 bg-black/20 p-4 text-sm text-zinc-500">
-                    Připojení vlastní domény, DNS instrukce a produkční publish flow doplníme v další fázi.
-                  </div>
                 </div>
 
                 {publishedUrl && (
@@ -3407,10 +3328,6 @@ export default function AiEditorPage() {
                     <div className="mb-2 text-sm font-medium text-white">
                       Nahrát vlastní obrázek
                     </div>
-                    <div className="mb-3 text-sm text-zinc-500">
-                      Vyberte obrázek z počítače a hned se vloží do náhledu.
-                    </div>
-
                     <label className="flex cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed border-white/15 bg-white/[0.03] px-4 py-8 text-center transition hover:bg-white/[0.06]">
                       <Icon icon="solar:upload-linear" width={24} />
                       <span className="mt-3 text-sm text-white">
@@ -3465,11 +3382,6 @@ export default function AiEditorPage() {
                       </button>
                     </div>
 
-                    <div className="mt-3 text-xs text-zinc-500">
-                      Hledání používá zdroje jako Unsplash a Pexels podle typu
-                      obrázku.
-                    </div>
-
                     <div className="mt-4 max-h-[30rem] overflow-y-auto pr-1">
                       {imageSearchLoading ? (
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -3479,10 +3391,6 @@ export default function AiEditorPage() {
                               className="overflow-hidden rounded-[10px] border border-white/8 bg-white/[0.03]"
                             >
                               <div className="h-40 animate-pulse bg-white/[0.06]" />
-                              <div className="space-y-2 p-3">
-                                <div className="h-3 w-3/4 rounded-[10px] bg-white/[0.08]" />
-                                <div className="h-3 w-1/2 rounded-[10px] bg-white/[0.06]" />
-                              </div>
                             </div>
                           ))}
                         </div>

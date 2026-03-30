@@ -6,7 +6,7 @@ export const maxDuration = 300;
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   maxRetries: 0,
-  timeout: 240000,
+  timeout: 180000,
 });
 
 const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
@@ -250,6 +250,7 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => {
       const candidate = item as AttachmentInput;
+
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
         name: typeof candidate.name === "string" ? candidate.name : undefined,
@@ -419,24 +420,18 @@ function inferIndustryKind(prompt: string): IndustryKind {
     text.includes("cukr") ||
     text.includes("sugar") ||
     text.includes("potrav") ||
-    text.includes("food") ||
-    text.includes("produkt") ||
-    text.includes("product") ||
+    text.includes("food")
+  ) {
+    return "food-product";
+  }
+
+  if (
     text.includes("eshop") ||
     text.includes("e-shop") ||
     text.includes("shop") ||
-    text.includes("prodej") ||
-    text.includes("baleni")
+    text.includes("produkt") ||
+    text.includes("product")
   ) {
-    if (
-      text.includes("cukr") ||
-      text.includes("sugar") ||
-      text.includes("food") ||
-      text.includes("potrav")
-    ) {
-      return "food-product";
-    }
-
     return "ecommerce-product";
   }
 
@@ -786,8 +781,8 @@ REFERENCE FAMILY: FINTECH NEON
 - luminous vertical beams, soft glow columns or layered light bars
 - large conversion headline on one side or bottom-anchored over visual if fitting seed
 - product / analytics / payment mockups may sit beside, below or layered behind content
-- pill navigation, glassy panels, elegant CTA glow
-`;
+- pill navigation, glassy panels, elegant CTA glow`;
+
     case "signal-orchestration":
       return `
 REFERENCE FAMILY: SIGNAL ORCHESTRATION
@@ -795,90 +790,79 @@ REFERENCE FAMILY: SIGNAL ORCHESTRATION
 - glass navigation, cyan / teal glow, HUD feeling
 - radial arcs, rings, targeting lines, orchestration grid overlays
 - central hero or offset-copy hero with strong system-message headline
-- product panel may be below hero instead of always to the right
-`;
+- product panel may be below hero instead of always to the right`;
+
     case "angled-enterprise":
       return `
 REFERENCE FAMILY: ANGLED ENTERPRISE
 - bold enterprise composition with angled section transitions
 - dark premium bands with strong statistics and trust sections
-- orbital glow, subtle sci-fi depth, clean readability
-`;
+- orbital glow, subtle sci-fi depth, clean readability`;
+
     case "cinematic-resort":
       return `
 REFERENCE FAMILY: CINEMATIC RESORT
 - immersive full-screen photography
 - editorial luxury composition
 - oversized display headline
-- atmospheric overlays and cinematic mood
-- copy may sit bottom-left, bottom-center or inside framed overlay panels
-`;
+- atmospheric overlays and cinematic mood`;
+
     case "luxury-editorial":
       return `
 REFERENCE FAMILY: LUXURY EDITORIAL
 - premium editorial composition
 - refined serif or contrast typography
 - strong image-led sections
-- asymmetry, generous spacing, layered cards and elegant separators
-- for premium real estate or development projects, this may include:
-  - centered or split navigation with refined logo treatment
-  - huge elegant serif headlines
-  - airy white sections after the hero
-  - thin dividers, muted palette, restrained luxury
-  - full-bleed interiors or architectural photography
-`;
+- asymmetry, generous spacing, layered cards and elegant separators`;
+
     case "product-commerce":
       return `
 REFERENCE FAMILY: PRODUCT COMMERCE
 - clean commercial product presentation
 - bright or softly premium background
 - product packshots, ingredient / benefit visuals, lifestyle photos
-- strong product CTA, variants, trust points, FAQ
-`;
+- strong product CTA, variants, trust points, FAQ`;
+
     case "restaurant-editorial":
       return `
 REFERENCE FAMILY: RESTAURANT EDITORIAL
 - immersive food photography
 - elegant dining mood
 - refined editorial typography
-- reservation CTA, menu highlights, atmosphere and story
-- can include subtle map and visit section
-`;
+- reservation CTA, menu highlights, atmosphere and story`;
+
     case "barber-premium":
       return `
 REFERENCE FAMILY: BARBER PREMIUM
 - masculine or premium grooming identity
 - stronger contrast, sharp typography, dark or warm palette
-- service cards, craft story, gallery, booking CTA
-`;
+- service cards, craft story, gallery, booking CTA`;
+
     case "clean-automotive":
       return `
 REFERENCE FAMILY: CLEAN AUTOMOTIVE
 - clean, trustworthy, corporate automotive styling
 - strong service hierarchy
-- no futuristic SaaS UI
-- useful for autoservis and dealers
-- vehicles, services, trust, availability, contact
-`;
+- useful for autoservis and dealers`;
+
     case "service-trades":
       return `
 REFERENCE FAMILY: SERVICE TRADES
 - clean commercial local service website
 - practical trust-first structure
-- clear services, realizace, process, references, contact
-`;
+- clear services, realizace, process, references, contact`;
+
     case "clean-business":
       return `
 REFERENCE FAMILY: CLEAN BUSINESS
 - modern commercial website
-- balanced spacing, structured sections, clear conversion hierarchy
-`;
+- balanced spacing, structured sections, clear conversion hierarchy`;
+
     default:
       return `
 REFERENCE FAMILY: AUTO
 - choose the strongest fitting premium commercial family for the business
-- do not fall back to a generic template
-`;
+- do not fall back to a generic template`;
   }
 }
 
@@ -886,112 +870,370 @@ function getIndustrySpecificRules(industry: IndustryKind, imageMode: string) {
   switch (industry) {
     case "food-product":
       return `
-INDUSTRY RULES: FOOD PRODUCT / SUGAR / PACKAGED GOODS
-- do NOT use fintech / dashboard / orchestration / dark SaaS composition
-- the site must feel like a commercial product website
+INDUSTRY RULES: FOOD PRODUCT
+- commercial product website
 - use 2 to 4 meaningful product / ingredient / packaging / lifestyle images
-- product images are REQUIRED
-- preferred sections:
-  - hero with product value
-  - benefits
-  - product variants or packaging
-  - why choose us / ingredients / quality
-  - use cases or recipes
-  - FAQ
-  - contact or order CTA
-`;
+- product images are REQUIRED`;
+
     case "restaurant":
       return `
 INDUSTRY RULES: RESTAURANT
 - food photography is central
 - reservation CTA should be clear
 - menu highlights, atmosphere, story, visit section and map make sense
-- avoid product dashboard style
-- for fine dining, prefer restraint, typography, editorial rhythm, dark warm palette or refined neutral luxury palette
-`;
+- for fine dining, prefer restraint, typography, editorial rhythm and refined luxury`;
+
     case "catering":
       return `
 INDUSTRY RULES: CATERING
 - use food and event imagery
-- emphasize nabídka, firemní akce, svatby, rozvoz, kontakt, poptávka
-`;
+- emphasize nabídka, akce, rozvoz, kontakt, poptávka`;
+
     case "barber":
       return `
 INDUSTRY RULES: BARBER
 - use craft / portrait / interior imagery
-- focus on služby, styl, galerie, tým, rezervace
-`;
+- focus on služby, styl, galerie, tým, rezervace`;
+
     case "hair-salon":
       return `
 INDUSTRY RULES: HAIR SALON
 - use salon / portrait / styling imagery
-- focus on služby, proměny, rezervace, kontakt
-`;
+- focus on služby, proměny, rezervace, kontakt`;
+
     case "autoservis":
       return `
 INDUSTRY RULES: AUTOSERVIS
 - clean trustworthy company site
 - use garage, mechanic, service bay or car maintenance imagery
-- focus on služby, ceník, objednání, důvěra, kontakt
-- do not use fintech or futuristic SaaS layout
-`;
+- focus on služby, ceník, objednání, důvěra, kontakt`;
+
     case "car-dealer":
       return `
 INDUSTRY RULES: CAR DEALER
 - clean corporate vehicle sales site
 - vehicle images are important
-- structure can include nabídka vozů, výhody, financování, reference, kontakt
-- keep it business-clean and not experimental
-`;
+- structure can include nabídka vozů, výhody, financování, reference, kontakt`;
+
     case "zednik":
       return `
 INDUSTRY RULES: MASONRY / CONSTRUCTION TRADES
 - practical trustworthy local service website
 - use project / facade / construction imagery
-- include služby, realizace, proces, reference, kontakt
-`;
+- include služby, realizace, proces, reference, kontakt`;
+
     case "ecommerce-product":
       return `
 INDUSTRY RULES: E-COMMERCE PRODUCT
 - product or category images are REQUIRED
-- use a conversion-first commerce structure
-`;
+- use a conversion-first commerce structure`;
+
     case "resort":
       return `
 INDUSTRY RULES: RESORT / HOSPITALITY
 - immersive image-led design
-- atmosphere matters more than generic cards
-`;
+- atmosphere matters more than generic cards`;
+
     case "real-estate":
       return `
 INDUSTRY RULES: REAL ESTATE / DEVELOPMENT PROJECT
 - use architecture / interior / exterior imagery
 - premium editorial composition
-- large full-bleed property visuals are welcome
-- oversized elegant serif headlines are welcome
-- airy sections with restrained palette are welcome
-- navigation may be centered, split around a logo, or refined and minimal
-- avoid generic corporate cards if a calmer premium editorial system is more fitting
-`;
+- large full-bleed visuals and airy sections are welcome`;
+
     case "fintech":
       return `
 INDUSTRY RULES: FINTECH
 - dark premium product direction is appropriate
-- product mockups, data panels and trust blocks are allowed
-`;
+- product mockups, data panels and trust blocks are allowed`;
+
     case "saas":
       return `
 INDUSTRY RULES: SAAS / SOFTWARE
-- dashboard / orchestration / interface-led design is appropriate
-- allow richer gradients, glows, animated borders, product UI cards, premium loading states and polished microinteractions
-`;
+- interface-led design is appropriate
+- richer gradients, glows, animated borders, polished microinteractions are welcome`;
+
     default:
       return `
 INDUSTRY RULES:
 - keep imagery and layout aligned with the business
-- image mode: ${imageMode}
-`;
+- image mode: ${imageMode}`;
   }
+}
+
+function formatChatHistory(history: ChatHistoryItem[]) {
+  if (!history?.length) return "Žádná historie chatu.";
+
+  return history
+    .slice(-4)
+    .map((item, index) => `${index + 1}. [${item.role}] ${item.text}`)
+    .join("\n");
+}
+
+function renderInputModeContext(params: {
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments: AttachmentInput[];
+}) {
+  const lines: string[] = [];
+
+  lines.push(`INPUT MODE: ${params.inputMode}`);
+
+  if (params.inputMode === "url" && params.referenceUrl?.trim()) {
+    lines.push(`REFERENCE URL: ${params.referenceUrl.trim()}`);
+    lines.push(
+      "The user wants strong inspiration from the supplied URL. Match structure and hierarchy where useful, but do not blindly clone."
+    );
+  }
+
+  if (params.inputMode === "html" && params.referenceHtml?.trim()) {
+    lines.push("REFERENCE HTML PROVIDED: yes");
+    lines.push(
+      `REFERENCE HTML SNIPPET:\n${params.referenceHtml.trim().slice(0, 6000)}`
+    );
+    lines.push(
+      "Use the supplied HTML as structural inspiration, but return a cleaner and more premium result."
+    );
+  }
+
+  if (
+    params.inputMode === "screenshot" ||
+    params.attachments.some((item) => item.kind === "screenshot")
+  ) {
+    lines.push("SCREENSHOT ATTACHMENTS PROVIDED: yes");
+    lines.push(
+      "The user likely wants the layout vibe, visual hierarchy or composition to be inspired by screenshots."
+    );
+  }
+
+  if (params.attachments.length > 0) {
+    lines.push(
+      `ATTACHMENTS: ${params.attachments
+        .map((item) => `${item.kind || "file"}:${item.name || "unknown"}`)
+        .join(", ")}`
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function renderPrompt(params: {
+  prompt: string;
+  buildType?: string;
+  model?: string;
+  chatHistory?: ChatHistoryItem[];
+  preferences: ReturnType<typeof resolveCreativeDirection>;
+  brandLogo?: BrandLogoAsset | null;
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments: AttachmentInput[];
+}) {
+  return `
+You are a world-class commercial web designer, art director and senior frontend developer.
+
+Return ONLY a structured JSON object matching the schema.
+
+PRIMARY GOAL:
+Create a premium commercial website that feels custom-designed for this exact business.
+It must not feel like a recycled template.
+
+MOST IMPORTANT PRIORITY:
+If the client explicitly described a style, fonts, mood, contact details, content or visual direction,
+those explicit client instructions OVERRIDE automatic defaults.
+
+CLIENT EXPLICIT ANSWERS:
+- Contact details: ${params.preferences.clientAnswers.contactDetails || "neuvedeno"}
+- Style notes: ${params.preferences.clientAnswers.styleNotes || "neuvedeno"}
+- Offer notes: ${params.preferences.clientAnswers.offerNotes || "neuvedeno"}
+- Extra notes: ${params.preferences.clientAnswers.extras || "neuvedeno"}
+
+OUTPUT RULES:
+- html must contain ONLY body markup content
+- do not return <!DOCTYPE html>
+- do not return <html>, <head> or <body>
+- css must contain ALL styling needed for the website
+- js must contain vanilla JavaScript only
+- do not use external libraries
+- do not use Tailwind CDN
+- do not rely on remote CSS
+- every major page block must use a semantic <section> tag
+- every major section must have data-section-id and data-section-type
+- data-section-id values must be stable, unique and human-readable
+- navigation must be its own section with data-section-id="navigation"
+- footer must be its own section with data-section-id="footer"
+- add a fully working mobile hamburger navigation
+- include a CTA button in the main navigation
+- footer must be complete and visually polished
+
+BRAND LOGO RULES:
+${
+  params.brandLogo
+    ? `- a real uploaded logo exists for this project
+- when rendering the navigation and any footer brand area, place the exact token __BRAND_LOGO__ where the real logo should appear
+- wrap that token in a tasteful logo container or link
+- do not invent a generic text logo if a real brand logo is available`
+    : `- if no real logo is provided, create an elegant text or monogram logo treatment`
+}
+
+SELECTED CREATIVE DIRECTION:
+- Detected industry: ${params.preferences.industry}
+- Image mode: ${params.preferences.imageMode}
+- Speed mode: ${params.preferences.speedMode}
+- Layout preference: ${params.preferences.layoutPreference}
+- Visual style: ${params.preferences.visualStyle}
+- Animation level: ${params.preferences.animationLevel}
+- Font mood: ${params.preferences.fontMood}
+- Icon style: ${params.preferences.iconStyle}
+- Design reference: ${params.preferences.designReference}
+- Button style: ${params.preferences.buttonStyle}
+- Prompt enhancer mode: ${params.preferences.promptEnhancerMode}
+- Preferred primary color: ${params.preferences.preferredPrimaryColor || "auto"}
+- Preferred background color: ${params.preferences.preferredBackgroundColor || "auto"}
+- Layout seed: ${params.preferences.layoutSeed}
+- Contact items to show: ${
+    params.preferences.contactItems.length
+      ? params.preferences.contactItems.join(", ")
+      : "phone, email, office, CTA form"
+  }
+
+${getDesignReferenceRecipe(params.preferences.designReference)}
+
+${getIndustrySpecificRules(
+    params.preferences.industry,
+    params.preferences.imageMode
+  )}
+
+INPUT CONTEXT:
+${renderInputModeContext({
+  inputMode: params.inputMode,
+  referenceUrl: params.referenceUrl,
+  referenceHtml: params.referenceHtml,
+  attachments: params.attachments,
+})}
+
+HARD TECHNICAL LAYOUT CONSTRAINTS:
+- the page must use stable wrappers and predictable layout primitives
+- all important sections must use max-width container + auto margins, disciplined grid, or disciplined flexbox
+- avoid fragile absolute positioning for primary readable copy
+- every section must remain visually stable at desktop, tablet and mobile
+- no section may look unfinished when content length changes moderately
+
+NAV HEIGHT RULES:
+- navigation should usually stay within min-height: 72px to max-height: 112px on desktop
+- absolute hard limit is 124px
+- do not allow brand text or logo to create giant nav height
+- nav row should use flex alignment and controlled padding
+
+LOGO FIT RULES:
+- uploaded logos must NEVER render at uncontrolled natural size
+- always create a dedicated logo shell with explicit sizing constraints
+- actual img.brand-logo-image must use object-fit: contain
+- never allow the uploaded logo to stretch the nav row height
+
+SPACING AND COMPOSITION RULES:
+- spacing must feel deliberate and premium
+- desktop section spacing should usually land between 88px and 144px
+- tablet spacing should stay generous
+- mobile spacing must still breathe
+- every hero, overlay card, floating panel and text block must have explicit safe inner padding
+- never place text flush to viewport edges or image edges
+- use horizontal gutters at minimum:
+  - desktop: clamp(24px, 4vw, 56px)
+  - tablet: clamp(20px, 5vw, 40px)
+  - mobile: clamp(16px, 5vw, 24px)
+
+OPTICAL ALIGNMENT RULES:
+- text may not be only mathematically centered; it must also feel optically centered
+- centered hero text blocks must have max-width and margin-inline auto
+- avoid awkward half-centered layouts
+
+HERO STABILITY RULES:
+- hero content must never collide with navigation
+- hero must have a predictable content wrapper
+- the first screen must feel complete and intentional
+- avoid giant accidental empty black gaps
+
+TYPOGRAPHY RULES:
+- enforce clear H1 / H2 / H3 hierarchy
+- headings must not always use extreme weight
+- default body copy should usually live around weight 400 to 500
+- display headlines may be strong, but keep them refined
+
+BUTTON AND CONTRAST RULES:
+- primary CTA must be clearly visible
+- navigation links and CTA button must not visually merge
+- if button style is gradient-glow, keep it elegant
+- if button style is solid-premium, prioritize clarity and conversion
+
+MOBILE NAV RULES:
+- logo on the left, hamburger fully on the far right
+- minimum tap target is 44x44
+- hamburger animates into X
+- mobile menu opens with refined fade, slide or scale
+
+ANIMATION AND WOW RULES:
+- use ${params.preferences.animationLevel} animation intensity
+- animations must feel premium, not gimmicky
+- allowed motion ideas:
+  - gradient drift
+  - subtle glow pulse
+  - reveal on scroll
+  - card hover lift
+  - animated border shimmer
+  - loading skeleton shimmer
+  - staggered text reveal
+  - animated underline / highlight pass
+  - floating UI drift
+- for SaaS / AI / product sites, richer motion is welcome
+- for luxury / real estate / restaurant, motion should stay more restrained
+- if prompt enhancer mode is wow-creative, push animation quality further
+
+IMAGE RULES:
+- also return assetPlan with at most 4 realistic images
+- if an image is needed in html, use a normal <img> and add data-image-slot="<slot>"
+- slot values in html must exactly match assetPlan.slot values
+- queries must be concrete and in English
+- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
+
+MANDATORY CSS IMPLEMENTATION DETAILS:
+- define a container utility in CSS
+- define a logo shell class
+- define a nav shell with controlled min/max height
+- define a stable hero inner wrapper with explicit max-widths
+- define card classes with repeatable padding, radius and border logic
+- define responsive breakpoints
+- prevent horizontal overflow globally
+- use box-sizing: border-box everywhere
+
+COPY RULES:
+- use Czech copy
+- hero headline should be short, premium and easy to scan
+- avoid lorem ipsum
+- make sections relevant to the business
+
+PROJECT CONTEXT:
+- Original prompt: ${params.prompt}
+- Build type: ${params.buildType || "neuvedeno"}
+- Preferred model label: ${params.model || "neuvedeno"}
+
+CHAT HISTORY:
+${formatChatHistory(params.chatHistory || [])}
+
+FINAL QA:
+- no obvious empty spaces
+- complete premium navigation with CTA
+- complete premium footer
+- working mobile menu
+- responsive desktop, tablet and mobile
+- visible design distinctiveness
+- stronger motion and detail
+- disciplined spacing
+- strong hierarchy
+- strong CTA contrast
+- uploaded logo constrained by a logo shell
+- hero remains structurally stable`;
 }
 
 async function createStructuredObject<T>({
@@ -1133,402 +1375,6 @@ function sanitizeBundle(bundle: GeneratedWebsiteBundle): GeneratedWebsiteBundle 
   };
 }
 
-function formatChatHistory(history: ChatHistoryItem[]) {
-  if (!history?.length) return "Žádná historie chatu.";
-
-  return history
-    .slice(-4)
-    .map((item, index) => `${index + 1}. [${item.role}] ${item.text}`)
-    .join("\n");
-}
-
-function renderInputModeContext(params: {
-  inputMode: InputMode;
-  prompt: string;
-  referenceUrl?: string;
-  referenceHtml?: string;
-  attachments: AttachmentInput[];
-}) {
-  const lines: string[] = [];
-
-  lines.push(`INPUT MODE: ${params.inputMode}`);
-
-  if (params.inputMode === "url" && params.referenceUrl?.trim()) {
-    lines.push(`REFERENCE URL: ${params.referenceUrl.trim()}`);
-    lines.push(
-      "The user wants a redesign or strong inspiration from the supplied URL."
-    );
-    lines.push(
-      "Match the general structure, density, content hierarchy and premium feel where useful, but do not clone blindly."
-    );
-  }
-
-  if (params.inputMode === "html" && params.referenceHtml?.trim()) {
-    lines.push("REFERENCE HTML PROVIDED: yes");
-    lines.push(
-      `REFERENCE HTML SNIPPET:\n${params.referenceHtml.trim().slice(0, 6000)}`
-    );
-    lines.push(
-      "Use the supplied HTML as structural inspiration, but return a cleaner, more premium and improved result."
-    );
-  }
-
-  if (
-    params.inputMode === "screenshot" ||
-    params.attachments.some((item) => item.kind === "screenshot")
-  ) {
-    lines.push("SCREENSHOT ATTACHMENTS PROVIDED: yes");
-    lines.push(
-      "The user likely wants the layout vibe, visual hierarchy or composition to be inspired by screenshots."
-    );
-  }
-
-  if (params.attachments.length > 0) {
-    lines.push(
-      `ATTACHMENTS: ${params.attachments
-        .map((item) => `${item.kind || "file"}:${item.name || "unknown"}`)
-        .join(", ")}`
-    );
-  }
-
-  return lines.join("\n");
-}
-
-function renderPrompt(params: {
-  prompt: string;
-  buildType?: string;
-  model?: string;
-  chatHistory?: ChatHistoryItem[];
-  preferences: ReturnType<typeof resolveCreativeDirection>;
-  brandLogo?: BrandLogoAsset | null;
-  inputMode: InputMode;
-  referenceUrl?: string;
-  referenceHtml?: string;
-  attachments: AttachmentInput[];
-}) {
-  return `
-You are a world-class commercial web designer, art director and senior frontend developer.
-
-Return ONLY a structured JSON object matching the schema.
-
-PRIMARY GOAL:
-Create a premium commercial website that feels custom-designed for this exact business.
-It must not feel like a recycled template.
-
-MOST IMPORTANT PRIORITY:
-If the client explicitly described a style, fonts, mood, contact details, content or visual direction,
-those explicit client instructions OVERRIDE automatic defaults.
-
-CLIENT EXPLICIT ANSWERS:
-- Contact details: ${params.preferences.clientAnswers.contactDetails || "neuvedeno"}
-- Style notes: ${params.preferences.clientAnswers.styleNotes || "neuvedeno"}
-- Offer notes: ${params.preferences.clientAnswers.offerNotes || "neuvedeno"}
-- Extra notes: ${params.preferences.clientAnswers.extras || "neuvedeno"}
-
-OUTPUT RULES:
-- html must contain ONLY body markup content
-- do not return <!DOCTYPE html>
-- do not return <html>, <head> or <body>
-- css must contain ALL styling needed for the website
-- js must contain vanilla JavaScript only
-- do not use external libraries
-- do not use Tailwind CDN
-- do not rely on remote CSS
-- every major page block must use a semantic <section> tag
-- every major section must have data-section-id and data-section-type
-- data-section-id values must be stable, unique and human-readable
-- do not create duplicate data-section-id values
-- do not nest one editable section inside another editable section
-- navigation must be its own section with data-section-id="navigation"
-- footer must be its own section with data-section-id="footer"
-- add a fully working mobile hamburger navigation
-- include a CTA button in the main navigation
-- footer must be complete and visually polished
-
-BRAND LOGO RULES:
-${
-  params.brandLogo
-    ? `- a real uploaded logo exists for this project
-- when rendering the navigation and any footer brand area, place the exact token __BRAND_LOGO__ where the real logo should appear
-- wrap that token in a tasteful logo container or link
-- do not invent a generic text logo if a real brand logo is available
-- make sure the logo area has premium spacing and alignment`
-    : `- if no real logo is provided, create an elegant text or monogram logo treatment`
-}
-
-DO NOT GENERATE THE SAME DEFAULT LAYOUT:
-- avoid repeating the same generic hero + cards + services pattern
-- DO NOT default to hero text on the left and image on the right
-- if a split layout is used, it must still feel custom and not be the default fallback
-- strongly commit to one design family and one layout system
-- make the composition visibly distinct
-- hero may be centered, bottom-left over image, bottom-centered, top-right overlay, stacked with media below, framed inside a window, or built with overlapping panels
-
-SELECTED CREATIVE DIRECTION:
-- Detected industry: ${params.preferences.industry}
-- Image mode: ${params.preferences.imageMode}
-- Speed mode: ${params.preferences.speedMode}
-- Layout preference: ${params.preferences.layoutPreference}
-- Visual style: ${params.preferences.visualStyle}
-- Animation level: ${params.preferences.animationLevel}
-- Font mood: ${params.preferences.fontMood}
-- Icon style: ${params.preferences.iconStyle}
-- Design reference: ${params.preferences.designReference}
-- Button style: ${params.preferences.buttonStyle}
-- Prompt enhancer mode: ${params.preferences.promptEnhancerMode}
-- Preferred primary color: ${params.preferences.preferredPrimaryColor || "auto"}
-- Preferred background color: ${params.preferences.preferredBackgroundColor || "auto"}
-- Layout seed: ${params.preferences.layoutSeed}
-- Contact items to show: ${
-    params.preferences.contactItems.length
-      ? params.preferences.contactItems.join(", ")
-      : "phone, email, office, CTA form"
-  }
-
-${getDesignReferenceRecipe(params.preferences.designReference)}
-
-${getIndustrySpecificRules(
-    params.preferences.industry,
-    params.preferences.imageMode
-  )}
-
-INPUT CONTEXT:
-${renderInputModeContext({
-  inputMode: params.inputMode,
-  prompt: params.prompt,
-  referenceUrl: params.referenceUrl,
-  referenceHtml: params.referenceHtml,
-  attachments: params.attachments,
-})}
-
-HARD TECHNICAL LAYOUT CONSTRAINTS:
-- the page must be built with stable wrappers and predictable layout primitives
-- use a main site container system consistently
-- all important sections must use one of these approaches:
-  - max-width container + centered margin auto
-  - disciplined CSS grid
-  - disciplined flexbox with explicit gap and alignment
-- avoid random absolute positioning unless it is clearly decorative
-- never use absolute positioning for primary readable copy unless wrapped in a safe bounded content shell
-- every section must remain visually stable at desktop, tablet and mobile
-- do not create sections that depend on fragile pixel offsets to look correct
-- if a design uses overlays, use explicit max-width, safe padding and z-index layering
-- no section may look unfinished when content length changes moderately
-
-NAV HEIGHT RULES:
-- header / navigation must have a controlled height
-- navigation should usually stay within min-height: 72px to max-height: 112px on desktop
-- if the design family needs a taller premium shell, absolute hard limit is 124px
-- do not stack random extra text inside navigation if it causes height growth
-- navigation content must fit within the nav shell without overflow
-- if extra brand text is used, keep it compact and aligned, never let it increase nav height excessively
-- nav row must usually use:
-  - display: flex
-  - align-items: center
-  - justify-content: space-between
-  - gap: 16px to 32px
-- keep nav inner padding controlled and symmetrical
-- prevent giant vertical padding in navigation
-- menu links must align to the visual center of the nav row
-
-LOGO FIT RULES:
-- uploaded logos must NEVER render at natural uncontrolled size
-- the logo must always live inside a dedicated wrapper with explicit sizing constraints
-- always create a logo wrapper such as .brand-logo-shell and constrain it
-- preferred desktop constraints:
-  - max-width: 180px to 240px depending on design
-  - height: 40px to 64px
-- preferred tablet constraints:
-  - max-width: 150px to 200px
-  - height: 36px to 56px
-- preferred mobile constraints:
-  - max-width: 120px to 170px
-  - height: 34px to 52px
-- the actual img.brand-logo-image must use:
-  - display: block
-  - max-width: 100%
-  - max-height: 100%
-  - width: auto
-  - height: auto
-  - object-fit: contain
-  - object-position: left center
-- never allow the uploaded logo to stretch the nav row height
-- never allow the uploaded logo to overflow outside the logo shell
-- if the logo is unusually wide, preserve it by shrinking inside the shell, not by increasing shell height
-- if the logo is unusually tall, preserve it by shrinking inside the shell, not by increasing nav height
-
-SPACING AND COMPOSITION RULES:
-- spacing must feel deliberate and premium, not compressed
-- section top/bottom spacing on desktop should usually land between 88px and 144px depending on density
-- tablet spacing should stay generous, not collapse too hard
-- mobile spacing must still breathe
-- keep consistent inner card padding inside similar components
-- every hero, overlay card, floating panel, content column and text block must have explicit safe inner padding
-- never place text flush to viewport edges or image edges
-- use base horizontal gutters at minimum:
-  - desktop: clamp(24px, 4vw, 56px)
-  - tablet: clamp(20px, 5vw, 40px)
-  - mobile: clamp(16px, 5vw, 24px)
-
-OPTICAL ALIGNMENT RULES:
-- text may not be only mathematically centered; it must also feel optically centered
-- if a centered hero is used, the text block itself must have a bounded max-width and margin-inline auto
-- avoid centered sections where text appears shifted left because the wrapper is too wide or one side contains a hidden visual offset
-- headlines and paragraphs inside centered blocks must usually use:
-  - text-align: center
-  - max-width on the text block
-  - margin-inline: auto
-
-HERO STABILITY RULES:
-- hero sections must feel intentional and structurally stable
-- hero content must never collide with the navigation
-- hero must always have a predictable content wrapper
-- do not create a hero where copy floats in a huge empty canvas without a deliberate reason
-- do not create a hero where image, text and CTA have mismatched rhythm
-- hero headline block must have a maximum readable width
-- if using split hero:
-  - use clear left/right or top/bottom regions
-  - align items consistently
-  - preserve equal visual weight
-- if using centered hero:
-  - center the whole content stack
-  - enforce max-width for text block
-  - keep CTA row centered too
-- if using photo-led hero:
-  - copy must live in a safe panel or safe padded zone
-  - ensure contrast is strong enough
-- if using KPI or floating cards, those cards must support the hero, not break it
-- hero section must not feel broken at first glance
-- avoid giant accidental black empty hero gaps above the first meaningful copy
-- the first screen must feel complete and intentional
-
-TYPOGRAPHY HIERARCHY RULES:
-- enforce a clear H1 / H2 / H3 / H4 hierarchy
-- H1 must be visually dominant and distinct from H2
-- section labels / eyebrow text should be much smaller than section titles
-- heading-top margins and bottom margins must be consistent
-- avoid oversized headings inside secondary sections
-- subheadings should support, not compete with the hero
-- paragraphs must have readable line-height and sufficient distance from titles
-
-FONT VARIATION RULES:
-- create more visible font variety between projects
-- use CSS variables for font stacks, for example --font-display and --font-body
-- choose CSS stacks that clearly differ by mood
-- headings must not always use extremely heavy weights
-- avoid overusing 800 or 900 weight
-- default body copy should usually live around 400 to 500
-- secondary headings often work better at 500 to 700 instead of 800+
-- display headlines may be strong, but keep them refined and not always ultra-bold
-
-BUTTON AND CONTRAST RULES:
-- primary CTA must be highly visible against its background
-- navigation links and CTA button must not visually merge into the same weight or same contrast level
-- if the menu text is light and subtle, the CTA must have stronger fill / outline / contrast
-- secondary buttons must still be readable
-- never create low-contrast CTA text against similarly colored fills
-- match button treatment to the chosen Button style
-- if Button style is gradient-glow, use elegant glow not cheap neon
-- if Button style is glass, keep CTA readable and premium
-- if Button style is solid-premium, prioritize conversion and clarity
-
-MOBILE NAV RULES:
-- mobile navigation must be designed intentionally, not treated as an afterthought
-- on mobile, the logo block must stay on the left and the hamburger toggle must stay fully on the far right
-- the hamburger must never collapse toward the logo or sit awkwardly near the center
-- the mobile nav inner row must usually use:
-  - width: 100%
-  - display: flex
-  - align-items: center
-  - justify-content: space-between
-  - gap: 12px to 20px
-- the toggle wrapper should usually be flex: 0 0 auto and margin-left: auto
-- minimum tap target for the toggle is 44px by 44px
-- use a proper animated hamburger-to-X transition
-- add aria-expanded handling in JS
-- the mobile menu panel should open with a refined fade, slide or scale transition
-
-BENTO / CARD SYSTEM RULES:
-- if using bento or feature cards, cards should look intentionally designed as one family
-- match border color, padding logic, heading scale, icon size and internal spacing
-- avoid one visually weak card next to one very dense card unless it is part of the intended layout rhythm
-- if a bento grid is used, it must feel complete and balanced
-- never leave the impression that one expected card is missing
-- do not create ragged empty holes unless they are clearly intentional and compositionally strong
-
-ANIMATION AND WOW RULES:
-- use ${params.preferences.animationLevel} animation intensity
-- animations must feel premium, not gimmicky
-- include more polished motion than before when fitting the industry
-- allowed motion ideas:
-  - gradient drift
-  - subtle glow pulse
-  - reveal on scroll
-  - card hover lift
-  - animated border shimmer
-  - loading skeleton shimmer
-  - staggered text reveal
-  - animated underline / highlight pass
-  - floating UI drift
-- for SaaS / AI / product sites, richer motion is welcome
-- for luxury / real estate / restaurant, motion should be more restrained, softer and more elegant
-- if prompt enhancer mode is wow-creative, push animation quality, composition and visual drama further
-- if prompt enhancer mode is conversion, prioritize clarity and conversion over decorative complexity
-- if prompt enhancer mode is premium-brand, prioritize polish, balance and premium consistency
-
-IMAGE RULES:
-- also return assetPlan with at most 4 realistic images
-- if an image is needed in html, use a normal <img> and add data-image-slot="<slot>"
-- slot values in html must exactly match assetPlan.slot values
-- use image slots only where visually meaningful
-- queries must be concrete and in English
-- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
-- if input mode is url, screenshot or html and the structure suggests image-led sections, preserve that image-led rhythm
-
-MANDATORY CSS IMPLEMENTATION DETAILS:
-- define a global container utility in the CSS for the generated page, for example:
-  - width: min(1200px, calc(100% - clamp(32px, 6vw, 80px)))
-  - margin-inline: auto
-- define a logo shell class and use it anywhere the brand logo appears
-- define a nav shell that uses flex alignment and controlled min/max height
-- define a stable hero inner wrapper with explicit max-widths
-- define card classes with repeatable padding, radius and border logic
-- define responsive breakpoints for desktop, tablet and mobile
-- make sure typography scales down cleanly on mobile
-- prevent horizontal overflow globally
-- use box-sizing: border-box everywhere
-
-PROJECT CONTEXT:
-- Original prompt: ${params.prompt}
-- Build type: ${params.buildType || "neuvedeno"}
-- Preferred model label: ${params.model || "neuvedeno"}
-
-CHAT HISTORY:
-${formatChatHistory(params.chatHistory || [])}
-
-FINAL QA:
-- no obvious empty spaces
-- complete premium navigation with CTA
-- complete premium footer
-- working mobile menu
-- responsive desktop, tablet and mobile
-- balanced layout
-- visible design distinctiveness
-- strong compositional identity
-- custom-feeling icons
-- richer motion and detail
-- disciplined spacing
-- strong heading hierarchy
-- strong CTA contrast
-- polished cards
-- navigation stays within controlled height
-- uploaded logo is always constrained by a logo shell
-- hero remains structurally stable
-- centered text must also feel optically centered
-- first screen must not feel broken or empty
-`;
-}
-
 export async function POST(req: Request) {
   const requestId = crypto.randomUUID();
   const routeStartedAt = nowMs();
@@ -1543,6 +1389,7 @@ export async function POST(req: Request) {
     const buildType =
       typeof body?.buildType === "string" ? body.buildType : "";
     const model = typeof body?.model === "string" ? body.model : "";
+
     const inputMode: InputMode =
       body?.inputMode === "url" ||
       body?.inputMode === "screenshot" ||
@@ -1617,7 +1464,7 @@ export async function POST(req: Request) {
         referenceHtml,
         attachments,
       }),
-      schemaName: "website_bundle_creative_setup_v11",
+      schemaName: "website_bundle_creative_setup_v12",
       schema: generatedWebsiteSchema,
       requestId,
     });

@@ -24,6 +24,101 @@ type AssetPlanItem = {
   orientation: "landscape" | "portrait" | "square";
 };
 
+type BrandLogoAsset = {
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+};
+
+type AttachmentItem = {
+  id?: string;
+  name?: string;
+  kind?: "screenshot" | "file";
+};
+
+type SpeedMode = "fast" | "balanced" | "premium";
+type LayoutPreference =
+  | "auto"
+  | "editorial"
+  | "split"
+  | "asymmetrical"
+  | "story"
+  | "grid"
+  | "luxury";
+type VisualStyle =
+  | "auto"
+  | "clean"
+  | "premium"
+  | "bold"
+  | "editorial"
+  | "luxury"
+  | "playful";
+type AnimationLevel = "minimal" | "subtle" | "rich" | "expressive";
+type FontMood =
+  | "auto"
+  | "geometric"
+  | "editorial"
+  | "luxury"
+  | "trustworthy"
+  | "tech"
+  | "friendly";
+type IconStyle =
+  | "auto"
+  | "minimal"
+  | "outlined"
+  | "solid"
+  | "custom";
+type ButtonStyle =
+  | "auto"
+  | "soft-pill"
+  | "glass"
+  | "solid-premium"
+  | "outline-elegant"
+  | "gradient-glow";
+type PromptEnhancerMode =
+  | "balanced"
+  | "conversion"
+  | "premium-brand"
+  | "wow-creative";
+type DesignReference =
+  | "auto"
+  | "fintech-neon"
+  | "signal-orchestration"
+  | "angled-enterprise"
+  | "cinematic-resort"
+  | "luxury-editorial"
+  | "product-commerce"
+  | "clean-business"
+  | "restaurant-editorial"
+  | "barber-premium"
+  | "clean-automotive"
+  | "service-trades";
+type InputMode = "prompt" | "url" | "screenshot" | "html";
+
+type ClientAnswers = {
+  contactDetails?: string;
+  styleNotes?: string;
+  offerNotes?: string;
+  extras?: string;
+};
+
+type GenerationPreferences = {
+  speedMode?: SpeedMode;
+  layoutPreference?: LayoutPreference;
+  visualStyle?: VisualStyle;
+  animationLevel?: AnimationLevel;
+  fontMood?: FontMood;
+  iconStyle?: IconStyle;
+  designReference?: DesignReference;
+  buttonStyle?: ButtonStyle;
+  promptEnhancerMode?: PromptEnhancerMode;
+  preferredPrimaryColor?: string;
+  preferredBackgroundColor?: string;
+  contactItems?: string[];
+  clientAnswers?: ClientAnswers;
+  sourcePrompt?: string;
+};
+
 type SectionBundle = {
   sectionHtml: string;
   sectionCss: string;
@@ -57,6 +152,210 @@ function logStep(
       ...(extra || {}),
     })
   );
+}
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function sanitizeBrandLogoAsset(value: unknown): BrandLogoAsset | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Partial<BrandLogoAsset>;
+  const name =
+    typeof candidate.name === "string" ? candidate.name.trim().slice(0, 160) : "";
+  const mimeType =
+    typeof candidate.mimeType === "string"
+      ? candidate.mimeType.trim().slice(0, 120)
+      : "";
+  const dataUrl =
+    typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
+
+  if (!dataUrl.startsWith("data:image/")) return null;
+  if (dataUrl.length > 4_000_000) return null;
+
+  return {
+    name: name || "logo",
+    mimeType: mimeType || "image/png",
+    dataUrl,
+  };
+}
+
+function sanitizeAttachments(value: unknown): AttachmentItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(0, 12)
+    .filter((item): item is AttachmentItem => item && typeof item === "object")
+    .map((item) => ({
+      id: typeof item.id === "string" ? item.id.slice(0, 120) : undefined,
+      name: typeof item.name === "string" ? item.name.slice(0, 200) : undefined,
+      kind:
+        item.kind === "screenshot" || item.kind === "file"
+          ? item.kind
+          : undefined,
+    }));
+}
+
+function resolveInputMode(value: unknown): InputMode {
+  return value === "url" ||
+    value === "screenshot" ||
+    value === "html" ||
+    value === "prompt"
+    ? value
+    : "prompt";
+}
+
+function summarizeAttachments(items: AttachmentItem[]) {
+  if (!items.length) return "Žádné přílohy.";
+
+  return items
+    .map((item, index) => `${index + 1}. ${item.kind || "file"} — ${item.name || "bez názvu"}`)
+    .join("\n");
+}
+
+function inferIndustryKind(prompt: string) {
+  const text = normalizeText(prompt);
+
+  if (
+    text.includes("fintech") ||
+    text.includes("payment") ||
+    text.includes("platby") ||
+    text.includes("bank") ||
+    text.includes("finance")
+  ) {
+    return "fintech";
+  }
+
+  if (
+    text.includes("saas") ||
+    text.includes("software") ||
+    text.includes("app") ||
+    text.includes("platform") ||
+    text.includes("workflow")
+  ) {
+    return "saas";
+  }
+
+  if (
+    text.includes("realit") ||
+    text.includes("makler") ||
+    text.includes("nemovit") ||
+    text.includes("developer") ||
+    text.includes("developersky projekt")
+  ) {
+    return "real-estate";
+  }
+
+  if (
+    text.includes("resort") ||
+    text.includes("hotel") ||
+    text.includes("wellness")
+  ) {
+    return "resort";
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("restaurace") ||
+    text.includes("bistro") ||
+    text.includes("osteria") ||
+    text.includes("kavarna") ||
+    text.includes("fine dining")
+  ) {
+    return "restaurant";
+  }
+
+  if (text.includes("catering")) return "catering";
+  if (text.includes("barber") || text.includes("barbershop")) return "barber";
+
+  if (
+    text.includes("kadernice") ||
+    text.includes("kadernictvi") ||
+    text.includes("hair salon")
+  ) {
+    return "hair-salon";
+  }
+
+  if (
+    text.includes("autoservis") ||
+    text.includes("oprava aut") ||
+    text.includes("servis aut")
+  ) {
+    return "autoservis";
+  }
+
+  if (
+    text.includes("autobazar") ||
+    text.includes("prodej aut") ||
+    text.includes("dealer")
+  ) {
+    return "car-dealer";
+  }
+
+  if (
+    text.includes("zednik") ||
+    text.includes("stavebni firma") ||
+    text.includes("rekonstrukce") ||
+    text.includes("fasady")
+  ) {
+    return "zednik";
+  }
+
+  if (
+    text.includes("cukr") ||
+    text.includes("sugar") ||
+    text.includes("food") ||
+    text.includes("potrav")
+  ) {
+    return "food-product";
+  }
+
+  if (
+    text.includes("shop") ||
+    text.includes("eshop") ||
+    text.includes("e-shop") ||
+    text.includes("produkt")
+  ) {
+    return "ecommerce-product";
+  }
+
+  if (
+    text.includes("advokat") ||
+    text.includes("pravnik") ||
+    text.includes("notar")
+  ) {
+    return "legal";
+  }
+
+  if (
+    text.includes("klinika") ||
+    text.includes("medical") ||
+    text.includes("doctor")
+  ) {
+    return "healthcare";
+  }
+
+  if (
+    text.includes("beauty") ||
+    text.includes("kosmet") ||
+    text.includes("esthetic")
+  ) {
+    return "beauty";
+  }
+
+  if (
+    text.includes("luxury") ||
+    text.includes("premium") ||
+    text.includes("boutique")
+  ) {
+    return "luxury-service";
+  }
+
+  return "generic-business";
 }
 
 async function createStructuredObject<T>({
@@ -239,7 +538,7 @@ function extractSectionIds(html: string) {
     (match) => match[2]
   );
 
-  return Array.from(new Set(matches)).slice(0, 20);
+  return Array.from(new Set(matches)).slice(0, 24);
 }
 
 function replaceSectionById(params: {
@@ -348,9 +647,17 @@ function improveRenderPrompt(params: {
   selectedSectionHtml: string;
   sectionIds: string[];
   chatHistory?: ChatHistoryItem[];
+  generationPreferences?: GenerationPreferences;
+  brandLogo?: BrandLogoAsset | null;
+  inputMode: InputMode;
+  referenceUrl?: string;
+  referenceHtml?: string;
+  attachments?: AttachmentItem[];
 }) {
+  const industry = inferIndustryKind(params.prompt);
+
   return `
-You are a world-class commercial web designer and senior frontend engineer.
+You are a world-class commercial web designer, art director and senior frontend engineer.
 
 Return ONLY a structured JSON object matching the schema.
 
@@ -371,16 +678,53 @@ CRITICAL RULES:
 - preserve semantic structure
 - keep result lightweight and production-safe
 
+EDITING CONTEXT:
+- detected industry: ${industry}
+- input mode: ${params.inputMode}
+- reference URL: ${params.referenceUrl || "none"}
+- reference HTML supplied: ${params.referenceHtml?.trim() ? "yes" : "no"}
+- attachments summary:
+${summarizeAttachments(params.attachments || [])}
+
+GENERATION PREFERENCES:
+- speed mode: ${params.generationPreferences?.speedMode || "premium"}
+- layout preference: ${params.generationPreferences?.layoutPreference || "auto"}
+- visual style: ${params.generationPreferences?.visualStyle || "auto"}
+- animation level: ${params.generationPreferences?.animationLevel || "subtle"}
+- font mood: ${params.generationPreferences?.fontMood || "auto"}
+- icon style: ${params.generationPreferences?.iconStyle || "auto"}
+- design reference: ${params.generationPreferences?.designReference || "auto"}
+- button style: ${params.generationPreferences?.buttonStyle || "auto"}
+- prompt enhancer mode: ${params.generationPreferences?.promptEnhancerMode || "premium-brand"}
+- preferred primary color: ${params.generationPreferences?.preferredPrimaryColor || "none"}
+- preferred background color: ${params.generationPreferences?.preferredBackgroundColor || "none"}
+- contact items: ${(params.generationPreferences?.contactItems || []).join(", ") || "none"}
+- client answers contact details: ${params.generationPreferences?.clientAnswers?.contactDetails || "none"}
+- client answers style notes: ${params.generationPreferences?.clientAnswers?.styleNotes || "none"}
+- client answers offer notes: ${params.generationPreferences?.clientAnswers?.offerNotes || "none"}
+- client answers extras: ${params.generationPreferences?.clientAnswers?.extras || "none"}
+
+BRAND LOGO CONTEXT:
+${
+  params.brandLogo
+    ? `- a real uploaded logo exists
+- if the selected section contains brand or footer identity, preserve room for the uploaded logo
+- do not create a generic oversized text logo in sections where a real brand area makes more sense`
+    : `- no uploaded logo exists`
+}
+
 DESIGN QUALITY RULES:
 - improve this section so it feels designed by a strong human designer
 - avoid generic template look
 - use stronger hierarchy, spacing, alignment and composition
-- keep the section consistent with the probable industry and visual tone
+- keep the section consistent with the industry, prompt and preferred visual tone
 - do not overcomplicate markup
 - if the instruction is mainly text-related, change mostly the copy
 - if the instruction is mainly visual, improve composition without breaking structure
 - do NOT silently convert unusual hero direction into a generic left-text/right-image split
 - if the user asks for text bottom-left, bottom-center, overlay, framed copy or layered composition, follow that request directly
+- if the user wants stronger premium details, add tasteful gradients, motion, border accents or glass treatment only where appropriate
+- if the user wants calmer luxury or editorial styling, keep motion and effects subtle
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the selected section must use stable wrappers and predictable layout primitives
@@ -561,6 +905,18 @@ export async function POST(req: Request) {
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
+    const generationPreferences =
+      body?.generationPreferences &&
+      typeof body.generationPreferences === "object"
+        ? (body.generationPreferences as GenerationPreferences)
+        : {};
+    const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
+    const inputMode = resolveInputMode(body?.inputMode);
+    const referenceUrl =
+      typeof body?.referenceUrl === "string" ? body.referenceUrl.trim() : "";
+    const referenceHtml =
+      typeof body?.referenceHtml === "string" ? body.referenceHtml : "";
+    const attachments = sanitizeAttachments(body?.attachments);
 
     console.log(
       JSON.stringify({
@@ -574,6 +930,11 @@ export async function POST(req: Request) {
         cssLength: css.length,
         jsLength: js.length,
         selectedSectionId,
+        inputMode,
+        referenceUrlLength: referenceUrl.length,
+        referenceHtmlLength: referenceHtml.length,
+        attachmentsCount: attachments.length,
+        hasBrandLogo: Boolean(brandLogo),
       })
     );
 
@@ -625,7 +986,7 @@ export async function POST(req: Request) {
     const improvedSection = await createStructuredObject<SectionBundle>({
       model: WEB_MODEL,
       system:
-        "You are an elite web designer and frontend engineer. Return only valid JSON.",
+        "You are an elite web designer, art director and frontend engineer. Return only valid JSON.",
       user: improveRenderPrompt({
         prompt,
         instruction,
@@ -633,8 +994,14 @@ export async function POST(req: Request) {
         selectedSectionHtml,
         sectionIds,
         chatHistory,
+        generationPreferences,
+        brandLogo,
+        inputMode,
+        referenceUrl,
+        referenceHtml,
+        attachments,
       }),
-      schemaName: "improve_section_bundle_layout_guardrails_v5",
+      schemaName: "improve_section_bundle_layout_guardrails_v6",
       schema: sectionBundleSchema,
       requestId,
     });
@@ -690,6 +1057,7 @@ export async function POST(req: Request) {
       totalMs: Date.now() - routeStartedAt,
       model: WEB_MODEL,
       selectedSectionId,
+      inputMode,
     });
 
     return Response.json({
