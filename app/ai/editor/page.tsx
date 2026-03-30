@@ -116,6 +116,87 @@ type GenerationPreferences = {
   sourcePrompt?: string;
 };
 
+type ReferenceSiteSummary = {
+  referenceUrl?: string;
+  finalUrl?: string;
+  title?: string;
+  metaDescription?: string;
+  headings?: string[];
+  navLinks?: string[];
+  ctas?: string[];
+  firstParagraphs?: string[];
+  sectionCount?: number;
+  classHints?: string[];
+  idHints?: string[];
+  textSample?: string;
+  htmlSnippet?: string;
+};
+
+type ReferenceLayoutFingerprint = {
+  heroType?:
+    | "full-bleed-centered"
+    | "split"
+    | "editorial-cover"
+    | "bottom-left-overlay"
+    | "grid"
+    | "unknown";
+  visualDominance?:
+    | "vehicle"
+    | "architecture"
+    | "product"
+    | "food"
+    | "software-ui"
+    | "people-service"
+    | "mixed"
+    | "unknown";
+  sectionSequence?: string[];
+  density?: "airy" | "balanced" | "dense";
+  navStyle?: "minimal" | "corporate" | "editorial" | "unknown";
+  likelyAccentStyle?: "lime" | "cyan" | "gold" | "white" | "unknown";
+  shouldUseStatsBandAfterHero?: boolean;
+  heroNeedsSingleDominantSubject?: boolean;
+  shouldAvoidSplitHero?: boolean;
+};
+
+type ReferenceScreenshotAnalysis = {
+  screenshotAvailable?: boolean;
+  aboveTheFoldType?:
+    | "cover-hero"
+    | "split-hero"
+    | "editorial-cover"
+    | "grid-hero"
+    | "unknown";
+  heroContentAlignment?:
+    | "center"
+    | "left"
+    | "right"
+    | "bottom-left"
+    | "unknown";
+  navVisualWeight?: "minimal" | "medium" | "heavy" | "unknown";
+  firstSectionAfterHero?:
+    | "stats-band"
+    | "services"
+    | "gallery"
+    | "testimonials"
+    | "unknown";
+  dominantVisualSubject?:
+    | "vehicle"
+    | "architecture"
+    | "product"
+    | "food"
+    | "ui"
+    | "portrait"
+    | "mixed"
+    | "unknown";
+  shouldKeepFullWidthHero?: boolean;
+  shouldKeepSingleDominantSubject?: boolean;
+  shouldAvoidSplitHero?: boolean;
+  mustKeepMotifs?: string[];
+  forbiddenMistakes?: string[];
+  colorDirection?: string;
+  compositionSummary?: string;
+};
+
 type GeneratorResponse = {
   html: string;
   css: string;
@@ -133,6 +214,10 @@ type GeneratorResponse = {
   changedOnlySelectedSection?: boolean;
   twoStepMode?: boolean;
   generationPreferences?: Partial<GenerationPreferences>;
+  referenceSummary?: ReferenceSiteSummary | null;
+  layoutFingerprint?: ReferenceLayoutFingerprint | null;
+  screenshotAnalysis?: ReferenceScreenshotAnalysis | null;
+  hasReferenceScreenshot?: boolean;
 };
 
 type AssetResolveResponse = {
@@ -640,15 +725,6 @@ function getEffectivePrompt(params: {
   }
 
   return prompt;
-}
-
-function toDebugLines(value?: string[] | null, fallback = "neuvedeno") {
-  if (!value || value.length === 0) return [fallback];
-  return value.filter(Boolean);
-}
-
-function toYesNo(value?: boolean) {
-  return value ? "ano" : "ne";
 }
 
 function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
@@ -2132,35 +2208,13 @@ export default function AiEditorPage() {
       referenceHtml,
       attachments,
     });
-
     const finalPrompt = requestInput.effectivePrompt;
-    if (requestInput.inputMode === "url" && !requestInput.referenceUrl) {
-      setError("Pro URL režim zadejte validní URL včetně https://");
-      return;
-    }
-
-    if (requestInput.inputMode === "html" && !requestInput.referenceHtml) {
-      setError("Pro HTML režim vložte HTML referenci.");
-      return;
-    }
-
-    if (
-      requestInput.inputMode === "screenshot" &&
-      !requestInput.attachments.some((item) => item.kind === "screenshot")
-    ) {
-      setError("Pro screenshot režim nahrajte alespoň jeden screenshot.");
-      return;
-    }
-
-    if (finalPrompt.length < 8) {
-      setError("Doplňte prosím zadání nebo referenční vstup.");
-      return;
-    }
+    if (finalPrompt.length < 8) return;
 
     const effectivePreferences = {
       ...(forcedPreferences || generationPreferences),
       sourcePrompt: finalPrompt,
-    } as GenerationPreferences;
+    };
 
     setLoading(true);
     setError(null);
@@ -2215,16 +2269,20 @@ export default function AiEditorPage() {
       setJs(data.js || "");
       setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
-      setReferenceSummaryDebug(data.referenceSummary || null);
-      setLayoutFingerprintDebug(data.layoutFingerprint || null);
-      setScreenshotAnalysisDebug(data.screenshotAnalysis || null);
-      setHasReferenceScreenshotDebug(Boolean(data.hasReferenceScreenshot));
 
       if (data.generationPreferences) {
         setGenerationPreferences((prev) =>
-          mergeStoredPreferences(prev, data.generationPreferences)
+          mergeStoredPreferences(prev, {
+            ...data.generationPreferences,
+            sourcePrompt: finalPrompt,
+          })
         );
       }
+
+      setReferenceSummaryDebug(data.referenceSummary ?? null);
+      setLayoutFingerprintDebug(data.layoutFingerprint ?? null);
+      setScreenshotAnalysisDebug(data.screenshotAnalysis ?? null);
+      setHasReferenceScreenshotDebug(Boolean(data.hasReferenceScreenshot));
 
       setMessages((prev) => [
         ...prev,
@@ -2637,95 +2695,6 @@ export default function AiEditorPage() {
                     )}
                   </div>
 
-
-                  {(referenceSummaryDebug || layoutFingerprintDebug || screenshotAnalysisDebug) && (
-                    <details className="mb-3 rounded-[10px] border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] leading-5 text-zinc-200">
-                      <summary className="cursor-pointer list-none select-none text-xs font-semibold uppercase tracking-[0.16em] text-amber-200">
-                        Debug reference analýza
-                      </summary>
-
-                      <div className="mt-3 space-y-3">
-                        {referenceSummaryDebug && (
-                          <div className="rounded-[10px] border border-white/8 bg-black/20 p-3">
-                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-                              Reference summary
-                            </div>
-                            <div><span className="text-zinc-500">Title:</span> <span className="text-white">{referenceSummaryDebug.title || "neuvedeno"}</span></div>
-                            <div><span className="text-zinc-500">Final URL:</span> <span className="text-white break-all">{referenceSummaryDebug.finalUrl || referenceSummaryDebug.referenceUrl || "neuvedeno"}</span></div>
-                            <div><span className="text-zinc-500">Počet sekcí:</span> <span className="text-white">{referenceSummaryDebug.sectionCount ?? 0}</span></div>
-                            <div className="mt-2 text-zinc-400">Headings:</div>
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              {toDebugLines(referenceSummaryDebug.headings).map((item, index) => (
-                                <span key={`heading-${index}`} className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-200">{item}</span>
-                              ))}
-                            </div>
-                            <div className="mt-2 text-zinc-400">CTA:</div>
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              {toDebugLines(referenceSummaryDebug.ctas).map((item, index) => (
-                                <span key={`cta-${index}`} className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-200">{item}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {layoutFingerprintDebug && (
-                          <div className="rounded-[10px] border border-white/8 bg-black/20 p-3">
-                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-                              Layout fingerprint
-                            </div>
-                            <div className="grid gap-1 text-[11px] text-zinc-300">
-                              <div><span className="text-zinc-500">Hero:</span> <span className="text-white">{layoutFingerprintDebug.heroType || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Dominance:</span> <span className="text-white">{layoutFingerprintDebug.visualDominance || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Nav:</span> <span className="text-white">{layoutFingerprintDebug.navStyle || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Density:</span> <span className="text-white">{layoutFingerprintDebug.density || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Accent:</span> <span className="text-white">{layoutFingerprintDebug.likelyAccentStyle || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Avoid split hero:</span> <span className="text-white">{toYesNo(layoutFingerprintDebug.shouldAvoidSplitHero)}</span></div>
-                              <div><span className="text-zinc-500">Stats after hero:</span> <span className="text-white">{toYesNo(layoutFingerprintDebug.shouldUseStatsBandAfterHero)}</span></div>
-                            </div>
-                            <div className="mt-2 text-zinc-400">Sekce:</div>
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              {toDebugLines(layoutFingerprintDebug.sectionSequence).map((item, index) => (
-                                <span key={`sequence-${index}`} className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-200">{item}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {(screenshotAnalysisDebug || hasReferenceScreenshotDebug) && (
-                          <div className="rounded-[10px] border border-white/8 bg-black/20 p-3">
-                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-                              Screenshot analysis
-                            </div>
-                            <div className="grid gap-1 text-[11px] text-zinc-300">
-                              <div><span className="text-zinc-500">Screenshot:</span> <span className="text-white">{hasReferenceScreenshotDebug ? "ano" : "ne"}</span></div>
-                              <div><span className="text-zinc-500">Above the fold:</span> <span className="text-white">{screenshotAnalysisDebug?.aboveTheFoldType || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Align:</span> <span className="text-white">{screenshotAnalysisDebug?.heroContentAlignment || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">After hero:</span> <span className="text-white">{screenshotAnalysisDebug?.firstSectionAfterHero || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Subject:</span> <span className="text-white">{screenshotAnalysisDebug?.dominantVisualSubject || "unknown"}</span></div>
-                              <div><span className="text-zinc-500">Keep full width:</span> <span className="text-white">{toYesNo(screenshotAnalysisDebug?.shouldKeepFullWidthHero)}</span></div>
-                              <div><span className="text-zinc-500">Avoid split:</span> <span className="text-white">{toYesNo(screenshotAnalysisDebug?.shouldAvoidSplitHero)}</span></div>
-                            </div>
-                            {screenshotAnalysisDebug?.compositionSummary && (
-                              <div className="mt-2 rounded-[10px] border border-white/8 bg-white/[0.04] p-2 text-zinc-300">
-                                {screenshotAnalysisDebug.compositionSummary}
-                              </div>
-                            )}
-                            {!!screenshotAnalysisDebug?.forbiddenMistakes?.length && (
-                              <div className="mt-2">
-                                <div className="mb-1 text-zinc-400">Zakázané chyby:</div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {screenshotAnalysisDebug.forbiddenMistakes.map((item, index) => (
-                                    <span key={`forbidden-${index}`} className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[10px] text-red-100">{item}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </details>
-                  )}
-
                   <button
                     type="button"
                     onClick={() => {
@@ -2920,6 +2889,59 @@ export default function AiEditorPage() {
                               {item}
                             </button>
                           ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(referenceSummaryDebug ||
+                      layoutFingerprintDebug ||
+                      screenshotAnalysisDebug ||
+                      hasReferenceScreenshotDebug) && (
+                      <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 p-3">
+                        <div className="mb-2 text-sm font-medium text-white">
+                          Debug reference analýza
+                        </div>
+                        <div className="space-y-2 text-[11px] leading-5 text-zinc-300">
+                          <div>
+                            <span className="text-zinc-100">Screenshot reference:</span>{" "}
+                            {hasReferenceScreenshotDebug ? "ano" : "ne"}
+                          </div>
+
+                          {referenceSummaryDebug && (
+                            <div className="rounded-[8px] border border-white/10 bg-black/20 p-2">
+                              <div className="mb-1 text-zinc-100">Reference summary</div>
+                              <div>Title: {referenceSummaryDebug.title || "—"}</div>
+                              <div>
+                                Sekce: {referenceSummaryDebug.sectionCount ?? "—"} · Nav:{" "}
+                                {referenceSummaryDebug.navLinks?.length ?? 0} · CTA:{" "}
+                                {referenceSummaryDebug.ctas?.length ?? 0}
+                              </div>
+                            </div>
+                          )}
+
+                          {layoutFingerprintDebug && (
+                            <div className="rounded-[8px] border border-white/10 bg-black/20 p-2">
+                              <div className="mb-1 text-zinc-100">Layout fingerprint</div>
+                              <div>Hero: {layoutFingerprintDebug.heroType || "—"}</div>
+                              <div>Dominance: {layoutFingerprintDebug.visualDominance || "—"}</div>
+                              <div>Nav: {layoutFingerprintDebug.navStyle || "—"}</div>
+                              <div>Density: {layoutFingerprintDebug.density || "—"}</div>
+                              <div>
+                                Sections: {layoutFingerprintDebug.sectionSequence?.join(" → ") || "—"}
+                              </div>
+                            </div>
+                          )}
+
+                          {screenshotAnalysisDebug && (
+                            <div className="rounded-[8px] border border-white/10 bg-black/20 p-2">
+                              <div className="mb-1 text-zinc-100">Screenshot analýza</div>
+                              <div>Above the fold: {screenshotAnalysisDebug.aboveTheFoldType || "—"}</div>
+                              <div>Alignment: {screenshotAnalysisDebug.heroContentAlignment || "—"}</div>
+                              <div>Subject: {screenshotAnalysisDebug.dominantVisualSubject || "—"}</div>
+                              <div>After hero: {screenshotAnalysisDebug.firstSectionAfterHero || "—"}</div>
+                              <div>Color: {screenshotAnalysisDebug.colorDirection || "—"}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
