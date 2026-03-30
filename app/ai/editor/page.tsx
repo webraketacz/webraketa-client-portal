@@ -116,22 +116,6 @@ type GenerationPreferences = {
   sourcePrompt?: string;
 };
 
-type ReferenceSiteSummary = {
-  referenceUrl?: string;
-  finalUrl?: string;
-  title?: string;
-  metaDescription?: string;
-  headings?: string[];
-  navLinks?: string[];
-  ctas?: string[];
-  firstParagraphs?: string[];
-  sectionCount?: number;
-  classHints?: string[];
-  idHints?: string[];
-  textSample?: string;
-  htmlSnippet?: string;
-};
-
 type GeneratorResponse = {
   html: string;
   css: string;
@@ -149,7 +133,6 @@ type GeneratorResponse = {
   changedOnlySelectedSection?: boolean;
   twoStepMode?: boolean;
   generationPreferences?: Partial<GenerationPreferences>;
-  referenceSummary?: ReferenceSiteSummary | null;
 };
 
 type AssetResolveResponse = {
@@ -618,52 +601,6 @@ function mergeStoredPreferences(
 }
 
 
-function sanitizeReferenceUrl(value?: string) {
-  const raw = (value || "").trim();
-  if (!raw) return "";
-
-  try {
-    const parsed = new URL(raw);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
-    return parsed.toString();
-  } catch {
-    return "";
-  }
-}
-
-function getGenerationRequestInput(params: {
-  prompt?: string;
-  inputMode: InputMode;
-  referenceUrl?: string;
-  referenceHtml?: string;
-  attachments?: AttachmentItem[];
-}) {
-  const safeInputMode =
-    params.inputMode === "url" ||
-    params.inputMode === "screenshot" ||
-    params.inputMode === "html"
-      ? params.inputMode
-      : "prompt";
-
-  const safeReferenceUrl = sanitizeReferenceUrl(params.referenceUrl);
-  const safeReferenceHtml = (params.referenceHtml || "").trim();
-  const safeAttachments = Array.isArray(params.attachments) ? params.attachments : [];
-  const effectivePrompt = getEffectivePrompt({
-    prompt: params.prompt,
-    inputMode: safeInputMode,
-    referenceUrl: safeReferenceUrl,
-    referenceHtml: safeReferenceHtml,
-    attachments: safeAttachments,
-  }).trim();
-
-  return {
-    inputMode: safeInputMode,
-    referenceUrl: safeReferenceUrl,
-    referenceHtml: safeReferenceHtml,
-    attachments: safeAttachments,
-    effectivePrompt,
-  };
-}
 
 function getEffectivePrompt(params: {
   prompt?: string;
@@ -703,6 +640,15 @@ function getEffectivePrompt(params: {
   }
 
   return prompt;
+}
+
+function toDebugLines(value?: string[] | null, fallback = "neuvedeno") {
+  if (!value || value.length === 0) return [fallback];
+  return value.filter(Boolean);
+}
+
+function toYesNo(value?: boolean) {
+  return value ? "ano" : "ne";
 }
 
 function getQuestionsForIndustry(industry: IndustryKind): Otazka[] {
@@ -1562,6 +1508,14 @@ export default function AiEditorPage() {
 
   const [generatedIndustry, setGeneratedIndustry] = useState<IndustryKind | null>(null);
   const [postGenerateSuggestions, setPostGenerateSuggestions] = useState<string[]>([]);
+  const [referenceSummaryDebug, setReferenceSummaryDebug] =
+    useState<ReferenceSiteSummary | null>(null);
+  const [layoutFingerprintDebug, setLayoutFingerprintDebug] =
+    useState<ReferenceLayoutFingerprint | null>(null);
+  const [screenshotAnalysisDebug, setScreenshotAnalysisDebug] =
+    useState<ReferenceScreenshotAnalysis | null>(null);
+  const [hasReferenceScreenshotDebug, setHasReferenceScreenshotDebug] =
+    useState(false);
 
   const progressRef = useRef<number | null>(null);
   const loadingMessageRef = useRef<number>(0);
@@ -1958,7 +1912,7 @@ export default function AiEditorPage() {
     setReferenceUrl(storedReferenceUrl);
     setReferenceHtml(storedReferenceHtml);
 
-    const bootPrompt = getGenerationRequestInput({
+    const bootPrompt = getEffectivePrompt({
       prompt: initialPrompt,
       inputMode:
         storedInputMode === "prompt" ||
@@ -1969,7 +1923,7 @@ export default function AiEditorPage() {
           : "prompt",
       referenceUrl: storedReferenceUrl,
       referenceHtml: storedReferenceHtml,
-    }).effectivePrompt;
+    });
 
     if (bootPrompt) {
       setPrompt(bootPrompt);
@@ -1999,7 +1953,7 @@ export default function AiEditorPage() {
       );
     } catch {}
 
-    const autostartPrompt = getGenerationRequestInput({
+    const autostartPrompt = getEffectivePrompt({
       prompt: initialPrompt,
       inputMode:
         storedInputMode === "prompt" ||
@@ -2010,8 +1964,7 @@ export default function AiEditorPage() {
           : "prompt",
       referenceUrl: storedReferenceUrl,
       referenceHtml: storedReferenceHtml,
-      attachments,
-    }).effectivePrompt;
+    });
 
     if (autostart && autostartPrompt && !autostartRef.current) {
       autostartRef.current = true;
@@ -2172,7 +2125,7 @@ export default function AiEditorPage() {
     customPrompt?: string,
     forcedPreferences?: GenerationPreferences
   ) {
-    const generationInput = getGenerationRequestInput({
+    const requestInput = getGenerationRequestInput({
       prompt: customPrompt ?? prompt,
       inputMode,
       referenceUrl,
@@ -2180,36 +2133,34 @@ export default function AiEditorPage() {
       attachments,
     });
 
-    const finalPrompt = generationInput.effectivePrompt;
-    const finalInputMode = generationInput.inputMode;
-    const finalReferenceUrl = generationInput.referenceUrl;
-    const finalReferenceHtml = generationInput.referenceHtml;
-    const finalAttachments = generationInput.attachments;
-
-    if (finalPrompt.length < 8) {
-      setError("Chybí zadání. Zadejte prompt nebo vložte validní URL / HTML / screenshot.");
+    const finalPrompt = requestInput.effectivePrompt;
+    if (requestInput.inputMode === "url" && !requestInput.referenceUrl) {
+      setError("Pro URL režim zadejte validní URL včetně https://");
       return;
     }
 
-    if (finalInputMode === "url" && !finalReferenceUrl) {
-      setError("V URL režimu vložte prosím validní URL včetně http:// nebo https://.");
-      return;
-    }
-
-    if (finalInputMode === "html" && !finalReferenceHtml.trim()) {
-      setError("V HTML režimu chybí referenční HTML.");
+    if (requestInput.inputMode === "html" && !requestInput.referenceHtml) {
+      setError("Pro HTML režim vložte HTML referenci.");
       return;
     }
 
     if (
-      finalInputMode === "screenshot" &&
-      !finalAttachments.some((item) => item.kind === "screenshot")
+      requestInput.inputMode === "screenshot" &&
+      !requestInput.attachments.some((item) => item.kind === "screenshot")
     ) {
-      setError("V režimu screenshot chybí nahraný screenshot.");
+      setError("Pro screenshot režim nahrajte alespoň jeden screenshot.");
       return;
     }
 
-    const effectivePreferences = forcedPreferences || generationPreferences;
+    if (finalPrompt.length < 8) {
+      setError("Doplňte prosím zadání nebo referenční vstup.");
+      return;
+    }
+
+    const effectivePreferences = {
+      ...(forcedPreferences || generationPreferences),
+      sourcePrompt: finalPrompt,
+    } as GenerationPreferences;
 
     setLoading(true);
     setError(null);
@@ -2223,6 +2174,10 @@ export default function AiEditorPage() {
     setSelectedImage(null);
     setGeneratedIndustry(null);
     setPostGenerateSuggestions([]);
+    setReferenceSummaryDebug(null);
+    setLayoutFingerprintDebug(null);
+    setScreenshotAnalysisDebug(null);
+    setHasReferenceScreenshotDebug(false);
     setProgress(0);
     setActiveTab("preview");
 
@@ -2234,18 +2189,12 @@ export default function AiEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: finalPrompt,
-          inputMode: finalInputMode,
-          referenceUrl: finalReferenceUrl,
-          referenceHtml: finalReferenceHtml,
-          attachments: finalAttachments,
-          generationPreferences: {
-            ...effectivePreferences,
-            sourcePrompt: finalPrompt,
-          },
-          landingPreferences: {
-            ...effectivePreferences,
-            sourcePrompt: finalPrompt,
-          },
+          inputMode: requestInput.inputMode,
+          referenceUrl: requestInput.referenceUrl,
+          referenceHtml: requestInput.referenceHtml,
+          attachments: requestInput.attachments,
+          generationPreferences: effectivePreferences,
+          landingPreferences: effectivePreferences,
           chatHistory: getChatHistoryPayload(),
           brandLogo: uploadedLogo,
         }),
@@ -2266,6 +2215,10 @@ export default function AiEditorPage() {
       setJs(data.js || "");
       setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
+      setReferenceSummaryDebug(data.referenceSummary || null);
+      setLayoutFingerprintDebug(data.layoutFingerprint || null);
+      setScreenshotAnalysisDebug(data.screenshotAnalysis || null);
+      setHasReferenceScreenshotDebug(Boolean(data.hasReferenceScreenshot));
 
       if (data.generationPreferences) {
         setGenerationPreferences((prev) =>
@@ -2683,6 +2636,95 @@ export default function AiEditorPage() {
                       </div>
                     )}
                   </div>
+
+
+                  {(referenceSummaryDebug || layoutFingerprintDebug || screenshotAnalysisDebug) && (
+                    <details className="mb-3 rounded-[10px] border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] leading-5 text-zinc-200">
+                      <summary className="cursor-pointer list-none select-none text-xs font-semibold uppercase tracking-[0.16em] text-amber-200">
+                        Debug reference analýza
+                      </summary>
+
+                      <div className="mt-3 space-y-3">
+                        {referenceSummaryDebug && (
+                          <div className="rounded-[10px] border border-white/8 bg-black/20 p-3">
+                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                              Reference summary
+                            </div>
+                            <div><span className="text-zinc-500">Title:</span> <span className="text-white">{referenceSummaryDebug.title || "neuvedeno"}</span></div>
+                            <div><span className="text-zinc-500">Final URL:</span> <span className="text-white break-all">{referenceSummaryDebug.finalUrl || referenceSummaryDebug.referenceUrl || "neuvedeno"}</span></div>
+                            <div><span className="text-zinc-500">Počet sekcí:</span> <span className="text-white">{referenceSummaryDebug.sectionCount ?? 0}</span></div>
+                            <div className="mt-2 text-zinc-400">Headings:</div>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {toDebugLines(referenceSummaryDebug.headings).map((item, index) => (
+                                <span key={`heading-${index}`} className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-200">{item}</span>
+                              ))}
+                            </div>
+                            <div className="mt-2 text-zinc-400">CTA:</div>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {toDebugLines(referenceSummaryDebug.ctas).map((item, index) => (
+                                <span key={`cta-${index}`} className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-200">{item}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {layoutFingerprintDebug && (
+                          <div className="rounded-[10px] border border-white/8 bg-black/20 p-3">
+                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                              Layout fingerprint
+                            </div>
+                            <div className="grid gap-1 text-[11px] text-zinc-300">
+                              <div><span className="text-zinc-500">Hero:</span> <span className="text-white">{layoutFingerprintDebug.heroType || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Dominance:</span> <span className="text-white">{layoutFingerprintDebug.visualDominance || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Nav:</span> <span className="text-white">{layoutFingerprintDebug.navStyle || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Density:</span> <span className="text-white">{layoutFingerprintDebug.density || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Accent:</span> <span className="text-white">{layoutFingerprintDebug.likelyAccentStyle || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Avoid split hero:</span> <span className="text-white">{toYesNo(layoutFingerprintDebug.shouldAvoidSplitHero)}</span></div>
+                              <div><span className="text-zinc-500">Stats after hero:</span> <span className="text-white">{toYesNo(layoutFingerprintDebug.shouldUseStatsBandAfterHero)}</span></div>
+                            </div>
+                            <div className="mt-2 text-zinc-400">Sekce:</div>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {toDebugLines(layoutFingerprintDebug.sectionSequence).map((item, index) => (
+                                <span key={`sequence-${index}`} className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-200">{item}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {(screenshotAnalysisDebug || hasReferenceScreenshotDebug) && (
+                          <div className="rounded-[10px] border border-white/8 bg-black/20 p-3">
+                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                              Screenshot analysis
+                            </div>
+                            <div className="grid gap-1 text-[11px] text-zinc-300">
+                              <div><span className="text-zinc-500">Screenshot:</span> <span className="text-white">{hasReferenceScreenshotDebug ? "ano" : "ne"}</span></div>
+                              <div><span className="text-zinc-500">Above the fold:</span> <span className="text-white">{screenshotAnalysisDebug?.aboveTheFoldType || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Align:</span> <span className="text-white">{screenshotAnalysisDebug?.heroContentAlignment || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">After hero:</span> <span className="text-white">{screenshotAnalysisDebug?.firstSectionAfterHero || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Subject:</span> <span className="text-white">{screenshotAnalysisDebug?.dominantVisualSubject || "unknown"}</span></div>
+                              <div><span className="text-zinc-500">Keep full width:</span> <span className="text-white">{toYesNo(screenshotAnalysisDebug?.shouldKeepFullWidthHero)}</span></div>
+                              <div><span className="text-zinc-500">Avoid split:</span> <span className="text-white">{toYesNo(screenshotAnalysisDebug?.shouldAvoidSplitHero)}</span></div>
+                            </div>
+                            {screenshotAnalysisDebug?.compositionSummary && (
+                              <div className="mt-2 rounded-[10px] border border-white/8 bg-white/[0.04] p-2 text-zinc-300">
+                                {screenshotAnalysisDebug.compositionSummary}
+                              </div>
+                            )}
+                            {!!screenshotAnalysisDebug?.forbiddenMistakes?.length && (
+                              <div className="mt-2">
+                                <div className="mb-1 text-zinc-400">Zakázané chyby:</div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {screenshotAnalysisDebug.forbiddenMistakes.map((item, index) => (
+                                    <span key={`forbidden-${index}`} className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[10px] text-red-100">{item}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  )}
 
                   <button
                     type="button"
