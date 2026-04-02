@@ -2,6 +2,35 @@ import OpenAI from "openai";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
+import { GoogleGenAI } from "@google/genai";
+
+const gemini = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
+const GEMINI_FAST_MODEL = process.env.GEMINI_FAST_MODEL || "gemini-3.1-flash-lite-preview";
+
+async function createGeminiReferenceCritic(input:any){
+  try{
+    const res = await gemini.models.generateContent({
+      model:GEMINI_MODEL,
+      contents:[{
+        role:"user",
+        parts:[{text:`Analyze fidelity vs reference blueprint and return strict JSON diff.`}]
+      }],
+      config:{responseMimeType:"application/json"}
+    });
+
+    if(!res.text) return null;
+    return JSON.parse(res.text);
+  }catch(e){
+    console.error("Gemini critic failed");
+    return null;
+  }
+}
+
+
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
