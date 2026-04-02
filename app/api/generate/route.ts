@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import chromium from "@sparticuz/chromium-min";
-import puppeteer from "puppeteer-core";
+import puppeteer, { type Page } from "puppeteer-core";
 
 import { GoogleGenAI } from "@google/genai";
 
@@ -949,7 +949,7 @@ async function createBrowserPage(referenceUrl: string) {
 }
 
 async function captureShotAt(
-  page: puppeteer.Page,
+  page: Page,
   shotId: ReferencePageShot["id"],
   scrollY: number
 ): Promise<ReferencePageShot> {
