@@ -177,6 +177,33 @@ type UiStylePreset =
   | "soft-premium"
   | "editorial";
 
+type BusinessGoal =
+  | "auto"
+  | "leads"
+  | "sales"
+  | "registrations"
+  | "trust"
+  | "presentation";
+
+type ContentDensity = "airy" | "balanced" | "dense";
+
+type HeroStyle =
+  | "auto"
+  | "minimal"
+  | "cover"
+  | "split"
+  | "overlay"
+  | "dashboard"
+  | "editorial";
+
+type ToneOfVoice =
+  | "professional"
+  | "premium"
+  | "direct"
+  | "friendly"
+  | "luxury"
+  | "technical";
+
 type LandingPreferences = {
   visualStyle: VisualStyle;
   fontMood: FontMood;
@@ -210,6 +237,18 @@ type LandingPreferences = {
   framingPreset: FramingPreset;
   themePreset: ThemePreset;
   uiStylePreset: UiStylePreset;
+
+  businessGoal: BusinessGoal;
+  contentDensity: ContentDensity;
+  heroStyle: HeroStyle;
+  toneOfVoice: ToneOfVoice;
+  targetAudience: string;
+  contactPreferences: string[];
+
+  exactPrimaryHex: string;
+  exactSecondaryHex: string;
+  exactBackgroundHex: string;
+  exactTextHex: string;
 };
 
 const DEFAULT_BUILD_TYPE = "premium";
@@ -217,10 +256,27 @@ const DEFAULT_MODEL = "openai-gpt-4";
 
 const TYPING_PROMPTS = [
   "Vytvořte prémiový web pro soukromou kliniku v Praze…",
-  "Navrhněte wow dark SaaS web pro AI startup…",
+  "Navrhněte výrazný dark SaaS web pro AI startup…",
   "Připravte luxusní landing page pro developerský projekt…",
   "Vygenerujte redesign podle URL konkurenčního webu…",
   "Vytvořte prémiový web pro fine dining restauraci…",
+];
+
+const ROTATING_TIPS = [
+  "Tajný tip: vložte URL oblíbeného webu a Zyvia přesněji převezme layout, rytmus i atmosféru návrhu.",
+  "Tajný tip: přidejte screenshot reference a zlepšíte kompozici hero sekce, typografii i spacing.",
+  "Tajný tip: uveďte obor, cílového zákazníka a obchodní cíl. Výsledek bude výrazně přesnější.",
+  "Tajný tip: nastavte přesné HEX barvy a získáte konzistentnější první návrh bez zbytečných oprav.",
+  "Tajný tip: u redesignu z URL se vyplatí otevřít Pokročilé nastavení návrhu a zamknout hero styl i hustotu obsahu.",
+];
+
+const CONTACT_CHOICES = [
+  "Telefon",
+  "E-mail",
+  "Formulář",
+  "Mapa",
+  "WhatsApp",
+  "Rezervace schůzky",
 ];
 
 function buildEnhancedPrompt(params: {
@@ -302,18 +358,36 @@ function buildEnhancedPrompt(params: {
       ? "Jde o generování podle screenshotu nebo vizuální reference. Vnímej layout, spacing, rytmus a hierarchii."
       : "Jde o generování podle textového zadání.";
 
-  const colorLines = [
+  const extraLines = [
     preferences.preferredPrimaryColor.trim()
-      ? `Primární akcent nebo CTA barva preferovaně: ${preferences.preferredPrimaryColor.trim()}.`
+      ? `Preferovaná primární barva: ${preferences.preferredPrimaryColor.trim()}.`
       : "",
     preferences.preferredBackgroundColor.trim()
-      ? `Preferovaná barva pozadí nebo základní tonalita: ${preferences.preferredBackgroundColor.trim()}.`
+      ? `Preferovaná barva pozadí: ${preferences.preferredBackgroundColor.trim()}.`
+      : "",
+    preferences.exactPrimaryHex.trim()
+      ? `Použij přesný HEX pro primární barvu: ${preferences.exactPrimaryHex.trim()}.`
+      : "",
+    preferences.exactSecondaryHex.trim()
+      ? `Použij přesný HEX pro sekundární barvu: ${preferences.exactSecondaryHex.trim()}.`
+      : "",
+    preferences.exactBackgroundHex.trim()
+      ? `Použij přesný HEX pro pozadí: ${preferences.exactBackgroundHex.trim()}.`
+      : "",
+    preferences.exactTextHex.trim()
+      ? `Použij přesný HEX pro text: ${preferences.exactTextHex.trim()}.`
+      : "",
+    preferences.targetAudience.trim()
+      ? `Cílový zákazník: ${preferences.targetAudience.trim()}.`
+      : "",
+    preferences.contactPreferences.length
+      ? `Kontaktní prvky, které má web obsahovat: ${preferences.contactPreferences.join(", ")}.`
       : "",
   ]
     .filter(Boolean)
     .join("\n");
 
-  const detailedSetup = [
+  const detailLines = [
     `Typeface family: ${preferences.typefaceFamily}.`,
     `Heading font preference: ${preferences.headingFont}.`,
     `Body font preference: ${preferences.bodyFont}.`,
@@ -335,6 +409,10 @@ function buildEnhancedPrompt(params: {
     `Framing preset: ${preferences.framingPreset}.`,
     `Theme preset: ${preferences.themePreset}.`,
     `UI style preset: ${preferences.uiStylePreset}.`,
+    `Business goal: ${preferences.businessGoal}.`,
+    `Content density: ${preferences.contentDensity}.`,
+    `Hero style: ${preferences.heroStyle}.`,
+    `Tone of voice: ${preferences.toneOfVoice}.`,
   ].join("\n");
 
   return [
@@ -348,13 +426,38 @@ function buildEnhancedPrompt(params: {
     layoutMap[preferences.layoutPreference],
     buttonStyleMap[preferences.buttonStyle],
     enhancerModeMap[preferences.promptEnhancerMode],
-    colorLines,
-    detailedSetup,
+    extraLines,
+    detailLines,
     "Výsledek musí působit prémiově, promyšleně, vizuálně konzistentně a ne jako generická šablona.",
     "Hlídej silný spacing, kvalitní hero sekci, přehlednou navigaci, konzistentní tlačítka, kvalitní práci s obrázky, lepší celkovou art direction a výrazně lepší kompozici.",
+    "Pokud jsou vyplněné obchodní cíle, cílový zákazník, hero styl nebo přesné barvy, ber je jako prioritu před automatickými volbami.",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="mb-1.5 block text-[9px] uppercase tracking-[0.14em] text-zinc-500">
+      {children}
+    </label>
+  );
+}
+
+function SelectField<T extends string>(props: {
+  value: T;
+  onChange: (value: T) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <select
+      value={props.value}
+      onChange={(e) => props.onChange(e.target.value as T)}
+      className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none"
+    >
+      {props.children}
+    </select>
+  );
 }
 
 function SettingCard(props: {
@@ -364,14 +467,14 @@ function SettingCard(props: {
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[18px] border border-white/8 bg-white/[0.025] p-4">
+    <section className="rounded-[18px] border border-white/8 bg-white/[0.022] p-4">
       <div className="mb-4 flex items-start gap-3">
         <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
           <Icon icon={props.icon} width={16} />
         </div>
         <div>
-          <div className="text-sm font-medium text-white">{props.title}</div>
-          <div className="mt-0.5 text-xs text-zinc-500">{props.subtitle}</div>
+          <div className="text-[13px] font-medium text-white">{props.title}</div>
+          <div className="mt-0.5 text-[11px] text-zinc-500">{props.subtitle}</div>
         </div>
       </div>
       {props.children}
@@ -388,7 +491,7 @@ function ChipOption(props: {
     <button
       type="button"
       onClick={props.onClick}
-      className={`rounded-[12px] border px-3 py-2 text-xs transition ${
+      className={`rounded-[12px] border px-3 py-2 text-[11px] transition ${
         props.active
           ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
           : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
@@ -396,6 +499,70 @@ function ChipOption(props: {
     >
       {props.label}
     </button>
+  );
+}
+
+function ModeButton(props: {
+  active: boolean;
+  compact?: boolean;
+  icon: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      title={props.label}
+      className={`group inline-flex items-center rounded-full border transition ${
+        props.compact ? "gap-0 px-3 py-1.5 text-[12px]" : "gap-2 px-3.5 py-1.5 text-[12px]"
+      } ${
+        props.active
+          ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
+          : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
+      }`}
+    >
+      <Icon icon={props.icon} width={14} />
+      {props.compact ? (
+        <span
+          className={`overflow-hidden whitespace-nowrap transition-all duration-200 ${
+            props.active
+              ? "ml-2 max-w-[110px] opacity-100"
+              : "ml-0 max-w-0 opacity-0 group-hover:ml-2 group-hover:max-w-[110px] group-hover:opacity-100"
+          }`}
+        >
+          {props.label}
+        </span>
+      ) : (
+        <span>{props.label}</span>
+      )}
+    </button>
+  );
+}
+
+function ColorInputRow(props: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div>
+      <FieldLabel>{props.label}</FieldLabel>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={props.value || "#7c5cff"}
+          onChange={(e) => props.onChange(e.target.value)}
+          className="h-10 w-12 rounded-[12px] border border-white/10 bg-[#0B0B10] p-1"
+        />
+        <input
+          value={props.value}
+          onChange={(e) => props.onChange(e.target.value)}
+          placeholder="#7C5CFF"
+          className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -408,6 +575,7 @@ export default function AiLandingPage() {
   const [sourceHtml, setSourceHtml] = useState("");
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [typingText, setTypingText] = useState("");
+  const [rotatingTipIndex, setRotatingTipIndex] = useState(0);
 
   const [creativeSetupOpen, setCreativeSetupOpen] = useState(false);
 
@@ -418,8 +586,7 @@ export default function AiLandingPage() {
 
   const [visualStyle, setVisualStyle] = useState<VisualStyle>("premium");
   const [fontMood, setFontMood] = useState<FontMood>("auto");
-  const [animationLevel, setAnimationLevel] =
-    useState<AnimationLevel>("rich");
+  const [animationLevel, setAnimationLevel] = useState<AnimationLevel>("rich");
   const [layoutPreference, setLayoutPreference] =
     useState<LayoutPreference>("auto");
   const [buttonStyle, setButtonStyle] = useState<ButtonStyle>("auto");
@@ -434,15 +601,13 @@ export default function AiLandingPage() {
   const [bodyFont, setBodyFont] = useState<FontChoice>("manrope");
   const [headingSizePreset, setHeadingSizePreset] =
     useState<HeadingSizePreset>("lg");
-  const [bodySizePreset, setBodySizePreset] =
-    useState<BodySizePreset>("md");
+  const [bodySizePreset, setBodySizePreset] = useState<BodySizePreset>("md");
   const [headingWeightPreset, setHeadingWeightPreset] =
     useState<HeadingWeightPreset>("semibold");
   const [letterSpacingPreset, setLetterSpacingPreset] =
     useState<LetterSpacingPreset>("tight");
 
-  const [animationType, setAnimationType] =
-    useState<AnimationType>("glow");
+  const [animationType, setAnimationType] = useState<AnimationType>("glow");
   const [animationScene, setAnimationScene] =
     useState<AnimationScene>("sequence");
   const [animationDuration, setAnimationDuration] = useState(0.8);
@@ -465,8 +630,24 @@ export default function AiLandingPage() {
     useState<FramingPreset>("full-screen");
   const [themePreset, setThemePreset] =
     useState<ThemePreset>("dark-premium");
-  const [uiStylePreset, setUiStylePreset] =
-    useState<UiStylePreset>("glass");
+  const [uiStylePreset, setUiStylePreset] = useState<UiStylePreset>("glass");
+
+  const [businessGoal, setBusinessGoal] = useState<BusinessGoal>("trust");
+  const [contentDensity, setContentDensity] =
+    useState<ContentDensity>("balanced");
+  const [heroStyle, setHeroStyle] = useState<HeroStyle>("auto");
+  const [toneOfVoice, setToneOfVoice] = useState<ToneOfVoice>("premium");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [contactPreferences, setContactPreferences] = useState<string[]>([
+    "Telefon",
+    "E-mail",
+    "Formulář",
+  ]);
+
+  const [exactPrimaryHex, setExactPrimaryHex] = useState("#7C5CFF");
+  const [exactSecondaryHex, setExactSecondaryHex] = useState("#5AD1FF");
+  const [exactBackgroundHex, setExactBackgroundHex] = useState("#09090D");
+  const [exactTextHex, setExactTextHex] = useState("#F4F4F5");
 
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -518,7 +699,7 @@ export default function AiLandingPage() {
           return;
         }
 
-        timeoutId = window.setTimeout(tick, 42);
+        timeoutId = window.setTimeout(tick, 38);
         return;
       }
 
@@ -532,7 +713,7 @@ export default function AiLandingPage() {
         return;
       }
 
-      timeoutId = window.setTimeout(tick, 20);
+      timeoutId = window.setTimeout(tick, 18);
     };
 
     timeoutId = window.setTimeout(tick, 500);
@@ -541,6 +722,14 @@ export default function AiLandingPage() {
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   }, [prompt, sourceMode, sourceUrl]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRotatingTipIndex((prev) => (prev + 1) % ROTATING_TIPS.length);
+    }, 3600);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
@@ -591,6 +780,12 @@ export default function AiLandingPage() {
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   }
 
+  function toggleContactPreference(item: string) {
+    setContactPreferences((prev) =>
+      prev.includes(item) ? prev.filter((value) => value !== item) : [...prev, item]
+    );
+  }
+
   function getLandingPreferences(): LandingPreferences {
     return {
       visualStyle,
@@ -622,6 +817,16 @@ export default function AiLandingPage() {
       framingPreset,
       themePreset,
       uiStylePreset,
+      businessGoal,
+      contentDensity,
+      heroStyle,
+      toneOfVoice,
+      targetAudience,
+      contactPreferences,
+      exactPrimaryHex,
+      exactSecondaryHex,
+      exactBackgroundHex,
+      exactTextHex,
     };
   }
 
@@ -643,7 +848,7 @@ export default function AiLandingPage() {
     setEnhancedPromptPreview(enhanced);
     setEnhanceModalOpen(true);
 
-    window.setTimeout(() => setIsEnhancingPrompt(false), 300);
+    window.setTimeout(() => setIsEnhancingPrompt(false), 260);
   }
 
   function applyEnhancedPrompt() {
@@ -685,6 +890,18 @@ export default function AiLandingPage() {
     setFramingPreset("full-screen");
     setThemePreset("dark-premium");
     setUiStylePreset("glass");
+
+    setBusinessGoal("trust");
+    setContentDensity("balanced");
+    setHeroStyle("auto");
+    setToneOfVoice("premium");
+    setTargetAudience("");
+    setContactPreferences(["Telefon", "E-mail", "Formulář"]);
+
+    setExactPrimaryHex("#7C5CFF");
+    setExactSecondaryHex("#5AD1FF");
+    setExactBackgroundHex("#09090D");
+    setExactTextHex("#F4F4F5");
   }
 
   function buildAutoPromptForSourceMode() {
@@ -741,7 +958,6 @@ export default function AiLandingPage() {
             transform: translate3d(36px, -22px, 0) scale(1.05);
           }
         }
-
         @keyframes zyviaFloatB {
           0% {
             transform: translate3d(0, 0, 0) scale(1);
@@ -750,7 +966,6 @@ export default function AiLandingPage() {
             transform: translate3d(-42px, 28px, 0) scale(1.06);
           }
         }
-
         @keyframes zyviaGlowPulse {
           0%,
           100% {
@@ -760,7 +975,6 @@ export default function AiLandingPage() {
             opacity: 0.78;
           }
         }
-
         @keyframes zyviaBorderShift {
           0% {
             background-position: 0% 50%;
@@ -769,7 +983,6 @@ export default function AiLandingPage() {
             background-position: 200% 50%;
           }
         }
-
         @keyframes zyviaGridDrift {
           0% {
             transform: translate3d(0, 0, 0);
@@ -778,7 +991,6 @@ export default function AiLandingPage() {
             transform: translate3d(18px, 12px, 0);
           }
         }
-
         @keyframes zyviaCaretBlink {
           0%,
           49% {
@@ -789,7 +1001,6 @@ export default function AiLandingPage() {
             opacity: 0;
           }
         }
-
         @keyframes zyviaBeamMove {
           0% {
             transform: translateX(-6%);
@@ -804,7 +1015,6 @@ export default function AiLandingPage() {
             opacity: 0.22;
           }
         }
-
         @keyframes zyviaLinesPulse {
           0%,
           100% {
@@ -814,7 +1024,6 @@ export default function AiLandingPage() {
             opacity: 0.2;
           }
         }
-
         @keyframes zyviaModalIn {
           0% {
             opacity: 0;
@@ -829,7 +1038,6 @@ export default function AiLandingPage() {
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,255,255,0.04),transparent_22%)]" />
-
         <div
           className="absolute inset-0 opacity-[0.08]"
           style={{
@@ -839,7 +1047,6 @@ export default function AiLandingPage() {
             animation: "zyviaGridDrift 18s linear infinite alternate",
           }}
         />
-
         <div
           className="absolute inset-x-[-8%] top-[110px] h-[340px] md:top-[102px] md:h-[380px]"
           style={{
@@ -849,7 +1056,6 @@ export default function AiLandingPage() {
             animation: "zyviaBeamMove 10s ease-in-out infinite",
           }}
         />
-
         <div
           className="absolute left-0 right-0 top-[138px] h-[240px] md:top-[130px] md:h-[260px]"
           style={{
@@ -862,7 +1068,6 @@ export default function AiLandingPage() {
             animation: "zyviaLinesPulse 4.6s ease-in-out infinite",
           }}
         />
-
         <div
           className="absolute left-[-180px] top-[-140px] h-[34rem] w-[34rem] rounded-[10px] blur-[150px]"
           style={{
@@ -871,7 +1076,6 @@ export default function AiLandingPage() {
             animation: "zyviaFloatA 16s ease-in-out infinite alternate",
           }}
         />
-
         <div
           className="absolute bottom-[-220px] right-[-120px] h-[38rem] w-[38rem] rounded-[10px] blur-[150px]"
           style={{
@@ -880,7 +1084,6 @@ export default function AiLandingPage() {
             animation: "zyviaFloatB 18s ease-in-out infinite alternate",
           }}
         />
-
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_48%,rgba(0,0,0,0.34)_100%)]" />
       </div>
 
@@ -899,20 +1102,26 @@ export default function AiLandingPage() {
               Agent
             </button>
             <button type="button" className="transition hover:text-white">
-              Pricing
+              Ceník
             </button>
             <button type="button" className="transition hover:text-white">
-              Docs
+              Dokumentace
             </button>
           </nav>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-200 backdrop-blur-xl transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+              className="text-sm text-zinc-300 transition hover:text-white"
             >
-              <Icon icon="solar:login-3-linear" width={16} />
-              Přihlášení / Registrace
+              Přihlášení
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-[linear-gradient(135deg,rgba(124,92,255,0.96),rgba(90,209,255,0.84))] px-4 py-2 text-sm font-medium text-white shadow-[0_10px_28px_rgba(124,92,255,0.18)] transition hover:opacity-95"
+            >
+              Začít zdarma
             </button>
           </div>
         </header>
@@ -934,52 +1143,40 @@ export default function AiLandingPage() {
                 Co chcete dnes vytvořit?
               </h1>
               <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-500 md:text-[15px]">
-                Web, landing page nebo redesign z URL, screenshotu či HTML.
+                Zadejte zadání nebo vložte referenci. Zyvia připraví výrazně
+                přesnější návrh webu během chvilky.
               </p>
             </div>
 
             <div className="rounded-[30px] border border-white/10 bg-[rgba(13,13,18,0.8)] p-3 shadow-[0_20px_120px_-40px_rgba(0,0,0,0.82)] backdrop-blur-2xl md:p-4">
               <div className="mb-3 flex flex-wrap gap-2">
-                {[
-                  {
-                    value: "prompt" as const,
-                    label: "Prompt",
-                    icon: "solar:pen-2-linear",
-                  },
-                  {
-                    value: "url" as const,
-                    label: "URL",
-                    icon: "solar:link-linear",
-                  },
-                  {
-                    value: "screenshot" as const,
-                    label: "Screenshot",
-                    icon: "solar:gallery-wide-linear",
-                  },
-                  {
-                    value: "html" as const,
-                    label: "HTML",
-                    icon: "solar:code-linear",
-                  },
-                ].map((item) => {
-                  const active = sourceMode === item.value;
-
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => setSourceMode(item.value)}
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
-                        active
-                          ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
-                          : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
-                      <Icon icon={item.icon} width={15} />
-                      {item.label}
-                    </button>
-                  );
-                })}
+                <ModeButton
+                  active={sourceMode === "prompt"}
+                  icon="solar:pen-2-linear"
+                  label="Prompt"
+                  onClick={() => setSourceMode("prompt")}
+                />
+                <ModeButton
+                  active={sourceMode === "url"}
+                  compact
+                  icon="solar:link-linear"
+                  label="URL"
+                  onClick={() => setSourceMode("url")}
+                />
+                <ModeButton
+                  active={sourceMode === "screenshot"}
+                  compact
+                  icon="solar:gallery-wide-linear"
+                  label="Screenshot"
+                  onClick={() => setSourceMode("screenshot")}
+                />
+                <ModeButton
+                  active={sourceMode === "html"}
+                  compact
+                  icon="solar:code-linear"
+                  label="HTML"
+                  onClick={() => setSourceMode("html")}
+                />
               </div>
 
               <div
@@ -1000,165 +1197,141 @@ export default function AiLandingPage() {
                         value={sourceUrl}
                         onChange={(e) => setSourceUrl(e.target.value)}
                         placeholder="Vložte URL webu, podle kterého se má návrh inspirovat…"
-                        className="mb-4 h-12 w-full rounded-[14px] border border-white/8 bg-white/[0.03] px-4 text-sm text-white outline-none placeholder:text-zinc-500"
+                        className="mb-4 h-11 w-full rounded-[14px] border border-white/8 bg-white/[0.03] px-4 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   )}
 
                   {sourceMode === "html" && (
                     <div className="border-b border-white/8 px-5 pt-5 md:px-6">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div className="text-sm text-zinc-300">
-                          Vložte HTML nebo nahrajte HTML soubor
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => htmlFileInputRef.current?.click()}
-                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                        >
-                          <Icon icon="solar:upload-linear" width={14} />
-                          Nahrát HTML
-                        </button>
-                      </div>
-
                       <textarea
                         value={sourceHtml}
                         onChange={(e) => setSourceHtml(e.target.value)}
-                        placeholder="<html>…</html>"
-                        className="mb-4 h-32 w-full resize-none rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
+                        placeholder="Vložte HTML nebo nahrajte .html soubor…"
+                        className="mb-4 min-h-[120px] w-full rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500"
                       />
                     </div>
                   )}
 
-                  {sourceMode === "prompt" && prompt.trim().length === 0 && (
-                    <div className="pointer-events-none absolute left-5 top-5 z-10 text-[15px] text-zinc-500 md:left-6 md:top-6 md:text-base">
-                      {typingText}
-                      <span
-                        className="ml-0.5 inline-block h-[1.05em] w-[1px] translate-y-[3px] bg-zinc-400"
-                        style={{ animation: "zyviaCaretBlink 1s linear infinite" }}
-                      />
+                  <div className="px-5 pb-[86px] pt-5 md:px-6 md:pt-6">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder={
+                        typingText ||
+                        "Popište, co chcete vytvořit. Např. prémiový web pro fintech startup se silným důrazem na důvěru a konverze."
+                      }
+                      className="min-h-[168px] w-full resize-none bg-transparent text-[16px] leading-7 text-white outline-none placeholder:text-zinc-500 md:min-h-[186px]"
+                    />
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => screenshotInputRef.current?.click()}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        title="Přidat screenshot"
+                      >
+                        <Icon icon="solar:gallery-wide-linear" width={17} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        title="Přidat soubor"
+                      >
+                        <Icon icon="solar:document-text-linear" width={17} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={openEnhanceModal}
+                        disabled={prompt.trim().length < 8 || isEnhancingPrompt}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                        title="Vylepšit zadání"
+                      >
+                        <Icon icon="solar:magic-stick-3-linear" width={17} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCreativeSetupOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[12px] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        title="Pokročilé nastavení návrhu"
+                      >
+                        <Icon icon="solar:tuning-2-linear" width={16} />
+                        Nastavení návrhu
+                      </button>
                     </div>
-                  )}
 
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="relative z-[2] h-48 w-full resize-none rounded-[25px] border-0 bg-transparent px-5 py-5 text-[15px] text-white outline-none placeholder:text-transparent md:h-52 md:px-6 md:py-6 md:text-base"
-                    placeholder={
-                      sourceMode === "url"
-                        ? "Volitelně doplňte poznámku k URL, např. co zachovat nebo změnit…"
-                        : sourceMode === "screenshot"
-                        ? "Volitelně doplňte, co má návrh zachovat nebo vylepšit…"
-                        : sourceMode === "html"
-                        ? "Volitelně doplňte požadovaný redesign nebo změny…"
-                        : "Popište, co chcete vytvořit..."
-                    }
-                  />
+                    <div className="absolute bottom-4 right-4 z-[3]">
+                      <button
+                        type="button"
+                        onClick={() => startGenerating()}
+                        disabled={!canContinue}
+                        className="inline-flex min-w-[168px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(124,92,255,0.96), rgba(90,209,255,0.84))",
+                          boxShadow:
+                            "0 10px 28px rgba(124,92,255,0.2), 0 0 32px rgba(90,209,255,0.08)",
+                        }}
+                      >
+                        Generovat návrh
+                        <Icon icon="solar:arrow-right-linear" width={17} />
+                      </button>
+                    </div>
 
-                  <div className="absolute bottom-4 left-4 z-[3] flex flex-wrap items-center gap-2 md:left-5">
-                    <button
-                      type="button"
-                      onClick={() => screenshotInputRef.current?.click()}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                      title="Screenshot"
-                    >
-                      <Icon icon="solar:gallery-wide-linear" width={17} />
-                    </button>
+                    <input
+                      ref={screenshotInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleScreenshotSelect}
+                    />
 
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                      title="Soubor"
-                    >
-                      <Icon icon="solar:file-text-linear" width={17} />
-                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
 
-                    <button
-                      type="button"
-                      onClick={openEnhanceModal}
-                      disabled={prompt.trim().length < 8 || isEnhancingPrompt}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
-                      title="Vylepšit zadání"
-                    >
-                      <Icon icon="solar:magic-stick-3-linear" width={17} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setCreativeSetupOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                      title="Creative setup"
-                    >
-                      <Icon icon="solar:tuning-2-linear" width={17} />
-                      Creative setup
-                    </button>
+                    <input
+                      ref={htmlFileInputRef}
+                      type="file"
+                      accept=".html,text/html"
+                      className="hidden"
+                      onChange={handleHtmlFileSelect}
+                    />
                   </div>
-
-                  <div className="absolute bottom-4 right-4 z-[3]">
-                    <button
-                      type="button"
-                      onClick={() => startGenerating()}
-                      disabled={!canContinue}
-                      className="inline-flex min-w-[168px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgba(124,92,255,0.96), rgba(90,209,255,0.84))",
-                        boxShadow:
-                          "0 10px 28px rgba(124,92,255,0.2), 0 0 32px rgba(90,209,255,0.08)",
-                      }}
-                    >
-                      Generovat návrh
-                      <Icon icon="solar:arrow-right-linear" width={17} />
-                    </button>
-                  </div>
-
-                  <input
-                    ref={screenshotInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleScreenshotSelect}
-                  />
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-
-                  <input
-                    ref={htmlFileInputRef}
-                    type="file"
-                    accept=".html,text/html"
-                    className="hidden"
-                    onChange={handleHtmlFileSelect}
-                  />
                 </div>
               </div>
 
+              <div className="px-2 pt-3 text-center text-[12px] text-zinc-500">
+                <span className="text-zinc-400">{ROTATING_TIPS[rotatingTipIndex]}</span>
+              </div>
+
               {attachments.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {attachments.map((item) => (
                     <div
                       key={item.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300"
                     >
                       <Icon
                         icon={
                           item.kind === "screenshot"
                             ? "solar:gallery-wide-linear"
-                            : "solar:file-text-linear"
+                            : "solar:document-text-linear"
                         }
                         width={14}
                       />
-                      <span className="max-w-[180px] truncate">{item.name}</span>
+                      <span>{item.name}</span>
                       <button
                         type="button"
                         onClick={() => removeAttachment(item.id)}
                         className="text-zinc-500 transition hover:text-white"
-                        aria-label="Odebrat soubor"
                       >
                         <Icon icon="solar:close-circle-linear" width={14} />
                       </button>
@@ -1166,32 +1339,32 @@ export default function AiLandingPage() {
                   ))}
                 </div>
               )}
-            </div>
 
-            <div className="mt-5 text-center text-xs text-zinc-500 md:text-sm">
-              Prémiový start bez složitého nastavování
+              <div className="mt-5 text-center text-xs text-zinc-500">
+                Prémiový start bez složitého nastavování
+              </div>
             </div>
           </div>
         </main>
       </div>
 
       {creativeSetupOpen && (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md">
+        <div className="fixed inset-0 z-[140] bg-black/70 p-4 backdrop-blur-md">
           <div
-            className="w-full max-w-7xl rounded-[28px] border border-white/10 bg-[#0A0A0D]/97 shadow-[0_40px_140px_rgba(0,0,0,0.55)]"
+            className="mx-auto flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#0B0B10]/95 shadow-[0_30px_120px_rgba(0,0,0,0.55)]"
             style={{ animation: "zyviaModalIn 220ms ease-out" }}
           >
-            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4 md:px-6">
-              <div className="flex items-center gap-3">
+            <div className="flex items-start justify-between gap-4 border-b border-white/8 px-5 py-4 md:px-6">
+              <div className="flex items-start gap-3">
                 <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
                   <Icon icon="solar:tuning-2-linear" width={18} />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-white">
-                    Creative setup
+                  <div className="text-[20px] font-semibold text-white">
+                    Pokročilé nastavení návrhu
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-500">
-                    Rozšířené nastavení art direction pro kvalitnější generování
+                  <div className="mt-1 text-sm text-zinc-500">
+                    Upřesněte styl, typografii, barvy i obchodní cíl pro přesnější výsledek.
                   </div>
                 </div>
               </div>
@@ -1200,9 +1373,9 @@ export default function AiLandingPage() {
                 <button
                   type="button"
                   onClick={resetCreativeSetup}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
                 >
-                  <Icon icon="solar:restart-linear" width={14} />
+                  <Icon icon="solar:restart-linear" width={16} />
                   Reset
                 </button>
 
@@ -1219,22 +1392,14 @@ export default function AiLandingPage() {
             <div className="max-h-[78vh] overflow-auto px-5 py-5 md:px-6 md:py-6">
               <div className="grid gap-4 xl:grid-cols-2">
                 <SettingCard
-                  title="Art direction"
+                  title="Vizuální směr"
                   subtitle="Celkový dojem, kompozice a UI styl"
                   icon="solar:palette-2-linear"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Styl
-                      </label>
-                      <select
-                        value={visualStyle}
-                        onChange={(e) =>
-                          setVisualStyle(e.target.value as VisualStyle)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Styl</FieldLabel>
+                      <SelectField value={visualStyle} onChange={setVisualStyle}>
                         <option value="auto">Auto</option>
                         <option value="clean">Clean</option>
                         <option value="premium">Premium</option>
@@ -1242,62 +1407,33 @@ export default function AiLandingPage() {
                         <option value="editorial">Editorial</option>
                         <option value="luxury">Luxury</option>
                         <option value="playful">Playful</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Layout
-                      </label>
-                      <select
-                        value={layoutPreference}
-                        onChange={(e) =>
-                          setLayoutPreference(
-                            e.target.value as LayoutPreference
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Rozvržení</FieldLabel>
+                      <SelectField value={layoutPreference} onChange={setLayoutPreference}>
                         <option value="auto">Auto</option>
                         <option value="editorial">Editorial</option>
                         <option value="split">Split</option>
-                        <option value="asymmetrical">Asymmetrical</option>
+                        <option value="asymmetrical">Asymetrické</option>
                         <option value="story">Story</option>
                         <option value="grid">Grid</option>
                         <option value="luxury">Luxury</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Theme
-                      </label>
-                      <select
-                        value={themePreset}
-                        onChange={(e) =>
-                          setThemePreset(e.target.value as ThemePreset)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Téma</FieldLabel>
+                      <SelectField value={themePreset} onChange={setThemePreset}>
                         <option value="auto">Auto</option>
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
+                        <option value="dark">Tmavé</option>
+                        <option value="light">Světlé</option>
                         <option value="dark-premium">Dark premium</option>
                         <option value="warm-light">Warm light</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Surface style
-                      </label>
-                      <select
-                        value={uiStylePreset}
-                        onChange={(e) =>
-                          setUiStylePreset(e.target.value as UiStylePreset)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Styl ploch</FieldLabel>
+                      <SelectField value={uiStylePreset} onChange={setUiStylePreset}>
                         <option value="auto">Auto</option>
                         <option value="flat">Flat</option>
                         <option value="outline">Outline</option>
@@ -1305,46 +1441,51 @@ export default function AiLandingPage() {
                         <option value="glass">Glass</option>
                         <option value="soft-premium">Soft premium</option>
                         <option value="editorial">Editorial</option>
-                      </select>
+                      </SelectField>
+                    </div>
+                    <div>
+                      <FieldLabel>Hero sekce</FieldLabel>
+                      <SelectField value={heroStyle} onChange={setHeroStyle}>
+                        <option value="auto">Auto</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="cover">Výrazná cover sekce</option>
+                        <option value="split">Split layout</option>
+                        <option value="overlay">Text přes vizuál</option>
+                        <option value="dashboard">Produktový dashboard</option>
+                        <option value="editorial">Prémiový editorial</option>
+                      </SelectField>
+                    </div>
+                    <div>
+                      <FieldLabel>Hustota obsahu</FieldLabel>
+                      <SelectField value={contentDensity} onChange={setContentDensity}>
+                        <option value="airy">Vzdušná</option>
+                        <option value="balanced">Vyvážená</option>
+                        <option value="dense">Obsahově bohatá</option>
+                      </SelectField>
                     </div>
                   </div>
                 </SettingCard>
 
                 <SettingCard
-                  title="Typography"
-                  subtitle="Typeface, velikost, váha, spacing"
+                  title="Typografie"
+                  subtitle="Písmo, velikost, váha a proklady"
                   icon="solar:text-field-focus-linear"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Typeface family
-                      </label>
-                      <select
-                        value={typefaceFamily}
-                        onChange={(e) =>
-                          setTypefaceFamily(e.target.value as TypefaceFamily)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Rodina písma</FieldLabel>
+                      <SelectField value={typefaceFamily} onChange={setTypefaceFamily}>
                         <option value="auto">Auto</option>
                         <option value="sans">Sans</option>
                         <option value="serif">Serif</option>
                         <option value="rounded">Rounded</option>
                         <option value="condensed">Condensed</option>
                         <option value="mono">Mono</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Font mood
-                      </label>
-                      <select
-                        value={fontMood}
-                        onChange={(e) => setFontMood(e.target.value as FontMood)}
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Charakter písma</FieldLabel>
+                      <SelectField value={fontMood} onChange={setFontMood}>
                         <option value="auto">Auto</option>
                         <option value="geometric">Geometric</option>
                         <option value="editorial">Editorial</option>
@@ -1352,166 +1493,89 @@ export default function AiLandingPage() {
                         <option value="trustworthy">Trustworthy</option>
                         <option value="tech">Tech</option>
                         <option value="friendly">Friendly</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Heading font
-                      </label>
-                      <select
-                        value={headingFont}
-                        onChange={(e) =>
-                          setHeadingFont(e.target.value as FontChoice)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Písmo nadpisů</FieldLabel>
+                      <SelectField value={headingFont} onChange={setHeadingFont}>
                         <option value="auto">Auto</option>
                         <option value="inter">Inter</option>
                         <option value="manrope">Manrope</option>
                         <option value="geist">Geist</option>
-                        <option value="playfair">Playfair Display</option>
+                        <option value="playfair">Playfair</option>
                         <option value="instrument-serif">Instrument Serif</option>
-                        <option value="plex-serif">Plex Serif</option>
-                      </select>
+                        <option value="plex-serif">IBM Plex Serif</option>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Body font
-                      </label>
-                      <select
-                        value={bodyFont}
-                        onChange={(e) =>
-                          setBodyFont(e.target.value as FontChoice)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Písmo textu</FieldLabel>
+                      <SelectField value={bodyFont} onChange={setBodyFont}>
                         <option value="auto">Auto</option>
                         <option value="inter">Inter</option>
                         <option value="manrope">Manrope</option>
                         <option value="geist">Geist</option>
-                        <option value="playfair">Playfair Display</option>
+                        <option value="playfair">Playfair</option>
                         <option value="instrument-serif">Instrument Serif</option>
-                        <option value="plex-serif">Plex Serif</option>
-                      </select>
+                        <option value="plex-serif">IBM Plex Serif</option>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Heading size
-                      </label>
-                      <select
-                        value={headingSizePreset}
-                        onChange={(e) =>
-                          setHeadingSizePreset(
-                            e.target.value as HeadingSizePreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
-                        <option value="sm">20–32px</option>
-                        <option value="md">32–40px</option>
+                      <FieldLabel>Velikost nadpisů</FieldLabel>
+                      <SelectField value={headingSizePreset} onChange={setHeadingSizePreset}>
+                        <option value="sm">36–44px</option>
+                        <option value="md">44–52px</option>
                         <option value="lg">48–64px</option>
-                        <option value="xl">64–80px</option>
-                      </select>
+                        <option value="xl">56–76px</option>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Body size
-                      </label>
-                      <select
-                        value={bodySizePreset}
-                        onChange={(e) =>
-                          setBodySizePreset(e.target.value as BodySizePreset)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
-                        <option value="sm">12–14px</option>
+                      <FieldLabel>Velikost textu</FieldLabel>
+                      <SelectField value={bodySizePreset} onChange={setBodySizePreset}>
+                        <option value="sm">13–15px</option>
                         <option value="md">14–16px</option>
                         <option value="lg">16–18px</option>
                         <option value="xl">18–20px</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Heading weight
-                      </label>
-                      <select
-                        value={headingWeightPreset}
-                        onChange={(e) =>
-                          setHeadingWeightPreset(
-                            e.target.value as HeadingWeightPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Váha nadpisů</FieldLabel>
+                      <SelectField value={headingWeightPreset} onChange={setHeadingWeightPreset}>
                         <option value="light">Light</option>
                         <option value="regular">Regular</option>
                         <option value="medium">Medium</option>
                         <option value="semibold">Semibold</option>
                         <option value="bold">Bold</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Letter spacing
-                      </label>
-                      <select
-                        value={letterSpacingPreset}
-                        onChange={(e) =>
-                          setLetterSpacingPreset(
-                            e.target.value as LetterSpacingPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Proklad písmen</FieldLabel>
+                      <SelectField value={letterSpacingPreset} onChange={setLetterSpacingPreset}>
                         <option value="tight">Tight</option>
                         <option value="normal">Normal</option>
                         <option value="wide">Wide</option>
-                      </select>
+                      </SelectField>
                     </div>
                   </div>
                 </SettingCard>
 
                 <SettingCard
-                  title="Motion system"
-                  subtitle="Typ animací, timing a intenzita"
+                  title="Animace a pohyb"
+                  subtitle="Typ animací, načasování a intenzita"
                   icon="solar:bolt-circle-linear"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Intenzita
-                      </label>
-                      <select
-                        value={animationLevel}
-                        onChange={(e) =>
-                          setAnimationLevel(e.target.value as AnimationLevel)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Intenzita</FieldLabel>
+                      <SelectField value={animationLevel} onChange={setAnimationLevel}>
                         <option value="minimal">Minimal</option>
                         <option value="subtle">Subtle</option>
                         <option value="rich">Rich</option>
                         <option value="expressive">Expressive</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Animation type
-                      </label>
-                      <select
-                        value={animationType}
-                        onChange={(e) =>
-                          setAnimationType(e.target.value as AnimationType)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Typ animace</FieldLabel>
+                      <SelectField value={animationType} onChange={setAnimationType}>
                         <option value="auto">Auto</option>
                         <option value="fade">Fade</option>
                         <option value="slide">Slide</option>
@@ -1519,149 +1583,93 @@ export default function AiLandingPage() {
                         <option value="blur">Blur</option>
                         <option value="rotate">Rotate</option>
                         <option value="glow">Glow</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Scene
-                      </label>
-                      <select
-                        value={animationScene}
-                        onChange={(e) =>
-                          setAnimationScene(e.target.value as AnimationScene)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Scéna</FieldLabel>
+                      <SelectField value={animationScene} onChange={setAnimationScene}>
                         <option value="auto">Auto</option>
-                        <option value="all-at-once">All at once</option>
-                        <option value="sequence">Sequence</option>
-                        <option value="word-by-word">Word by word</option>
-                        <option value="letter-by-letter">Letter by letter</option>
-                      </select>
+                        <option value="all-at-once">Najednou</option>
+                        <option value="sequence">Sekvence</option>
+                        <option value="word-by-word">Po slovech</option>
+                        <option value="letter-by-letter">Po písmenech</option>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Timing
-                      </label>
-                      <select
-                        value={animationTiming}
-                        onChange={(e) =>
-                          setAnimationTiming(e.target.value as TimingPreset)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Načasování</FieldLabel>
+                      <SelectField value={animationTiming} onChange={setAnimationTiming}>
                         <option value="linear">Linear</option>
                         <option value="ease">Ease</option>
-                        <option value="ease-in">Ease In</option>
-                        <option value="ease-out">Ease Out</option>
-                        <option value="ease-in-out">Ease In Out</option>
+                        <option value="ease-in">Ease in</option>
+                        <option value="ease-out">Ease out</option>
+                        <option value="ease-in-out">Ease in out</option>
                         <option value="spring">Spring</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Iterations
-                      </label>
-                      <select
-                        value={animationIterations}
-                        onChange={(e) =>
-                          setAnimationIterations(
-                            e.target.value as IterationPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
-                        <option value="once">Once</option>
-                        <option value="twice">Twice</option>
-                        <option value="thrice">Thrice</option>
-                        <option value="infinite">Infinite</option>
-                      </select>
+                      <FieldLabel>Opakování</FieldLabel>
+                      <SelectField value={animationIterations} onChange={setAnimationIterations}>
+                        <option value="once">Jednou</option>
+                        <option value="twice">Dvakrát</option>
+                        <option value="thrice">Třikrát</option>
+                        <option value="infinite">Nekonečně</option>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Direction
-                      </label>
-                      <select
-                        value={animationDirection}
-                        onChange={(e) =>
-                          setAnimationDirection(
-                            e.target.value as DirectionPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Směr</FieldLabel>
+                      <SelectField value={animationDirection} onChange={setAnimationDirection}>
                         <option value="normal">Normal</option>
                         <option value="reverse">Reverse</option>
                         <option value="alternate">Alternate</option>
-                        <option value="alternate-reverse">
-                          Alternate reverse
-                        </option>
-                      </select>
+                        <option value="alternate-reverse">Alternate reverse</option>
+                      </SelectField>
                     </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        <span>Duration</span>
-                        <span>{animationDuration.toFixed(1)}s</span>
+                      <FieldLabel>Délka</FieldLabel>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          min={0.1}
+                          max={2}
+                          step={0.1}
+                          value={animationDuration}
+                          onChange={(e) => setAnimationDuration(Number(e.target.value))}
+                          className="w-full"
+                        />
+                        <span className="w-10 text-right text-[12px] text-zinc-400">
+                          {animationDuration.toFixed(1)}s
+                        </span>
                       </div>
-                      <input
-                        type="range"
-                        min={0.2}
-                        max={2.4}
-                        step={0.1}
-                        value={animationDuration}
-                        onChange={(e) =>
-                          setAnimationDuration(Number(e.target.value))
-                        }
-                        className="w-full"
-                      />
                     </div>
-
                     <div>
-                      <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        <span>Delay</span>
-                        <span>{animationDelay.toFixed(1)}s</span>
+                      <FieldLabel>Zpoždění</FieldLabel>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          min={0}
+                          max={1.5}
+                          step={0.1}
+                          value={animationDelay}
+                          onChange={(e) => setAnimationDelay(Number(e.target.value))}
+                          className="w-full"
+                        />
+                        <span className="w-10 text-right text-[12px] text-zinc-400">
+                          {animationDelay.toFixed(1)}s
+                        </span>
                       </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1.5}
-                        step={0.1}
-                        value={animationDelay}
-                        onChange={(e) =>
-                          setAnimationDelay(Number(e.target.value))
-                        }
-                        className="w-full"
-                      />
                     </div>
                   </div>
                 </SettingCard>
 
                 <SettingCard
-                  title="Color & surface system"
-                  subtitle="Akcent, pozadí, border, shadow, framing"
+                  title="Barvy a povrchy"
+                  subtitle="Akcent, pozadí, ohraničení, stín a kompozice"
                   icon="solar:stars-line-duotone"
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Accent preset
-                      </label>
-                      <select
-                        value={accentColorPreset}
-                        onChange={(e) =>
-                          setAccentColorPreset(
-                            e.target.value as AccentColorPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Akcent</FieldLabel>
+                      <SelectField value={accentColorPreset} onChange={setAccentColorPreset}>
                         <option value="auto">Auto</option>
                         <option value="cyan">Cyan</option>
                         <option value="blue">Blue</option>
@@ -1672,22 +1680,11 @@ export default function AiLandingPage() {
                         <option value="amber">Amber</option>
                         <option value="emerald">Emerald</option>
                         <option value="rose">Rose</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Background preset
-                      </label>
-                      <select
-                        value={backgroundColorPreset}
-                        onChange={(e) =>
-                          setBackgroundColorPreset(
-                            e.target.value as SurfaceColorPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Pozadí</FieldLabel>
+                      <SelectField value={backgroundColorPreset} onChange={setBackgroundColorPreset}>
                         <option value="auto">Auto</option>
                         <option value="neutral">Neutral</option>
                         <option value="slate">Slate</option>
@@ -1696,22 +1693,11 @@ export default function AiLandingPage() {
                         <option value="dark-navy">Dark navy</option>
                         <option value="warm-black">Warm black</option>
                         <option value="charcoal">Charcoal</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Border preset
-                      </label>
-                      <select
-                        value={borderColorPreset}
-                        onChange={(e) =>
-                          setBorderColorPreset(
-                            e.target.value as BorderColorPreset
-                          )
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Ohraničení</FieldLabel>
+                      <SelectField value={borderColorPreset} onChange={setBorderColorPreset}>
                         <option value="auto">Auto</option>
                         <option value="subtle">Subtle</option>
                         <option value="neutral">Neutral</option>
@@ -1719,132 +1705,174 @@ export default function AiLandingPage() {
                         <option value="cool-gray">Cool gray</option>
                         <option value="glass-cyan">Glass cyan</option>
                         <option value="violet">Violet</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Shadow preset
-                      </label>
-                      <select
-                        value={shadowPreset}
-                        onChange={(e) =>
-                          setShadowPreset(e.target.value as ShadowPreset)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
-                        <option value="none">None</option>
+                      <FieldLabel>Stín</FieldLabel>
+                      <SelectField value={shadowPreset} onChange={setShadowPreset}>
+                        <option value="none">Žádný</option>
                         <option value="small">Small</option>
                         <option value="medium">Medium</option>
                         <option value="large">Large</option>
                         <option value="xl">XL</option>
                         <option value="glow">Glow</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Framing
-                      </label>
-                      <select
-                        value={framingPreset}
-                        onChange={(e) =>
-                          setFramingPreset(e.target.value as FramingPreset)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Kompozice</FieldLabel>
+                      <SelectField value={framingPreset} onChange={setFramingPreset}>
                         <option value="auto">Auto</option>
                         <option value="full-screen">Full screen</option>
                         <option value="card">Card</option>
                         <option value="browser">Browser</option>
                         <option value="device">Device</option>
                         <option value="editorial-frame">Editorial frame</option>
-                      </select>
+                      </SelectField>
                     </div>
-
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Barva tlačítek
-                      </label>
-                      <input
-                        value={preferredPrimaryColor}
-                        onChange={(e) => setPreferredPrimaryColor(e.target.value)}
-                        placeholder="Např. champagne"
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Barva pozadí
-                      </label>
-                      <input
-                        value={preferredBackgroundColor}
-                        onChange={(e) =>
-                          setPreferredBackgroundColor(e.target.value)
-                        }
-                        placeholder="Např. dark navy"
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Prompt strategy"
-                  subtitle="Jak agresivně se má prompt vylepšit"
-                  icon="solar:magic-stick-3-linear"
-                >
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                    <ChipOption
-                      active={promptEnhancerMode === "balanced"}
-                      label="Balanced"
-                      onClick={() => setPromptEnhancerMode("balanced")}
-                    />
-                    <ChipOption
-                      active={promptEnhancerMode === "conversion"}
-                      label="Conversion"
-                      onClick={() => setPromptEnhancerMode("conversion")}
-                    />
-                    <ChipOption
-                      active={promptEnhancerMode === "premium-brand"}
-                      label="Premium brand"
-                      onClick={() => setPromptEnhancerMode("premium-brand")}
-                    />
-                    <ChipOption
-                      active={promptEnhancerMode === "wow-creative"}
-                      label="Wow creative"
-                      onClick={() => setPromptEnhancerMode("wow-creative")}
-                    />
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        Button system
-                      </label>
-                      <select
-                        value={buttonStyle}
-                        onChange={(e) =>
-                          setButtonStyle(e.target.value as ButtonStyle)
-                        }
-                        className="h-11 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3.5 text-sm text-white outline-none"
-                      >
+                      <FieldLabel>Styl tlačítek</FieldLabel>
+                      <SelectField value={buttonStyle} onChange={setButtonStyle}>
                         <option value="auto">Auto</option>
                         <option value="soft-pill">Soft pill</option>
                         <option value="glass">Glass</option>
                         <option value="solid-premium">Solid premium</option>
                         <option value="outline-elegant">Outline elegant</option>
                         <option value="gradient-glow">Gradient glow</option>
-                      </select>
+                      </SelectField>
                     </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <ColorInputRow
+                      label="Primární barva"
+                      value={exactPrimaryHex}
+                      onChange={setExactPrimaryHex}
+                    />
+                    <ColorInputRow
+                      label="Sekundární barva"
+                      value={exactSecondaryHex}
+                      onChange={setExactSecondaryHex}
+                    />
+                    <ColorInputRow
+                      label="Barva pozadí"
+                      value={exactBackgroundHex}
+                      onChange={setExactBackgroundHex}
+                    />
+                    <ColorInputRow
+                      label="Barva textu"
+                      value={exactTextHex}
+                      onChange={setExactTextHex}
+                    />
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <FieldLabel>Preferovaná CTA barva</FieldLabel>
+                      <input
+                        value={preferredPrimaryColor}
+                        onChange={(e) => setPreferredPrimaryColor(e.target.value)}
+                        placeholder="Např. electric cyan"
+                        className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>Preferované pozadí</FieldLabel>
+                      <input
+                        value={preferredBackgroundColor}
+                        onChange={(e) => setPreferredBackgroundColor(e.target.value)}
+                        placeholder="Např. dark navy"
+                        className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                  </div>
+                </SettingCard>
+
+                <SettingCard
+                  title="Obchodní cíl a tón"
+                  subtitle="Co má web splnit a jak má působit"
+                  icon="solar:chart-square-linear"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <FieldLabel>Obchodní cíl</FieldLabel>
+                      <SelectField value={businessGoal} onChange={setBusinessGoal}>
+                        <option value="auto">Auto</option>
+                        <option value="leads">Získat poptávky</option>
+                        <option value="sales">Prodat produkt</option>
+                        <option value="registrations">Získat registrace</option>
+                        <option value="trust">Zvýšit důvěru</option>
+                        <option value="presentation">Reprezentovat značku</option>
+                      </SelectField>
+                    </div>
+                    <div>
+                      <FieldLabel>Tón textů</FieldLabel>
+                      <SelectField value={toneOfVoice} onChange={setToneOfVoice}>
+                        <option value="professional">Profesionální</option>
+                        <option value="premium">Prémiový</option>
+                        <option value="direct">Přímý a prodejní</option>
+                        <option value="friendly">Přátelský</option>
+                        <option value="luxury">Luxusní</option>
+                        <option value="technical">Technologický</option>
+                      </SelectField>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <FieldLabel>Pro koho je web určený</FieldLabel>
+                      <input
+                        value={targetAudience}
+                        onChange={(e) => setTargetAudience(e.target.value)}
+                        placeholder="Např. startupy, menší firmy, prémiová klientela, developeři…"
+                        className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <FieldLabel>Kontaktní prvky</FieldLabel>
+                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        {CONTACT_CHOICES.map((item) => (
+                          <ChipOption
+                            key={item}
+                            active={contactPreferences.includes(item)}
+                            label={item}
+                            onClick={() => toggleContactPreference(item)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </SettingCard>
+
+                <SettingCard
+                  title="Strategie generování"
+                  subtitle="Jak silně má Zyvia ovlivnit výsledek a brief"
+                  icon="solar:magic-stick-3-linear"
+                >
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <ChipOption
+                      active={promptEnhancerMode === "balanced"}
+                      label="Vyvážené"
+                      onClick={() => setPromptEnhancerMode("balanced")}
+                    />
+                    <ChipOption
+                      active={promptEnhancerMode === "conversion"}
+                      label="Konverzní"
+                      onClick={() => setPromptEnhancerMode("conversion")}
+                    />
+                    <ChipOption
+                      active={promptEnhancerMode === "premium-brand"}
+                      label="Prémiová značka"
+                      onClick={() => setPromptEnhancerMode("premium-brand")}
+                    />
+                    <ChipOption
+                      active={promptEnhancerMode === "wow-creative"}
+                      label="Wow kreativní"
+                      onClick={() => setPromptEnhancerMode("wow-creative")}
+                    />
                   </div>
                 </SettingCard>
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-white/8 px-5 py-4 md:px-6">
-              <div className="text-xs text-zinc-500">
+            <div className="flex items-center justify-between gap-4 border-t border-white/8 px-5 py-4 md:px-6">
+              <div className="text-[12px] text-zinc-500">
                 Toto nastavení se uloží pro generování, enhance prompt i další editor flow.
               </div>
 
@@ -1859,7 +1887,7 @@ export default function AiLandingPage() {
                     "0 10px 30px rgba(124,92,255,0.24), 0 0 40px rgba(90,209,255,0.1)",
                 }}
               >
-                Použít nastavení
+                Použít nastavení návrhu
                 <Icon icon="solar:check-circle-linear" width={16} />
               </button>
             </div>
@@ -1907,33 +1935,33 @@ export default function AiLandingPage() {
                   Vylepšené zadání
                 </div>
                 <div className="max-h-[420px] overflow-auto whitespace-pre-wrap text-sm leading-7 text-zinc-100">
-                  {enhancedPromptPreview}
+                  {isEnhancingPrompt ? "Zyvia právě doplňuje brief…" : enhancedPromptPreview}
                 </div>
               </div>
             </div>
 
-            <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setEnhanceModalOpen(false)}
-                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+                className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
               >
-                Ponechat původní
+                Zavřít
               </button>
 
               <button
                 type="button"
                 onClick={applyEnhancedPrompt}
-                className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white"
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white"
                 style={{
                   background:
                     "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
                   boxShadow:
-                    "0 10px 30px rgba(124,92,255,0.28), 0 0 40px rgba(90,209,255,0.12)",
+                    "0 10px 30px rgba(124,92,255,0.24), 0 0 40px rgba(90,209,255,0.1)",
                 }}
               >
                 Použít vylepšené zadání
-                <Icon icon="solar:magic-stick-3-linear" width={18} />
+                <Icon icon="solar:magic-stick-3-linear" width={16} />
               </button>
             </div>
           </div>
