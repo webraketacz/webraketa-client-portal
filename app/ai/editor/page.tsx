@@ -230,7 +230,7 @@ type AssetSearchResponse = {
   error?: string;
 };
 
-type PublishResponse = {
+type PublikovatResponse = {
   url?: string;
   inspectUrl?: string;
   deploymentId?: string;
@@ -939,6 +939,62 @@ function prettifySectionLabel(id: string, type: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function inferSectionFromInstruction(
+  instruction: string,
+  sections: SectionMeta[]
+): SectionMeta | null {
+  const normalizedInstruction = normalizeText(instruction || "");
+  if (!normalizedInstruction.trim() || !sections.length) return null;
+
+  const aliasGroups: Record<string, string[]> = {
+    hero: ["hero", "hlavicka", "hlavičku", "hlavicku", "uvod", "úvod", "prvni sekce", "první sekce"],
+    header: ["header", "hlavicka", "hlavičku", "hlavicku", "navigace", "menu"],
+    nav: ["navigace", "menu", "hlavni menu", "hlavní menu"],
+    about: ["o nas", "o nás", "o projektu", "about"],
+    services: ["sluzby", "služby", "nabidka", "nabídka", "co delame", "co děláme"],
+    features: ["funkce", "vyhody", "výhody", "benefity"],
+    gallery: ["galerie", "fotky", "obrazky", "obrázky", "portfolio"],
+    testimonials: ["reference", "recenze", "testimonialy", "testimonials"],
+    contact: ["kontakt", "kontakty", "spojeni", "spojení"],
+    faq: ["faq", "otazky", "otázky", "casto", "často"],
+    pricing: ["cenik", "ceník", "ceny", "pricing"],
+    footer: ["footer", "paticka", "patička", "spodek"],
+    team: ["tym", "tým", "nas tym", "náš tým"],
+  };
+
+  let best: { section: SectionMeta; score: number } | null = null;
+
+  for (const section of sections) {
+    const haystack = normalizeText(
+      [section.id, section.type, section.label].filter(Boolean).join(" ")
+    );
+
+    let score = 0;
+
+    for (const token of [section.id, section.type, section.label]) {
+      const normalizedToken = normalizeText(token || "");
+      if (!normalizedToken) continue;
+      if (normalizedInstruction.includes(normalizedToken)) score += 6;
+    }
+
+    for (const [key, aliases] of Object.entries(aliasGroups)) {
+      if (!haystack.includes(key)) continue;
+      for (const alias of aliases) {
+        if (normalizedInstruction.includes(normalizeText(alias))) {
+          score += 4;
+        }
+      }
+    }
+
+    if (!best || score > best.score) {
+      best = { section, score };
+    }
+  }
+
+  return best && best.score > 0 ? best.section : null;
+}
+
+
 function extractSectionsFromHtml(html: string): SectionMeta[] {
   if (!html) return [];
 
@@ -1590,6 +1646,7 @@ export default function AiEditorPage() {
   const [publishing, setPublishing] = useState(false);
   const [improving, setImproving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [resolvingAssets, setResolvingAssets] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -1682,6 +1739,13 @@ export default function AiEditorPage() {
     );
   }, [availableSections, selectedSectionId, selectedSectionType]);
 
+  const inferredSectionMeta = useMemo(
+    () => inferSectionFromInstruction(chatInput, availableSections),
+    [chatInput, availableSections]
+  );
+
+  const activeSectionMeta = inferredSectionMeta || selectedSectionMeta;
+
   const previewDocument = useMemo(() => {
     if (!html) return "";
     return buildPreviewDocument(html, css, js, false);
@@ -1725,7 +1789,7 @@ export default function AiEditorPage() {
       .slice(0, 48);
   }
 
-  function openPublishPanel() {
+  function openPublikovatPanel() {
     setExportMenuOpen(false);
     const fallbackName =
       prompt.trim().split(/[\n\.]/)[0]?.trim().slice(0, 60) || "Můj web";
@@ -1742,7 +1806,7 @@ export default function AiEditorPage() {
   }
 
   function handleGithubExport() {
-    openPublishPanel();
+    openPublikovatPanel();
   }
 
 
@@ -1777,9 +1841,9 @@ export default function AiEditorPage() {
 
   function applyFollowUpSuggestion(suggestion: string) {
     setChatInput(
-      selectedSectionMeta
-        ? `${suggestion} Zaměř se na sekci ${selectedSectionMeta.label}.`
-        : `${suggestion} Vyberu pak konkrétní sekci v náhledu.`
+      activeSectionMeta
+        ? `${suggestion} Zaměř se hlavně na sekci ${activeSectionMeta.label}.`
+        : suggestion
     );
 
     if (isFullscreen) {
@@ -2409,11 +2473,23 @@ export default function AiEditorPage() {
     const instruction = (instructionOverride ?? chatInput).trim();
     if (instruction.length < 3) return;
 
-    if (!selectedSectionId) {
-      setError("Nejdřív vyberte konkrétní sekci, kterou chcete upravit.");
+    const resolvedSection =
+      inferSectionFromInstruction(instruction, availableSections) ||
+      selectedSectionMeta ||
+      availableSections[0] ||
+      null;
+
+    const resolvedSectionId = resolvedSection?.id || null;
+    const resolvedSectionType = resolvedSection?.type || null;
+    const resolvedSectionLabel = resolvedSection?.label || "vybranou část webu";
+
+    if (!resolvedSectionId) {
+      setError("Nepodařilo se rozpoznat část webu pro úpravu.");
       return;
     }
 
+    setSelectedSectionId(resolvedSectionId);
+    setSelectedSectionType(resolvedSectionType);
     setImproving(true);
     setError(null);
     setPublishError(null);
@@ -2436,7 +2512,7 @@ export default function AiEditorPage() {
           html,
           css,
           js,
-          selectedSectionId,
+          selectedSectionId: resolvedSectionId,
           inputMode,
           referenceUrl,
           referenceHtml,
@@ -2465,9 +2541,7 @@ export default function AiEditorPage() {
         {
           id: `assistant-improve-${Date.now()}`,
           role: "assistant",
-          text: `Úprava byla aplikována pouze do sekce ${
-            selectedSectionMeta?.label || selectedSectionId
-          }.`,
+          text: `Úprava byla aplikována do sekce ${resolvedSectionLabel}.`,
         },
       ]);
 
@@ -2480,7 +2554,7 @@ export default function AiEditorPage() {
     }
   }
 
-  async function handlePublish() {
+  async function handlePublikovat() {
     if (!html || !css) return;
 
     const finalSiteName = publishForm.siteName.trim() || "Můj web";
@@ -2506,7 +2580,7 @@ export default function AiEditorPage() {
         }),
       });
 
-      const data = await parseApiResponse<PublishResponse>(res);
+      const data = await parseApiResponse<PublikovatResponse>(res);
       if (!res.ok || !data.url) {
         throw new Error(data?.error ?? "Publikace selhala");
       }
@@ -2726,40 +2800,56 @@ export default function AiEditorPage() {
         {!isFullscreen && (
           <header className="border-b border-white/8 bg-[#07070b]/88 px-3 py-2 backdrop-blur-2xl md:px-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex min-w-0 items-center gap-3">
                 <img
                   src="/zyvia-logo.svg"
                   alt="Zyvia"
-                  className="h-5 w-auto shrink-0"
+                  className="h-6 w-auto shrink-0 md:h-7"
                 />
-                <div className="text-[11px] text-zinc-500">AI Web Builder</div>
+                <div className="text-[10px] text-zinc-500 md:text-[11px]">AI Web Builder</div>
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setActiveTab("preview")}
-                  className={`rounded-[10px] px-3 py-1.5 text-[12px] transition ${
+                  className={`rounded-[10px] px-3 py-1.5 text-[11px] transition ${
                     activeTab === "preview"
                       ? "bg-white/[0.10] text-white"
                       : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
                   }`}
                 >
-                  Preview
+                  Náhled
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("editor")}
-                  className={`rounded-[10px] px-3 py-1.5 text-[12px] transition ${
+                  className={`rounded-[10px] px-3 py-1.5 text-[11px] transition ${
                     activeTab === "editor"
                       ? "bg-white/[0.10] text-white"
                       : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
                   }`}
                 >
-                  Design
+                  Editor
                 </button>
 
                 <div className="mx-1 hidden h-5 w-px bg-white/10 md:block" />
+
+                <button
+                  type="button"
+                  onClick={() => setIsChatCollapsed((prev) => !prev)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                  title={isChatCollapsed ? "Zobrazit chat" : "Skrýt chat"}
+                >
+                  <Icon
+                    icon={
+                      isChatCollapsed
+                        ? "solar:sidebar-minimalistic-bold-duotone"
+                        : "solar:sidebar-minimalistic-outline"
+                    }
+                    width={14}
+                  />
+                </button>
 
                 <button
                   type="button"
@@ -2767,7 +2857,8 @@ export default function AiEditorPage() {
                     if (!isFullscreen) setActiveTab("preview");
                     setIsFullscreen((prev) => !prev);
                   }}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-[12px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                  title={isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"}
                 >
                   <Icon
                     icon={
@@ -2775,9 +2866,8 @@ export default function AiEditorPage() {
                         ? "solar:minimize-square-3-linear"
                         : "solar:maximize-square-3-linear"
                     }
-                    width={13}
+                    width={14}
                   />
-                  Preview
                 </button>
 
                 <button
@@ -2834,7 +2924,7 @@ export default function AiEditorPage() {
                     resolvingAssets ||
                     prompt.trim().length < 12
                   }
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-[12px] font-medium text-white transition disabled:opacity-50"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-[11px] font-medium text-white transition disabled:opacity-50"
                   style={{
                     background:
                       "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
@@ -2848,7 +2938,7 @@ export default function AiEditorPage() {
                     ? "Upravuji…"
                     : resolvingAssets
                     ? "Obrázky…"
-                    : "Generate"}
+                    : "Generovat"}
                   <Icon icon="solar:arrow-up-linear" width={13} />
                 </button>
 
@@ -2856,7 +2946,7 @@ export default function AiEditorPage() {
                   type="button"
                   onClick={() => setExportMenuOpen((prev) => !prev)}
                   disabled={!html}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-[12px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-[11px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
                 >
                   <Icon icon="solar:download-linear" width={13} />
                   Export
@@ -2871,7 +2961,7 @@ export default function AiEditorPage() {
                     >
                       <Icon icon="mdi:github" width={15} className="mt-0.5 text-zinc-300" />
                       <span>
-                        <span className="block text-[12px] text-white">Exportovat na GitHub</span>
+                        <span className="block text-[11px] text-white">Exportovat na GitHub</span>
                         <span className="block text-[10px] text-zinc-500">Napojí existující publish flow.</span>
                       </span>
                     </button>
@@ -2885,7 +2975,7 @@ export default function AiEditorPage() {
                     >
                       <Icon icon="solar:folder-open-linear" width={15} className="mt-0.5 text-zinc-300" />
                       <span>
-                        <span className="block text-[12px] text-white">Stáhnout soubory</span>
+                        <span className="block text-[11px] text-white">Stáhnout soubory</span>
                         <span className="block text-[10px] text-zinc-500">ZIP s HTML, CSS a JS.</span>
                       </span>
                     </button>
@@ -2894,12 +2984,12 @@ export default function AiEditorPage() {
 
                 <button
                   type="button"
-                  onClick={openPublishPanel}
+                  onClick={openPublikovatPanel}
                   disabled={!html}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3 text-[12px] text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3 text-[11px] text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
                 >
                   <Icon icon="solar:upload-linear" width={13} />
-                  Publish
+                  Publikovat
                 </button>
               </div>
             </div>
@@ -2908,12 +2998,12 @@ export default function AiEditorPage() {
 
         <div
           className={`min-h-0 flex-1 ${
-            isFullscreen
+            isFullscreen || isChatCollapsed
               ? "grid grid-cols-1"
-              : "grid grid-cols-1 xl:grid-cols-[380px_minmax(0,1fr)]"
+              : "grid grid-cols-1 xl:grid-cols-[350px_minmax(0,1fr)]"
           }`}
         >
-          {!isFullscreen && (
+          {!isFullscreen && !isChatCollapsed && (
             <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
               <div className="flex h-full flex-col">
                 <div className="border-b border-white/8 px-4 py-3">
@@ -2980,9 +3070,9 @@ export default function AiEditorPage() {
                           ? "Probíhá zpracování úprav a aplikace změn do návrhu."
                           : resolvingAssets
                           ? "Rozvržení už je hotové, teď se dohledávají obrázky odděleně."
-                          : selectedSectionMeta
-                          ? "Kliknutím v editoru vybíráte konkrétní sekce, texty i obrázky pro úpravy."
-                          : "V Editoru vybíráte sekce, texty i obrázky. Náhled slouží jen pro čisté zobrazení."}
+                          : activeSectionMeta
+                          ? `Rozpoznaná část pro další úpravy: ${activeSectionMeta.label}.`
+                          : "Napište úpravu přirozeně a Zyvia sama rozpozná, které části webu se má změna týkat."}
                       </div>
                     </div>
 
@@ -3081,7 +3171,7 @@ export default function AiEditorPage() {
                           Další rychlé úpravy
                         </div>
                         <div className="mb-3 text-[11px] leading-5 text-zinc-300">
-                          Vyberte sekci v editoru a jedním klikem si připravte další zadání.
+                          Jedním klikem si připravte další zadání. Sekci poznám automaticky podle textu nebo podle aktuálního výběru.
                         </div>
                         <div className="flex flex-col gap-2">
                           {postGenerateSuggestions.map((item) => (
@@ -3102,83 +3192,40 @@ export default function AiEditorPage() {
                       layoutFingerprintDebug ||
                       screenshotAnalysisDebug ||
                       hasReferenceScreenshotDebug) && (
-                      <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Debug reference analýza
-                        </div>
-                        <div className="space-y-2 text-[11px] leading-5 text-zinc-300">
+                      <details className="rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
+                        <summary className="cursor-pointer list-none text-[12px] font-medium text-zinc-200">
+                          Referenční analýza
+                        </summary>
+                        <div className="mt-3 space-y-2 text-[11px] leading-5 text-zinc-400">
                           <div>
-                            <span className="text-zinc-100">Screenshot reference:</span>{" "}
-                            {hasReferenceScreenshotDebug ? "ano" : "ne"}
+                            Screenshot reference: {hasReferenceScreenshotDebug ? "ano" : "ne"}
                           </div>
-
                           {referenceSummaryDebug && (
-                            <div className="rounded-[8px] border border-white/10 bg-black/20 p-2">
-                              <div className="mb-1 text-zinc-100">Reference summary</div>
-                              <div>Title: {referenceSummaryDebug.title || "—"}</div>
-                              <div>
-                                Sekce: {referenceSummaryDebug.sectionCount ?? "—"} · Nav:{" "}
-                                {referenceSummaryDebug.navLinks?.length ?? 0} · CTA:{" "}
-                                {referenceSummaryDebug.ctas?.length ?? 0}
-                              </div>
+                            <div>
+                              Titulek: {referenceSummaryDebug.title || "—"} · Sekce:{" "}
+                              {referenceSummaryDebug.sectionCount ?? "—"} · CTA:{" "}
+                              {referenceSummaryDebug.ctas?.length ?? 0}
                             </div>
                           )}
-
                           {layoutFingerprintDebug && (
-                            <div className="rounded-[8px] border border-white/10 bg-black/20 p-2">
-                              <div className="mb-1 text-zinc-100">Layout fingerprint</div>
-                              <div>Hero: {layoutFingerprintDebug.heroType || "—"}</div>
-                              <div>Dominance: {layoutFingerprintDebug.visualDominance || "—"}</div>
-                              <div>Nav: {layoutFingerprintDebug.navStyle || "—"}</div>
-                              <div>Density: {layoutFingerprintDebug.density || "—"}</div>
-                              <div>
-                                Sections: {layoutFingerprintDebug.sectionSequence?.join(" → ") || "—"}
-                              </div>
+                            <div>
+                              Layout: {layoutFingerprintDebug.heroType || "—"} · Hustota:{" "}
+                              {layoutFingerprintDebug.density || "—"}
                             </div>
                           )}
-
                           {screenshotAnalysisDebug && (
-                            <div className="rounded-[8px] border border-white/10 bg-black/20 p-2">
-                              <div className="mb-1 text-zinc-100">Screenshot analýza</div>
-                              <div>Above the fold: {screenshotAnalysisDebug.aboveTheFoldType || "—"}</div>
-                              <div>Alignment: {screenshotAnalysisDebug.heroContentAlignment || "—"}</div>
-                              <div>Subject: {screenshotAnalysisDebug.dominantVisualSubject || "—"}</div>
-                              <div>After hero: {screenshotAnalysisDebug.firstSectionAfterHero || "—"}</div>
-                              <div>Color: {screenshotAnalysisDebug.colorDirection || "—"}</div>
+                            <div>
+                              Kompozice: {screenshotAnalysisDebug.heroContentAlignment || "—"} ·
+                              Barvy: {screenshotAnalysisDebug.colorDirection || "—"}
                             </div>
                           )}
                         </div>
-                      </div>
+                      </details>
                     )}
 
-                    {selectedSectionMeta && (
-                      <div className="rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 p-3">
-                        <div className="mb-2 text-sm font-medium text-white">
-                          Vybraná sekce: {selectedSectionMeta.label}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => useSectionAction("text")}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
-                          >
-                            Změnit text
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => useSectionAction("visual")}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
-                          >
-                            Změnit vzhled
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => useSectionAction("regenerate")}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-zinc-200 transition hover:bg-white/[0.10]"
-                          >
-                            Přegenerovat
-                          </button>
-                        </div>
+                    {activeSectionMeta && (
+                      <div className="rounded-[10px] border border-cyan-500/15 bg-cyan-500/8 p-3 text-[12px] text-cyan-50">
+                        Aktivní část webu: <span className="font-medium">{activeSectionMeta.label}</span>
                       </div>
                     )}
 
@@ -3222,24 +3269,26 @@ export default function AiEditorPage() {
                   </div>
                 </div>
 
-                <div className="border-t border-white/8 px-4 py-3">
+                <div className="mt-auto border-t border-white/8 px-4 py-3">
                   <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
+                    {activeSectionMeta && (
+                      <div className="mb-2 text-[11px] text-zinc-500">
+                        Rozpoznaná část: <span className="text-zinc-300">{activeSectionMeta.label}</span>
+                      </div>
+                    )}
+
                     <textarea
                       ref={chatInputRef}
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       onKeyDown={onChatKeyDown}
-                      placeholder={
-                        selectedSectionMeta
-                          ? `Napište úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
-                          : "Nejdřív klikněte v editoru na konkrétní sekci, kterou chcete upravit."
-                      }
-                      className="h-14 w-full resize-none bg-transparent text-[12px] text-white outline-none placeholder:text-zinc-500"
+                      placeholder="Popište úpravu přirozeně, třeba: Uprav hlavičku, zesil CTA nebo změň text kontaktu…"
+                      className="h-20 w-full resize-none bg-transparent text-[12px] text-white outline-none placeholder:text-zinc-500"
                     />
 
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <div className="text-[11px] text-zinc-500">
-                        Enter odešle úpravu
+                        Enter odešle úpravu. Sekci rozpoznám automaticky.
                       </div>
 
                       <button
@@ -3255,9 +3304,42 @@ export default function AiEditorPage() {
                         className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[12px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:pen-2-linear" width={14} />
-                        {improving ? "Upravuji…" : "Použít"}
+                        {improving ? "Upravuji…" : "Použít úpravu"}
                       </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!otazky.length || otazkyDokonceny) {
+                          startQuestionFlow(prompt);
+                          return;
+                        }
+                        scrollChatToBottom(true);
+                      }}
+                      disabled={
+                        loading ||
+                        improving ||
+                        resolvingAssets ||
+                        prompt.trim().length < 12
+                      }
+                      className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[12px] text-[12px] font-medium text-white transition disabled:opacity-50"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                        boxShadow:
+                          "0 10px 24px rgba(124,92,255,0.16), 0 0 28px rgba(90,209,255,0.06)",
+                      }}
+                    >
+                      {loading
+                        ? "Generuji…"
+                        : improving
+                        ? "Upravuji…"
+                        : resolvingAssets
+                        ? "Doplňuji obrázky…"
+                        : "Spustit generování"}
+                      <Icon icon="solar:arrow-up-linear" width={14} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3524,7 +3606,7 @@ export default function AiEditorPage() {
 
                   <button
                     type="button"
-                    onClick={handlePublish}
+                    onClick={handlePublikovat}
                     disabled={!html || !css || publishing}
                     className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-100 transition hover:bg-emerald-500/15 disabled:opacity-40"
                   >
