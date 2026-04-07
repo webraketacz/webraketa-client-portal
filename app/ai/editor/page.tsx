@@ -1597,6 +1597,7 @@ export default function AiEditorPage() {
   const [publishedUrl, setPublishedUrl] = useState("");
   const [publishedInspectUrl, setPublishedInspectUrl] = useState("");
   const [publishPanelOpen, setPublishPanelOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [publishForm, setPublishForm] = useState<PublishFormState>({
     siteName: "Můj web",
     slug: "",
@@ -1725,6 +1726,7 @@ export default function AiEditorPage() {
   }
 
   function openPublishPanel() {
+    setExportMenuOpen(false);
     const fallbackName =
       prompt.trim().split(/[\n\.]/)[0]?.trim().slice(0, 60) || "Můj web";
     const nextSlug =
@@ -1738,6 +1740,11 @@ export default function AiEditorPage() {
     setPublishError(null);
     setPublishPanelOpen(true);
   }
+
+  function handleGithubExport() {
+    openPublishPanel();
+  }
+
 
   function startQuestionFlow(currentPrompt: string) {
     const prefs = mergeStoredPreferences(
@@ -2717,36 +2724,182 @@ export default function AiEditorPage() {
 
       <div className="relative z-10 flex h-full flex-col">
         {!isFullscreen && (
-          <header className="border-b border-white/8 bg-[#07070b]/80 px-4 py-2.5 backdrop-blur-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+          <header className="border-b border-white/8 bg-[#07070b]/88 px-3 py-2 backdrop-blur-2xl md:px-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2.5">
                 <img
                   src="/zyvia-logo.svg"
                   alt="Zyvia"
-                  className="h-6 w-auto shrink-0"
+                  className="h-5 w-auto shrink-0"
                 />
-                <div className="text-xs text-zinc-500">AI Web Builder</div>
+                <div className="text-[11px] text-zinc-500">AI Web Builder</div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => downloadZipSite(html, css, js)}
-                  disabled={!html}
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                  onClick={() => setActiveTab("preview")}
+                  className={`rounded-[10px] px-3 py-1.5 text-[12px] transition ${
+                    activeTab === "preview"
+                      ? "bg-white/[0.10] text-white"
+                      : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                  }`}
                 >
-                  <Icon icon="solar:download-linear" width={14} />
+                  Preview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("editor")}
+                  className={`rounded-[10px] px-3 py-1.5 text-[12px] transition ${
+                    activeTab === "editor"
+                      ? "bg-white/[0.10] text-white"
+                      : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                >
+                  Design
+                </button>
+
+                <div className="mx-1 hidden h-5 w-px bg-white/10 md:block" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isFullscreen) setActiveTab("preview");
+                    setIsFullscreen((prev) => !prev);
+                  }}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-[12px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                >
+                  <Icon
+                    icon={
+                      isFullscreen
+                        ? "solar:minimize-square-3-linear"
+                        : "solar:maximize-square-3-linear"
+                    }
+                    width={13}
+                  />
+                  Preview
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("desktop")}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 transition ${
+                    viewMode === "desktop"
+                      ? "bg-white/[0.10] text-white"
+                      : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                  title="Desktop"
+                >
+                  <Icon icon="solar:monitor-linear" width={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("tablet")}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 transition ${
+                    viewMode === "tablet"
+                      ? "bg-white/[0.10] text-white"
+                      : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                  title="Tablet"
+                >
+                  <Icon icon="solar:tablet-linear" width={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("mobile")}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/10 transition ${
+                    viewMode === "mobile"
+                      ? "bg-white/[0.10] text-white"
+                      : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
+                  }`}
+                  title="Mobil"
+                >
+                  <Icon icon="solar:smartphone-linear" width={14} />
+                </button>
+              </div>
+
+              <div className="relative flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!otazky.length || otazkyDokonceny) {
+                      startQuestionFlow(prompt);
+                      return;
+                    }
+                    scrollChatToBottom(true);
+                  }}
+                  disabled={
+                    loading ||
+                    improving ||
+                    resolvingAssets ||
+                    prompt.trim().length < 12
+                  }
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-[12px] font-medium text-white transition disabled:opacity-50"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
+                    boxShadow:
+                      "0 10px 24px rgba(124,92,255,0.16), 0 0 28px rgba(90,209,255,0.06)",
+                  }}
+                >
+                  {loading
+                    ? "Generuji…"
+                    : improving
+                    ? "Upravuji…"
+                    : resolvingAssets
+                    ? "Obrázky…"
+                    : "Generate"}
+                  <Icon icon="solar:arrow-up-linear" width={13} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setExportMenuOpen((prev) => !prev)}
+                  disabled={!html}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-[12px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                >
+                  <Icon icon="solar:download-linear" width={13} />
                   Export
                 </button>
+
+                {exportMenuOpen && (
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-40 min-w-[220px] rounded-[14px] border border-white/10 bg-[#0b0b10]/96 p-2 shadow-2xl backdrop-blur-2xl">
+                    <button
+                      type="button"
+                      onClick={handleGithubExport}
+                      className="flex w-full items-start gap-2 rounded-[10px] px-3 py-2 text-left transition hover:bg-white/[0.06]"
+                    >
+                      <Icon icon="mdi:github" width={15} className="mt-0.5 text-zinc-300" />
+                      <span>
+                        <span className="block text-[12px] text-white">Exportovat na GitHub</span>
+                        <span className="block text-[10px] text-zinc-500">Napojí existující publish flow.</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExportMenuOpen(false);
+                        downloadZipSite(html, css, js);
+                      }}
+                      className="mt-1 flex w-full items-start gap-2 rounded-[10px] px-3 py-2 text-left transition hover:bg-white/[0.06]"
+                    >
+                      <Icon icon="solar:folder-open-linear" width={15} className="mt-0.5 text-zinc-300" />
+                      <span>
+                        <span className="block text-[12px] text-white">Stáhnout soubory</span>
+                        <span className="block text-[10px] text-zinc-500">ZIP s HTML, CSS a JS.</span>
+                      </span>
+                    </button>
+                  </div>
+                )}
 
                 <button
                   type="button"
                   onClick={openPublishPanel}
                   disabled={!html}
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3 text-[12px] text-emerald-200 transition hover:bg-emerald-500/15 disabled:opacity-40"
                 >
-                  <Icon icon="solar:upload-linear" width={14} />
-                  Publikovat
+                  <Icon icon="solar:upload-linear" width={13} />
+                  Publish
                 </button>
               </div>
             </div>
@@ -2764,63 +2917,21 @@ export default function AiEditorPage() {
             <aside className="min-h-0 border-r border-white/8 bg-[#08080c]/88 backdrop-blur-2xl">
               <div className="flex h-full flex-col">
                 <div className="border-b border-white/8 px-4 py-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
-                      Editor
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Chat</div>
+                      <div className="mt-1 text-[11px] text-zinc-600">Jednoduché úpravy a komunikace k návrhu.</div>
                     </div>
                     {(loading || improving || resolvingAssets) && (
-                      <div className="rounded-[10px] border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-300">
+                      <div className="rounded-[999px] border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[10px] text-violet-300">
                         {loading
                           ? "Generuji"
                           : improving
                           ? "Upravuji"
-                          : "Doplňuji obrázky"}
+                          : "Obrázky"}
                       </div>
                     )}
                   </div>
-
-                  <div className="mb-3 rounded-[10px] border border-white/8 bg-white/[0.03] p-3 text-[11px] leading-5 text-zinc-400">
-                    <div>Zdroj: <span className="text-white">{inputMode}</span></div>
-                    {referenceUrl && <div className="truncate">URL: {referenceUrl}</div>}
-                    {attachments.length > 0 && (
-                      <div className="truncate">
-                        Přílohy: {attachments.map((item) => item.name).filter(Boolean).join(", ")}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!otazky.length || otazkyDokonceny) {
-                        startQuestionFlow(prompt);
-                        return;
-                      }
-                      scrollChatToBottom(true);
-                    }}
-                    disabled={
-                      loading ||
-                      improving ||
-                      resolvingAssets ||
-                      prompt.trim().length < 12
-                    }
-                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
-                      boxShadow:
-                        "0 10px 24px rgba(124,92,255,0.20), 0 0 28px rgba(90,209,255,0.08)",
-                    }}
-                  >
-                    {loading
-                      ? "Generuji…"
-                      : improving
-                      ? "Probíhá úprava…"
-                      : resolvingAssets
-                      ? "Doplňuji obrázky…"
-                      : "Začít generovat"}
-                    <Icon icon="solar:arrow-up-linear" width={15} />
-                  </button>
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -2832,7 +2943,7 @@ export default function AiEditorPage() {
                       return (
                         <div
                           key={message.id}
-                          className={`max-w-[94%] rounded-[10px] px-3 py-2 text-[13px] leading-5 ${
+                          className={`max-w-[94%] rounded-[10px] px-3 py-2 text-[12px] leading-5 ${
                             isUser
                               ? "ml-auto border border-cyan-500/15 bg-cyan-500/10 text-cyan-50"
                               : isSystem
@@ -2846,7 +2957,7 @@ export default function AiEditorPage() {
                     })}
 
                     <div className="rounded-[10px] border border-white/8 bg-[#0b0b10] p-3">
-                      <div className="mb-2 flex items-center justify-between text-[13px] text-zinc-400">
+                      <div className="mb-2 flex items-center justify-between text-[12px] text-zinc-400">
                         <span>{status}</span>
                         <span>{Math.round(progress)}%</span>
                       </div>
@@ -2933,7 +3044,7 @@ export default function AiEditorPage() {
                           </div>
                         )}
 
-                        <div className="mb-3 text-[13px] text-zinc-200">
+                        <div className="mb-3 text-[12px] text-zinc-200">
                           {aktualniOtazka.text}
                         </div>
 
@@ -2941,7 +3052,7 @@ export default function AiEditorPage() {
                           value={odpovedInput}
                           onChange={(e) => setOdpovedInput(e.target.value)}
                           placeholder={aktualniOtazka.placeholder}
-                          className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/25 p-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
+                          className="h-24 w-full resize-none rounded-[10px] border border-white/10 bg-black/25 p-3 text-[12px] text-white outline-none placeholder:text-zinc-500"
                         />
 
                         <div className="mt-3 flex items-center justify-between gap-3">
@@ -2978,7 +3089,7 @@ export default function AiEditorPage() {
                               key={item}
                               type="button"
                               onClick={() => applyFollowUpSuggestion(item)}
-                              className="w-full rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-[13px] leading-5 text-zinc-100 transition hover:bg-white/[0.10]"
+                              className="w-full rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-[12px] leading-5 text-zinc-100 transition hover:bg-white/[0.10]"
                             >
                               {item}
                             </button>
@@ -3112,10 +3223,6 @@ export default function AiEditorPage() {
                 </div>
 
                 <div className="border-t border-white/8 px-4 py-3">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                    Upravit návrh
-                  </div>
-
                   <div className="rounded-[10px] border border-white/8 bg-white/[0.03] p-3">
                     <textarea
                       ref={chatInputRef}
@@ -3127,7 +3234,7 @@ export default function AiEditorPage() {
                           ? `Napište úpravu pro sekci ${selectedSectionMeta.label.toLowerCase()}…`
                           : "Nejdřív klikněte v editoru na konkrétní sekci, kterou chcete upravit."
                       }
-                      className="h-14 w-full resize-none bg-transparent text-[13px] text-white outline-none placeholder:text-zinc-500"
+                      className="h-14 w-full resize-none bg-transparent text-[12px] text-white outline-none placeholder:text-zinc-500"
                     />
 
                     <div className="mt-3 flex items-center justify-between gap-3">
@@ -3145,7 +3252,7 @@ export default function AiEditorPage() {
                           resolvingAssets ||
                           chatInput.trim().length < 3
                         }
-                        className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[13px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
+                        className="inline-flex items-center gap-2 rounded-[10px] border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[12px] font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-40"
                       >
                         <Icon icon="solar:pen-2-linear" width={14} />
                         {improving ? "Upravuji…" : "Použít"}
@@ -3222,93 +3329,6 @@ export default function AiEditorPage() {
             )}
 
             <div className="flex h-full min-h-0 flex-col">
-              {!isFullscreen && (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5 md:px-5">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("preview")}
-                      className={`rounded-[10px] px-4 py-2 text-[13px] transition ${
-                        activeTab === "preview"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
-                      Náhled
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("editor")}
-                      className={`rounded-[10px] px-4 py-2 text-[13px] transition ${
-                        activeTab === "editor"
-                          ? "bg-white/[0.10] text-white"
-                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                    >
-                      Editor
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isFullscreen) setActiveTab("preview");
-                        setIsFullscreen((prev) => !prev);
-                      }}
-                      className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 text-[13px] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                    >
-                      <Icon
-                        icon={
-                          isFullscreen
-                            ? "solar:minimize-square-3-linear"
-                            : "solar:maximize-square-3-linear"
-                        }
-                        width={14}
-                      />
-                      {isFullscreen ? "Ukončit" : "Celá obrazovka"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("desktop")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                        viewMode === "desktop"
-                          ? "bg-white/[0.10] text-white"
-                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Desktop"
-                    >
-                      <Icon icon="solar:monitor-linear" width={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("tablet")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                        viewMode === "tablet"
-                          ? "bg-white/[0.10] text-white"
-                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Tablet"
-                    >
-                      <Icon icon="solar:tablet-linear" width={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("mobile")}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 transition ${
-                        viewMode === "mobile"
-                          ? "bg-white/[0.10] text-white"
-                          : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-white"
-                      }`}
-                      title="Mobil"
-                    >
-                      <Icon icon="solar:smartphone-linear" width={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="min-h-0 flex-1">
                 <div
