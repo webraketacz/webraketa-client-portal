@@ -11,10 +11,9 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
 type AttachmentItem = {
-  id?: string;
-  name?: string;
-  kind?: "screenshot" | "file";
-  dataUrl?: string;
+  id: string;
+  name: string;
+  kind: "screenshot" | "file";
 };
 
 type SourceMode = "prompt" | "url" | "screenshot" | "html";
@@ -732,36 +731,11 @@ export default function AiLandingPage() {
     return () => window.clearInterval(interval);
   }, []);
 
-  
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        resolve(result);
-      } else {
-        reject(new Error("Failed to convert file to data URL."));
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error("File reading failed."));
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-
-
-  async function addAttachment(file: File, kind: "screenshot" | "file") {
+  function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
       id: `${kind}-${file.name}-${Date.now()}`,
       name: file.name,
       kind,
-      dataUrl: kind === "screenshot" ? await fileToDataUrl(file) : undefined,
     };
 
     setAttachments((prev) => {
@@ -773,25 +747,19 @@ async function fileToDataUrl(file: File): Promise<string> {
     });
   }
 
-  async function handleScreenshotSelect(e: ChangeEvent<HTMLInputElement>) {
+  function handleScreenshotSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    try {
-      await addAttachment(file, "screenshot");
-      setSourceMode("screenshot");
-    } finally {
-      e.target.value = "";
-    }
+    addAttachment(file, "screenshot");
+    setSourceMode("screenshot");
+    e.target.value = "";
   }
 
-  async function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
+  function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    try {
-      await addAttachment(file, "file");
-    } finally {
-      e.target.value = "";
-    }
+    addAttachment(file, "file");
+    e.target.value = "";
   }
 
   async function handleHtmlFileSelect(e: ChangeEvent<HTMLInputElement>) {
@@ -802,13 +770,14 @@ async function fileToDataUrl(file: File): Promise<string> {
       const text = await file.text();
       setSourceHtml(text);
       setSourceMode("html");
-      await addAttachment(file, "file");
+      addAttachment(file, "file");
     } finally {
       e.target.value = "";
     }
   }
 
-  function removeAttachment(id: string) {
+  function removeAttachment(id?: string) {
+    if (!id) return;
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   }
 
