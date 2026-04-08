@@ -185,7 +185,7 @@ function sanitizeBrandLogoAsset(value: unknown): BrandLogoAsset | null {
   };
 }
 
-function sanitizeAttachments(value: unknown): AttachmentItem[] {
+function sanitizeAttachments(value: unknown): AttachmentInput[] {
   if (!Array.isArray(value)) return [];
 
   return value
