@@ -732,6 +732,30 @@ export default function AiLandingPage() {
     return () => window.clearInterval(interval);
   }, []);
 
+  
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result);
+      } else {
+        reject(new Error("Failed to convert file to data URL."));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("File reading failed."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+
   async function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
       id: `${kind}-${file.name}-${Date.now()}`,
