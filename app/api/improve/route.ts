@@ -210,7 +210,7 @@ function resolveInputMode(value: unknown): InputMode {
     : "prompt";
 }
 
-function summarizeAttachments(items: AttachmentItem[]) {
+function summarizeAttachments(items: AttachmentInput[]) {
   if (!items.length) return "Žádné přílohy.";
 
   return items
@@ -653,7 +653,7 @@ function improveRenderPrompt(params: {
   inputMode: InputMode;
   referenceUrl?: string;
   referenceHtml?: string;
-  attachments?: AttachmentItem[];
+  attachments?: AttachmentInput[];
 }) {
   const industry = inferIndustryKind(params.prompt);
 
