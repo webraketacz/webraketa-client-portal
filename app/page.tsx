@@ -280,6 +280,29 @@ const CONTACT_CHOICES = [
   "Rezervace schůzky",
 ];
 
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result);
+      } else {
+        reject(new Error("Nepodařilo se převést soubor na data URL."));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Čtení souboru selhalo."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+
 function buildEnhancedPrompt(params: {
   prompt: string;
   sourceMode: SourceMode;
@@ -567,29 +590,6 @@ function ColorInputRow(props: {
   );
 }
 
-
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        resolve(result);
-      } else {
-        reject(new Error("Failed to convert file to data URL."));
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error("File reading failed."));
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function AiLandingPage() {
   const router = useRouter();
 
@@ -674,7 +674,6 @@ export default function AiLandingPage() {
   const [exactTextHex, setExactTextHex] = useState("#F4F4F5");
 
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const htmlFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canContinue = useMemo(() => {
@@ -783,16 +782,6 @@ export default function AiLandingPage() {
     }
   }
 
-  async function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      await addAttachment(file, "file");
-    } finally {
-      e.target.value = "";
-    }
-  }
-
   async function handleHtmlFileSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -801,15 +790,19 @@ export default function AiLandingPage() {
       const text = await file.text();
       setSourceHtml(text);
       setSourceMode("html");
-      addAttachment(file, "file");
+      await addAttachment(file, "file");
     } finally {
       e.target.value = "";
     }
   }
 
-  function removeAttachment(id: string) {
+  function removeAttachment(id?: string) {
+    if (!id) return;
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   }
+
+  const screenshotAttachments = attachments.filter((item) => item.kind === "screenshot");
+  const fileAttachments = attachments.filter((item) => item.kind === "file");
 
   function toggleContactPreference(item: string) {
     setContactPreferences((prev) =>
@@ -986,7 +979,7 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(36px, -22px, 0) scale(1.05);
+            transform: translate3d(52px, -30px, 0) scale(1.08);
           }
         }
         @keyframes zyviaFloatB {
@@ -994,7 +987,32 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(-42px, 28px, 0) scale(1.06);
+            transform: translate3d(-56px, 36px, 0) scale(1.1);
+          }
+        }
+        @keyframes zyviaAuroraShift {
+          0% {
+            transform: translate3d(-4%, -2%, 0) scale(1.02) rotate(0deg);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translate3d(3%, 2%, 0) scale(1.08) rotate(8deg);
+            opacity: 0.46;
+          }
+          100% {
+            transform: translate3d(-2%, 4%, 0) scale(1.04) rotate(-6deg);
+            opacity: 0.34;
+          }
+        }
+        @keyframes zyviaOrbitalDrift {
+          0% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          50% {
+            transform: translate3d(32px, -22px, 0) scale(1.08);
+          }
+          100% {
+            transform: translate3d(-24px, 18px, 0) scale(0.96);
           }
         }
         @keyframes zyviaGlowPulse {
@@ -1128,7 +1146,7 @@ export default function AiLandingPage() {
             />
           </div>
 
-          <nav className="hidden items-center gap-7 text-sm text-zinc-400 md:flex">
+          <nav className="hidden items-center gap-7 text-[15px] font-medium text-zinc-400 md:flex">
             <button type="button" className="transition hover:text-white">
               Agent
             </button>
@@ -1143,14 +1161,14 @@ export default function AiLandingPage() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              className="text-sm text-zinc-300 transition hover:text-white"
+              className="text-[15px] font-medium text-zinc-300 transition hover:text-white"
             >
               Přihlášení
             </button>
 
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-[linear-gradient(135deg,rgba(124,92,255,0.96),rgba(90,209,255,0.84))] px-4 py-2 text-sm font-medium text-white shadow-[0_10px_28px_rgba(124,92,255,0.18)] transition hover:opacity-95"
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-[linear-gradient(135deg,rgba(124,92,255,0.96),rgba(90,209,255,0.84))] px-5 py-2.5 text-[15px] font-medium text-white shadow-[0_10px_28px_rgba(124,92,255,0.18)] transition hover:opacity-95"
             >
               Začít zdarma
             </button>
@@ -1244,7 +1262,63 @@ export default function AiLandingPage() {
                     </div>
                   )}
 
-                  <div className="px-5 pb-[86px] pt-5 md:px-6 md:pt-6">
+                  <div className="px-5 py-5 md:px-6 md:pt-6">
+                    {sourceMode === "screenshot" && (
+                      <div className="mb-4 rounded-[18px] border border-white/8 bg-white/[0.03] p-3.5">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-white">Screenshot reference</div>
+                            <div className="mt-1 text-xs text-zinc-500">
+                              Nahrajte screenshot a Zyvia převezme kompozici, rytmus i layout.
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => screenshotInputRef.current?.click()}
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                          >
+                            <Icon icon="solar:gallery-add-linear" width={16} />
+                            Přidat screenshot
+                          </button>
+                        </div>
+
+                        {screenshotAttachments.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {screenshotAttachments.map((item) => (
+                              <div
+                                key={item.id}
+                                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300"
+                              >
+                                <Icon icon="solar:gallery-wide-linear" width={14} />
+                                <span>{item.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttachment(item.id)}
+                                  className="text-zinc-500 transition hover:text-white"
+                                >
+                                  <Icon icon="solar:close-circle-linear" width={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {sourceMode === "html" && (
+                      <div className="mb-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => htmlFileInputRef.current?.click()}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        >
+                          <Icon icon="solar:upload-linear" width={16} />
+                          Nahrát HTML soubor
+                        </button>
+                      </div>
+                    )}
+
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
@@ -1255,52 +1329,35 @@ export default function AiLandingPage() {
                       className="min-h-[168px] w-full resize-none bg-transparent text-[16px] leading-7 text-white outline-none placeholder:text-zinc-500 md:min-h-[186px]"
                     />
 
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => screenshotInputRef.current?.click()}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                        title="Přidat screenshot"
-                      >
-                        <Icon icon="solar:gallery-wide-linear" width={17} />
-                      </button>
+                    <div className="mt-5 flex flex-col gap-3 border-t border-white/8 pt-4 md:flex-row md:items-center md:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={openEnhanceModal}
+                          disabled={prompt.trim().length < 8 || isEnhancingPrompt}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                          title="Vylepšit zadání"
+                        >
+                          <Icon icon="solar:magic-stick-3-linear" width={16} />
+                          AI vylepšení promptu
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                        title="Přidat soubor"
-                      >
-                        <Icon icon="solar:document-text-linear" width={17} />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreativeSetupOpen(true)}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                          title="Pokročilé nastavení návrhu"
+                        >
+                          <Icon icon="solar:tuning-2-linear" width={16} />
+                          Nastavení návrhu
+                        </button>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={openEnhanceModal}
-                        disabled={prompt.trim().length < 8 || isEnhancingPrompt}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-                        title="Vylepšit zadání"
-                      >
-                        <Icon icon="solar:magic-stick-3-linear" width={17} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCreativeSetupOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[12px] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                        title="Pokročilé nastavení návrhu"
-                      >
-                        <Icon icon="solar:tuning-2-linear" width={16} />
-                        Nastavení návrhu
-                      </button>
-                    </div>
-
-                    <div className="absolute bottom-4 right-4 z-[3]">
                       <button
                         type="button"
                         onClick={() => startGenerating()}
                         disabled={!canContinue}
-                        className="inline-flex min-w-[168px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex min-w-[192px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                         style={{
                           background:
                             "linear-gradient(135deg, rgba(124,92,255,0.96), rgba(90,209,255,0.84))",
@@ -1322,13 +1379,6 @@ export default function AiLandingPage() {
                     />
 
                     <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileSelect}
-                    />
-
-                    <input
                       ref={htmlFileInputRef}
                       type="file"
                       accept=".html,text/html"
@@ -1343,21 +1393,14 @@ export default function AiLandingPage() {
                 <span className="text-zinc-400">{ROTATING_TIPS[rotatingTipIndex]}</span>
               </div>
 
-              {attachments.length > 0 && (
+              {fileAttachments.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {attachments.map((item) => (
+                  {fileAttachments.map((item) => (
                     <div
                       key={item.id}
                       className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300"
                     >
-                      <Icon
-                        icon={
-                          item.kind === "screenshot"
-                            ? "solar:gallery-wide-linear"
-                            : "solar:document-text-linear"
-                        }
-                        width={14}
-                      />
+                      <Icon icon="solar:document-text-linear" width={14} />
                       <span>{item.name}</span>
                       <button
                         type="button"
