@@ -280,29 +280,6 @@ const CONTACT_CHOICES = [
   "Rezervace schůzky",
 ];
 
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        resolve(result);
-      } else {
-        reject(new Error("Nepodařilo se převést soubor na data URL."));
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error("Čtení souboru selhalo."));
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-
-
 function buildEnhancedPrompt(params: {
   prompt: string;
   sourceMode: SourceMode;
@@ -564,6 +541,28 @@ function ModeButton(props: {
   );
 }
 
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result);
+      } else {
+        reject(new Error("Nepodařilo se převést soubor na data URL."));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Čtení souboru selhalo."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
 function ColorInputRow(props: {
   label: string;
   value: string;
@@ -796,7 +795,8 @@ export default function AiLandingPage() {
     }
   }
 
-  function removeAttachment(id: string) {
+  function removeAttachment(id?: string) {
+    if (!id) return;
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   }
 
@@ -967,7 +967,7 @@ export default function AiLandingPage() {
     sessionStorage.setItem("ai_webgen_source_url", sourceUrl.trim());
     sessionStorage.setItem("ai_webgen_source_html", sourceHtml);
 
-    router.push("/ai/editor");
+    router.push("/editor");
   }
 
   return (
