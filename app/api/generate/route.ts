@@ -440,14 +440,33 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .slice(0, 8)
     .filter((item) => item && typeof item === "object")
     .map((item) => {
-      const candidate = item as AttachmentInput;
+      const candidate = item as Partial<AttachmentInput>;
+      const kind =
+        candidate.kind === "screenshot" ||
+        candidate.kind === "image" ||
+        candidate.kind === "file"
+          ? candidate.kind
+          : "file";
+
+      const dataUrl =
+        typeof candidate.dataUrl === "string" &&
+        candidate.dataUrl.startsWith("data:image/")
+          ? candidate.dataUrl.slice(0, 1_500_000)
+          : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
         name: typeof candidate.name === "string" ? candidate.name : undefined,
-        kind:
-          candidate.kind === "screenshot" || candidate.kind === "file"
-            ? candidate.kind
+        kind,
+        dataUrl,
+        url: typeof candidate.url === "string" ? candidate.url : undefined,
+        base64:
+          typeof candidate.base64 === "string"
+            ? candidate.base64.slice(0, 1_500_000)
+            : undefined,
+        mimeType:
+          typeof candidate.mimeType === "string"
+            ? candidate.mimeType
             : undefined,
       };
     });
