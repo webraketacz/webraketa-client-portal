@@ -31,6 +31,7 @@ type AttachmentItem = {
   id?: string;
   name?: string;
   kind?: "screenshot" | "file";
+  dataUrl?: string;
 };
 
 type SpeedMode = "fast" | "balanced" | "premium";
@@ -2108,7 +2109,40 @@ export default function AiEditorPage() {
     if (autostart && autostartPrompt && !autostartRef.current) {
       autostartRef.current = true;
       sessionStorage.removeItem("ai_webgen_autostart");
-      setTimeout(() => startQuestionFlow(autostartPrompt), 250);
+
+      const resolvedInputMode =
+        storedInputMode === "prompt" ||
+        storedInputMode === "url" ||
+        storedInputMode === "screenshot" ||
+        storedInputMode === "html"
+          ? storedInputMode
+          : "prompt";
+
+      const parsedPrefsSafe = (() => {
+        try {
+          return JSON.parse(storedLandingPreferences);
+        } catch {
+          return {};
+        }
+      })();
+
+      const nextPrefs = mergeStoredPreferences(
+        autostartPrompt ? createDefaultPreferences(autostartPrompt) : generationPreferences,
+        parsedPrefsSafe
+      );
+
+      if (
+        resolvedInputMode === "url" ||
+        resolvedInputMode === "html" ||
+        resolvedInputMode === "screenshot"
+      ) {
+        setOtazkyDokonceny(true);
+        setTimeout(() => {
+          void handleGenerate(autostartPrompt, nextPrefs);
+        }, 250);
+      } else {
+        setTimeout(() => startQuestionFlow(autostartPrompt), 250);
+      }
     }
   }, []);
 
