@@ -30,10 +30,11 @@ type BrandLogoAsset = {
   dataUrl: string;
 };
 
-type AttachmentItem = {
+type AttachmentInput = {
   id?: string;
   name?: string;
   kind?: "screenshot" | "file";
+  dataUrl?: string;
 };
 
 type SpeedMode = "fast" | "balanced" | "premium";

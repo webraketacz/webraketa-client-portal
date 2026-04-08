@@ -11,9 +11,10 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
 type AttachmentItem = {
-  id: string;
-  name: string;
-  kind: "screenshot" | "file";
+  id?: string;
+  name?: string;
+  kind?: "screenshot" | "file";
+  dataUrl?: string;
 };
 
 type SourceMode = "prompt" | "url" | "screenshot" | "html";
