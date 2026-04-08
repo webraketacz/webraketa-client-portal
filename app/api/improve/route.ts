@@ -190,7 +190,7 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
 
   return value
     .slice(0, 12)
-    .filter((item): item is AttachmentItem => item && typeof item === "object")
+    .filter((item): item is AttachmentInput => item && typeof item === "object")
     .map((item) => ({
       id: typeof item.id === "string" ? item.id.slice(0, 120) : undefined,
       name: typeof item.name === "string" ? item.name.slice(0, 200) : undefined,
