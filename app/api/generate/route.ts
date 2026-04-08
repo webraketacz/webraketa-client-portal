@@ -135,6 +135,8 @@ type DesignReference =
 
 type InputMode = "prompt" | "url" | "screenshot" | "html";
 
+type ReferenceMode = "strict" | "guided" | "free";
+
 type IndustryKind =
   | "fintech"
   | "saas"
