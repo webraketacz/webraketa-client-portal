@@ -43,7 +43,7 @@ const client = new OpenAI({
 const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
 
 // Zyvia build marker (forces Vercel redeploy)
-const ZYVIA_BUILD_VERSION = "production-fidelity-v1";
+const ZYVIA_BUILD_VERSION = "production-fidelity-v2";
 
 type ChatHistoryItem = {
   role: "system" | "user" | "assistant";
