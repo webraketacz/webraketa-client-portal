@@ -1723,18 +1723,56 @@ function resolveCreativeDirection(
   prefs: GenerationPreferences,
   fingerprint?: ReferenceLayoutFingerprint | null,
   screenshotAnalysis?: ReferenceScreenshotAnalysis | null,
-  referenceBlueprint?: ReferenceBlueprint | null
+  referenceBlueprint?: ReferenceBlueprint | null,
+  options?: { inputMode?: InputMode }
 ) {
   const industry = inferIndustryKind(prompt);
-  const industryDefaults = getIndustryDefaults(industry);
+  const blueprintHeroType = referenceBlueprint?.layout?.heroType || "unknown";
+  const screenshotSubject =
+    screenshotAnalysis?.dominantVisualSubject ||
+    referenceBlueprint?.hero?.dominantSubject ||
+    "unknown";
+
+  const screenshotArchitectureLike = screenshotSubject === "architecture";
+  const screenshotProductLike = screenshotSubject === "product";
+  const screenshotUiLike = screenshotSubject === "ui";
+
+  const screenshotToneSource = [
+    screenshotAnalysis?.colorDirection || "",
+    screenshotAnalysis?.compositionSummary || "",
+    referenceBlueprint?.brandAbstraction?.backgroundStyle || "",
+    referenceBlueprint?.brandAbstraction?.typographyMood || "",
+    referenceBlueprint?.layout?.containerStyle || "",
+    referenceBlueprint?.layout?.spacingRhythm || "",
+    ...(referenceBlueprint?.fidelityLocks?.mustKeep || []),
+  ].join(" ");
+
+  const looksLightReference = /light|white|cream|beige|sand|warm neutral|soft neutral|ivory|bright|airy|editorial|clean/i.test(
+    screenshotToneSource
+  );
+
+  const isStrictScreenshotMode = options?.inputMode === "screenshot";
+
+  const resolvedIndustry =
+    isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
+      ? "real-estate"
+      : isStrictScreenshotMode && screenshotArchitectureLike
+      ? "resort"
+      : isStrictScreenshotMode && screenshotProductLike
+      ? "ecommerce-product"
+      : isStrictScreenshotMode && screenshotUiLike
+      ? "saas"
+      : industry;
+
+  const industryDefaults = getIndustryDefaults(resolvedIndustry);
 
   const fallbackAnimation =
-    industry === "fintech" || industry === "saas"
+    resolvedIndustry === "fintech" || resolvedIndustry === "saas"
       ? "rich"
-      : industry === "resort" ||
-        industry === "beauty" ||
-        industry === "restaurant" ||
-        industry === "real-estate"
+      : resolvedIndustry === "resort" ||
+        resolvedIndustry === "beauty" ||
+        resolvedIndustry === "restaurant" ||
+        resolvedIndustry === "real-estate"
       ? "subtle"
       : "subtle";
 
@@ -1823,7 +1861,6 @@ function resolveCreativeDirection(
     ],
   };
 
-  const blueprintHeroType = referenceBlueprint?.layout?.heroType || "unknown";
   const hardAvoidSplit =
     blueprintHeroType === "cover" ||
     blueprintHeroType === "editorial" ||
@@ -1833,43 +1870,31 @@ function resolveCreativeDirection(
     Boolean(screenshotAnalysis?.shouldKeepFullWidthHero);
 
   const seedChoices =
-    industry === "fintech"
+    resolvedIndustry === "fintech"
       ? layoutSeedPool.fintech
-      : industry === "saas"
+      : resolvedIndustry === "saas"
       ? layoutSeedPool.saas
-      : industry === "real-estate"
+      : resolvedIndustry === "real-estate"
       ? layoutSeedPool.realEstate
-      : industry === "resort"
+      : resolvedIndustry === "resort"
       ? layoutSeedPool.resort
-      : industry === "restaurant" || industry === "catering"
+      : resolvedIndustry === "restaurant" || resolvedIndustry === "catering"
       ? layoutSeedPool.restaurant
-      : industry === "food-product" || industry === "ecommerce-product"
+      : resolvedIndustry === "food-product" ||
+        resolvedIndustry === "ecommerce-product"
       ? layoutSeedPool.product
-      : industry === "autoservis" || industry === "car-dealer"
+      : resolvedIndustry === "autoservis" || resolvedIndustry === "car-dealer"
       ? layoutSeedPool.automotive
-      : industry === "zednik"
+      : resolvedIndustry === "zednik"
       ? layoutSeedPool.trades
-      : industry === "luxury-service" || industry === "beauty"
+      : resolvedIndustry === "luxury-service" || resolvedIndustry === "beauty"
       ? layoutSeedPool.luxury
       : layoutSeedPool.generic;
 
   const layoutSeed = makeDeterministicChoice(
-    `${prompt}-${blueprintHeroType}-${referenceBlueprint?.layout?.navStyle || ""}-seed`,
+    `${resolvedIndustry}-${prompt}-${blueprintHeroType}-${referenceBlueprint?.layout?.navStyle || ""}-seed`,
     seedChoices
   );
-
-  const isStrictScreenshotMode = params.inputMode === "screenshot";
-
-  const resolvedIndustry =
-    isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
-      ? "real-estate"
-      : isStrictScreenshotMode && screenshotArchitectureLike
-      ? "resort"
-      : isStrictScreenshotMode && screenshotProductLike
-      ? "ecommerce-product"
-      : isStrictScreenshotMode && screenshotUiLike
-      ? "saas"
-      : industry;
 
   return {
     industry: resolvedIndustry,
@@ -1881,6 +1906,8 @@ function resolveCreativeDirection(
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
         ? prefs.layoutPreference
+        : isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
+        ? "editorial"
         : blueprintHeroType === "editorial"
         ? "editorial"
         : blueprintHeroType === "cover"
@@ -1891,6 +1918,8 @@ function resolveCreativeDirection(
     visualStyle:
       prefs.visualStyle && prefs.visualStyle !== "auto"
         ? prefs.visualStyle
+        : isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
+        ? "editorial"
         : referenceBlueprint?.layout?.navStyle === "editorial"
         ? "editorial"
         : referenceBlueprint?.layout?.density === "dense"
@@ -1916,6 +1945,8 @@ function resolveCreativeDirection(
     designReference:
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
+        : isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
+        ? "luxury-editorial"
         : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
     promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
@@ -3312,7 +3343,8 @@ export async function POST(req: Request) {
       rawPreferences,
       layoutFingerprint,
       screenshotAnalysis,
-      referenceBlueprint
+      referenceBlueprint,
+      { inputMode }
     );
 
     console.log(
