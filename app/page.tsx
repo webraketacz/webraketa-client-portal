@@ -14,6 +14,7 @@ type AttachmentItem = {
   id: string;
   name: string;
   kind: "screenshot" | "file";
+  dataUrl?: string;
 };
 
 type SourceMode = "prompt" | "url" | "screenshot" | "html";
@@ -267,7 +268,7 @@ const ROTATING_TIPS = [
   "Tajný tip: přidejte screenshot reference a zlepšíte kompozici hero sekce, typografii i spacing.",
   "Tajný tip: uveďte obor, cílového zákazníka a obchodní cíl. Výsledek bude výrazně přesnější.",
   "Tajný tip: nastavte přesné HEX barvy a získáte konzistentnější první návrh bez zbytečných oprav.",
-  "Tajný tip: u redesignu z URL nechte reference převzít hlavní slovo a přidejte co nejpřesnější vstup.",
+  "Tajný tip: u redesignu z URL se vyplatí otevřít Pokročilé nastavení návrhu a zamknout hero styl i hustotu obsahu.",
 ];
 
 const CONTACT_CHOICES = [
@@ -279,6 +280,7 @@ const CONTACT_CHOICES = [
   "Rezervace schůzky",
 ];
 
+
 const EMPTY_PREFERENCES: LandingPreferences = {
   visualStyle: "auto",
   fontMood: "auto",
@@ -288,7 +290,6 @@ const EMPTY_PREFERENCES: LandingPreferences = {
   promptEnhancerMode: "balanced",
   preferredPrimaryColor: "",
   preferredBackgroundColor: "",
-
   typefaceFamily: "auto",
   headingFont: "auto",
   bodyFont: "auto",
@@ -296,7 +297,6 @@ const EMPTY_PREFERENCES: LandingPreferences = {
   bodySizePreset: "md",
   headingWeightPreset: "regular",
   letterSpacingPreset: "normal",
-
   animationType: "auto",
   animationScene: "auto",
   animationDuration: 0,
@@ -304,7 +304,6 @@ const EMPTY_PREFERENCES: LandingPreferences = {
   animationTiming: "ease",
   animationIterations: "once",
   animationDirection: "normal",
-
   accentColorPreset: "auto",
   backgroundColorPreset: "auto",
   borderColorPreset: "auto",
@@ -312,28 +311,41 @@ const EMPTY_PREFERENCES: LandingPreferences = {
   framingPreset: "auto",
   themePreset: "auto",
   uiStylePreset: "auto",
-
   businessGoal: "auto",
   contentDensity: "balanced",
   heroStyle: "auto",
   toneOfVoice: "professional",
   targetAudience: "",
   contactPreferences: [],
-
   exactPrimaryHex: "",
   exactSecondaryHex: "",
   exactBackgroundHex: "",
   exactTextHex: "",
 };
 
-function getGenerationPreferencesForMode(
-  sourceMode: SourceMode,
-  preferences: LandingPreferences
-): LandingPreferences {
-  return sourceMode === "screenshot" || sourceMode === "url"
-    ? EMPTY_PREFERENCES
-    : preferences;
+
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result);
+      } else {
+        reject(new Error("Nepodařilo se převést soubor na data URL."));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Čtení souboru selhalo."));
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
+
 
 function buildEnhancedPrompt(params: {
   prompt: string;
@@ -633,8 +645,6 @@ export default function AiLandingPage() {
   const [typingText, setTypingText] = useState("");
   const [rotatingTipIndex, setRotatingTipIndex] = useState(0);
 
-  const [creativeSetupOpen, setCreativeSetupOpen] = useState(false);
-
   const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
   const [originalPromptPreview, setOriginalPromptPreview] = useState("");
   const [enhancedPromptPreview, setEnhancedPromptPreview] = useState("");
@@ -706,7 +716,6 @@ export default function AiLandingPage() {
   const [exactTextHex, setExactTextHex] = useState("#F4F4F5");
 
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const htmlFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canContinue = useMemo(() => {
@@ -787,11 +796,12 @@ export default function AiLandingPage() {
     return () => window.clearInterval(interval);
   }, []);
 
-  function addAttachment(file: File, kind: "screenshot" | "file") {
+  async function addAttachment(file: File, kind: "screenshot" | "file") {
     const nextItem: AttachmentItem = {
       id: `${kind}-${file.name}-${Date.now()}`,
       name: file.name,
       kind,
+      dataUrl: kind === "screenshot" ? await fileToDataUrl(file) : undefined,
     };
 
     setAttachments((prev) => {
@@ -803,19 +813,15 @@ export default function AiLandingPage() {
     });
   }
 
-  function handleScreenshotSelect(e: ChangeEvent<HTMLInputElement>) {
+  async function handleScreenshotSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    addAttachment(file, "screenshot");
-    setSourceMode("screenshot");
-    e.target.value = "";
-  }
-
-  function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    addAttachment(file, "file");
-    e.target.value = "";
+    try {
+      await addAttachment(file, "screenshot");
+      setSourceMode("screenshot");
+    } finally {
+      e.target.value = "";
+    }
   }
 
   async function handleHtmlFileSelect(e: ChangeEvent<HTMLInputElement>) {
@@ -826,15 +832,19 @@ export default function AiLandingPage() {
       const text = await file.text();
       setSourceHtml(text);
       setSourceMode("html");
-      addAttachment(file, "file");
+      await addAttachment(file, "file");
     } finally {
       e.target.value = "";
     }
   }
 
-  function removeAttachment(id: string) {
+  function removeAttachment(id?: string) {
+    if (!id) return;
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   }
+
+  const screenshotAttachments = attachments.filter((item) => item.kind === "screenshot");
+  const fileAttachments = attachments.filter((item) => item.kind === "file");
 
   function toggleContactPreference(item: string) {
     setContactPreferences((prev) =>
@@ -897,7 +907,10 @@ export default function AiLandingPage() {
       sourceMode,
       sourceUrl,
       sourceHtml,
-      preferences: getLandingPreferences(),
+      preferences:
+        sourceMode === "screenshot" || sourceMode === "url"
+          ? EMPTY_PREFERENCES
+          : getLandingPreferences(),
     });
 
     setOriginalPromptPreview(trimmed);
@@ -911,53 +924,6 @@ export default function AiLandingPage() {
     if (!enhancedPromptPreview.trim()) return;
     setPrompt(enhancedPromptPreview);
     setEnhanceModalOpen(false);
-  }
-
-  function resetCreativeSetup() {
-    setVisualStyle("premium");
-    setFontMood("auto");
-    setAnimationLevel("rich");
-    setLayoutPreference("auto");
-    setButtonStyle("auto");
-    setPromptEnhancerMode("premium-brand");
-    setPreferredPrimaryColor("");
-    setPreferredBackgroundColor("");
-
-    setTypefaceFamily("sans");
-    setHeadingFont("manrope");
-    setBodyFont("manrope");
-    setHeadingSizePreset("lg");
-    setBodySizePreset("md");
-    setHeadingWeightPreset("semibold");
-    setLetterSpacingPreset("tight");
-
-    setAnimationType("glow");
-    setAnimationScene("sequence");
-    setAnimationDuration(0.8);
-    setAnimationDelay(0);
-    setAnimationTiming("ease-out");
-    setAnimationIterations("once");
-    setAnimationDirection("normal");
-
-    setAccentColorPreset("cyan");
-    setBackgroundColorPreset("dark-navy");
-    setBorderColorPreset("glass-cyan");
-    setShadowPreset("glow");
-    setFramingPreset("full-screen");
-    setThemePreset("dark-premium");
-    setUiStylePreset("glass");
-
-    setBusinessGoal("trust");
-    setContentDensity("balanced");
-    setHeroStyle("auto");
-    setToneOfVoice("premium");
-    setTargetAudience("");
-    setContactPreferences(["Telefon", "E-mail", "Formulář"]);
-
-    setExactPrimaryHex("#7C5CFF");
-    setExactSecondaryHex("#5AD1FF");
-    setExactBackgroundHex("#09090D");
-    setExactTextHex("#F4F4F5");
   }
 
   function buildAutoPromptForSourceMode() {
@@ -982,10 +948,10 @@ export default function AiLandingPage() {
 
     if (!finalPrompt.trim()) return;
 
-    const landingPreferences = getGenerationPreferencesForMode(
-      sourceMode,
-      getLandingPreferences()
-    );
+    const landingPreferences =
+      sourceMode === "screenshot" || sourceMode === "url"
+        ? EMPTY_PREFERENCES
+        : getLandingPreferences();
 
     sessionStorage.setItem("ai_webgen_prompt", finalPrompt);
     sessionStorage.setItem("ai_webgen_autostart", "1");
@@ -1003,7 +969,7 @@ export default function AiLandingPage() {
     sessionStorage.setItem("ai_webgen_source_url", sourceUrl.trim());
     sessionStorage.setItem("ai_webgen_source_html", sourceHtml);
 
-    router.push("/ai/editor");
+    router.push("/editor");
   }
 
   return (
@@ -1014,7 +980,7 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(36px, -22px, 0) scale(1.05);
+            transform: translate3d(52px, -30px, 0) scale(1.08);
           }
         }
         @keyframes zyviaFloatB {
@@ -1022,7 +988,32 @@ export default function AiLandingPage() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           100% {
-            transform: translate3d(-42px, 28px, 0) scale(1.06);
+            transform: translate3d(-56px, 36px, 0) scale(1.1);
+          }
+        }
+        @keyframes zyviaAuroraShift {
+          0% {
+            transform: translate3d(-4%, -2%, 0) scale(1.02) rotate(0deg);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translate3d(3%, 2%, 0) scale(1.08) rotate(8deg);
+            opacity: 0.46;
+          }
+          100% {
+            transform: translate3d(-2%, 4%, 0) scale(1.04) rotate(-6deg);
+            opacity: 0.34;
+          }
+        }
+        @keyframes zyviaOrbitalDrift {
+          0% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          50% {
+            transform: translate3d(32px, -22px, 0) scale(1.08);
+          }
+          100% {
+            transform: translate3d(-24px, 18px, 0) scale(0.96);
           }
         }
         @keyframes zyviaGlowPulse {
@@ -1156,7 +1147,7 @@ export default function AiLandingPage() {
             />
           </div>
 
-          <nav className="hidden items-center gap-7 text-sm text-zinc-400 md:flex">
+          <nav className="hidden items-center gap-7 text-[15px] font-medium text-zinc-400 md:flex">
             <button type="button" className="transition hover:text-white">
               Agent
             </button>
@@ -1171,14 +1162,14 @@ export default function AiLandingPage() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              className="text-sm text-zinc-300 transition hover:text-white"
+              className="text-[15px] font-medium text-zinc-300 transition hover:text-white"
             >
               Přihlášení
             </button>
 
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-[linear-gradient(135deg,rgba(124,92,255,0.96),rgba(90,209,255,0.84))] px-4 py-2 text-sm font-medium text-white shadow-[0_10px_28px_rgba(124,92,255,0.18)] transition hover:opacity-95"
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-[linear-gradient(135deg,rgba(124,92,255,0.96),rgba(90,209,255,0.84))] px-5 py-2.5 text-[15px] font-medium text-white shadow-[0_10px_28px_rgba(124,92,255,0.18)] transition hover:opacity-95"
             >
               Začít zdarma
             </button>
@@ -1272,7 +1263,63 @@ export default function AiLandingPage() {
                     </div>
                   )}
 
-                  <div className="px-5 pb-[86px] pt-5 md:px-6 md:pt-6">
+                  <div className="px-5 py-5 md:px-6 md:pt-6">
+                    {sourceMode === "screenshot" && (
+                      <div className="mb-4 rounded-[18px] border border-white/8 bg-white/[0.03] p-3.5">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-white">Screenshot reference</div>
+                            <div className="mt-1 text-xs text-zinc-500">
+                              Nahrajte screenshot a Zyvia převezme kompozici, rytmus i layout.
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => screenshotInputRef.current?.click()}
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                          >
+                            <Icon icon="solar:gallery-add-linear" width={16} />
+                            Přidat screenshot
+                          </button>
+                        </div>
+
+                        {screenshotAttachments.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {screenshotAttachments.map((item) => (
+                              <div
+                                key={item.id}
+                                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300"
+                              >
+                                <Icon icon="solar:gallery-wide-linear" width={14} />
+                                <span>{item.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttachment(item.id)}
+                                  className="text-zinc-500 transition hover:text-white"
+                                >
+                                  <Icon icon="solar:close-circle-linear" width={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {sourceMode === "html" && (
+                      <div className="mb-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => htmlFileInputRef.current?.click()}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        >
+                          <Icon icon="solar:upload-linear" width={16} />
+                          Nahrát HTML soubor
+                        </button>
+                      </div>
+                    )}
+
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
@@ -1283,43 +1330,25 @@ export default function AiLandingPage() {
                       className="min-h-[168px] w-full resize-none bg-transparent text-[16px] leading-7 text-white outline-none placeholder:text-zinc-500 md:min-h-[186px]"
                     />
 
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => screenshotInputRef.current?.click()}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                        title="Přidat screenshot"
-                      >
-                        <Icon icon="solar:gallery-wide-linear" width={17} />
-                      </button>
+                    <div className="mt-5 flex flex-col gap-3 border-t border-white/8 pt-4 md:flex-row md:items-center md:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={openEnhanceModal}
+                          disabled={prompt.trim().length < 8 || isEnhancingPrompt}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
+                          title="Vylepšit zadání"
+                        >
+                          <Icon icon="solar:magic-stick-3-linear" width={16} />
+                          AI vylepšení promptu
+                        </button>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
-                        title="Přidat soubor"
-                      >
-                        <Icon icon="solar:document-text-linear" width={17} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={openEnhanceModal}
-                        disabled={prompt.trim().length < 8 || isEnhancingPrompt}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.08] hover:text-white disabled:opacity-40"
-                        title="Vylepšit zadání"
-                      >
-                        <Icon icon="solar:magic-stick-3-linear" width={17} />
-                      </button>
-
-                    </div>
-
-                    <div className="absolute bottom-4 right-4 z-[3]">
                       <button
                         type="button"
                         onClick={() => startGenerating()}
                         disabled={!canContinue}
-                        className="inline-flex min-w-[168px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex min-w-[192px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                         style={{
                           background:
                             "linear-gradient(135deg, rgba(124,92,255,0.96), rgba(90,209,255,0.84))",
@@ -1341,13 +1370,6 @@ export default function AiLandingPage() {
                     />
 
                     <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileSelect}
-                    />
-
-                    <input
                       ref={htmlFileInputRef}
                       type="file"
                       accept=".html,text/html"
@@ -1362,21 +1384,14 @@ export default function AiLandingPage() {
                 <span className="text-zinc-400">{ROTATING_TIPS[rotatingTipIndex]}</span>
               </div>
 
-              {attachments.length > 0 && (
+              {fileAttachments.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {attachments.map((item) => (
+                  {fileAttachments.map((item) => (
                     <div
                       key={item.id}
                       className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300"
                     >
-                      <Icon
-                        icon={
-                          item.kind === "screenshot"
-                            ? "solar:gallery-wide-linear"
-                            : "solar:document-text-linear"
-                        }
-                        width={14}
-                      />
+                      <Icon icon="solar:document-text-linear" width={14} />
                       <span>{item.name}</span>
                       <button
                         type="button"
@@ -1398,553 +1413,7 @@ export default function AiLandingPage() {
         </main>
       </div>
 
-      {false && (
-        <div className="fixed inset-0 z-[140] bg-black/70 p-4 backdrop-blur-md">
-          <div
-            className="mx-auto flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#0B0B10]/95 shadow-[0_30px_120px_rgba(0,0,0,0.55)]"
-            style={{ animation: "zyviaModalIn 220ms ease-out" }}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-white/8 px-5 py-4 md:px-6">
-              <div className="flex items-start gap-3">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200">
-                  <Icon icon="solar:tuning-2-linear" width={18} />
-                </div>
-                <div>
-                  <div className="text-[20px] font-semibold text-white">
-                    Pokročilé nastavení návrhu
-                  </div>
-                  <div className="mt-1 text-sm text-zinc-500">
-                    Upřesněte styl, typografii, barvy i obchodní cíl pro přesnější výsledek.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={resetCreativeSetup}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                >
-                  <Icon icon="solar:restart-linear" width={16} />
-                  Reset
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCreativeSetupOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                >
-                  <Icon icon="solar:close-circle-linear" width={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[78vh] overflow-auto px-5 py-5 md:px-6 md:py-6">
-              <div className="grid gap-4 xl:grid-cols-2">
-                <SettingCard
-                  title="Vizuální směr"
-                  subtitle="Celkový dojem, kompozice a UI styl"
-                  icon="solar:palette-2-linear"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel>Styl</FieldLabel>
-                      <SelectField value={visualStyle} onChange={setVisualStyle}>
-                        <option value="auto">Auto</option>
-                        <option value="clean">Clean</option>
-                        <option value="premium">Premium</option>
-                        <option value="bold">Bold</option>
-                        <option value="editorial">Editorial</option>
-                        <option value="luxury">Luxury</option>
-                        <option value="playful">Playful</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Rozvržení</FieldLabel>
-                      <SelectField value={layoutPreference} onChange={setLayoutPreference}>
-                        <option value="auto">Auto</option>
-                        <option value="editorial">Editorial</option>
-                        <option value="split">Split</option>
-                        <option value="asymmetrical">Asymetrické</option>
-                        <option value="story">Story</option>
-                        <option value="grid">Grid</option>
-                        <option value="luxury">Luxury</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Téma</FieldLabel>
-                      <SelectField value={themePreset} onChange={setThemePreset}>
-                        <option value="auto">Auto</option>
-                        <option value="dark">Tmavé</option>
-                        <option value="light">Světlé</option>
-                        <option value="dark-premium">Dark premium</option>
-                        <option value="warm-light">Warm light</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Styl ploch</FieldLabel>
-                      <SelectField value={uiStylePreset} onChange={setUiStylePreset}>
-                        <option value="auto">Auto</option>
-                        <option value="flat">Flat</option>
-                        <option value="outline">Outline</option>
-                        <option value="minimal">Minimal</option>
-                        <option value="glass">Glass</option>
-                        <option value="soft-premium">Soft premium</option>
-                        <option value="editorial">Editorial</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Hero sekce</FieldLabel>
-                      <SelectField value={heroStyle} onChange={setHeroStyle}>
-                        <option value="auto">Auto</option>
-                        <option value="minimal">Minimal</option>
-                        <option value="cover">Výrazná cover sekce</option>
-                        <option value="split">Split layout</option>
-                        <option value="overlay">Text přes vizuál</option>
-                        <option value="dashboard">Produktový dashboard</option>
-                        <option value="editorial">Prémiový editorial</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Hustota obsahu</FieldLabel>
-                      <SelectField value={contentDensity} onChange={setContentDensity}>
-                        <option value="airy">Vzdušná</option>
-                        <option value="balanced">Vyvážená</option>
-                        <option value="dense">Obsahově bohatá</option>
-                      </SelectField>
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Typografie"
-                  subtitle="Písmo, velikost, váha a proklady"
-                  icon="solar:text-field-focus-linear"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel>Rodina písma</FieldLabel>
-                      <SelectField value={typefaceFamily} onChange={setTypefaceFamily}>
-                        <option value="auto">Auto</option>
-                        <option value="sans">Sans</option>
-                        <option value="serif">Serif</option>
-                        <option value="rounded">Rounded</option>
-                        <option value="condensed">Condensed</option>
-                        <option value="mono">Mono</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Charakter písma</FieldLabel>
-                      <SelectField value={fontMood} onChange={setFontMood}>
-                        <option value="auto">Auto</option>
-                        <option value="geometric">Geometric</option>
-                        <option value="editorial">Editorial</option>
-                        <option value="luxury">Luxury</option>
-                        <option value="trustworthy">Trustworthy</option>
-                        <option value="tech">Tech</option>
-                        <option value="friendly">Friendly</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Písmo nadpisů</FieldLabel>
-                      <SelectField value={headingFont} onChange={setHeadingFont}>
-                        <option value="auto">Auto</option>
-                        <option value="inter">Inter</option>
-                        <option value="manrope">Manrope</option>
-                        <option value="geist">Geist</option>
-                        <option value="playfair">Playfair</option>
-                        <option value="instrument-serif">Instrument Serif</option>
-                        <option value="plex-serif">IBM Plex Serif</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Písmo textu</FieldLabel>
-                      <SelectField value={bodyFont} onChange={setBodyFont}>
-                        <option value="auto">Auto</option>
-                        <option value="inter">Inter</option>
-                        <option value="manrope">Manrope</option>
-                        <option value="geist">Geist</option>
-                        <option value="playfair">Playfair</option>
-                        <option value="instrument-serif">Instrument Serif</option>
-                        <option value="plex-serif">IBM Plex Serif</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Velikost nadpisů</FieldLabel>
-                      <SelectField value={headingSizePreset} onChange={setHeadingSizePreset}>
-                        <option value="sm">36–44px</option>
-                        <option value="md">44–52px</option>
-                        <option value="lg">48–64px</option>
-                        <option value="xl">56–76px</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Velikost textu</FieldLabel>
-                      <SelectField value={bodySizePreset} onChange={setBodySizePreset}>
-                        <option value="sm">13–15px</option>
-                        <option value="md">14–16px</option>
-                        <option value="lg">16–18px</option>
-                        <option value="xl">18–20px</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Váha nadpisů</FieldLabel>
-                      <SelectField value={headingWeightPreset} onChange={setHeadingWeightPreset}>
-                        <option value="light">Light</option>
-                        <option value="regular">Regular</option>
-                        <option value="medium">Medium</option>
-                        <option value="semibold">Semibold</option>
-                        <option value="bold">Bold</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Proklad písmen</FieldLabel>
-                      <SelectField value={letterSpacingPreset} onChange={setLetterSpacingPreset}>
-                        <option value="tight">Tight</option>
-                        <option value="normal">Normal</option>
-                        <option value="wide">Wide</option>
-                      </SelectField>
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Animace a pohyb"
-                  subtitle="Typ animací, načasování a intenzita"
-                  icon="solar:bolt-circle-linear"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel>Intenzita</FieldLabel>
-                      <SelectField value={animationLevel} onChange={setAnimationLevel}>
-                        <option value="minimal">Minimal</option>
-                        <option value="subtle">Subtle</option>
-                        <option value="rich">Rich</option>
-                        <option value="expressive">Expressive</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Typ animace</FieldLabel>
-                      <SelectField value={animationType} onChange={setAnimationType}>
-                        <option value="auto">Auto</option>
-                        <option value="fade">Fade</option>
-                        <option value="slide">Slide</option>
-                        <option value="scale">Scale</option>
-                        <option value="blur">Blur</option>
-                        <option value="rotate">Rotate</option>
-                        <option value="glow">Glow</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Scéna</FieldLabel>
-                      <SelectField value={animationScene} onChange={setAnimationScene}>
-                        <option value="auto">Auto</option>
-                        <option value="all-at-once">Najednou</option>
-                        <option value="sequence">Sekvence</option>
-                        <option value="word-by-word">Po slovech</option>
-                        <option value="letter-by-letter">Po písmenech</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Načasování</FieldLabel>
-                      <SelectField value={animationTiming} onChange={setAnimationTiming}>
-                        <option value="linear">Linear</option>
-                        <option value="ease">Ease</option>
-                        <option value="ease-in">Ease in</option>
-                        <option value="ease-out">Ease out</option>
-                        <option value="ease-in-out">Ease in out</option>
-                        <option value="spring">Spring</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Opakování</FieldLabel>
-                      <SelectField value={animationIterations} onChange={setAnimationIterations}>
-                        <option value="once">Jednou</option>
-                        <option value="twice">Dvakrát</option>
-                        <option value="thrice">Třikrát</option>
-                        <option value="infinite">Nekonečně</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Směr</FieldLabel>
-                      <SelectField value={animationDirection} onChange={setAnimationDirection}>
-                        <option value="normal">Normal</option>
-                        <option value="reverse">Reverse</option>
-                        <option value="alternate">Alternate</option>
-                        <option value="alternate-reverse">Alternate reverse</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Délka</FieldLabel>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="range"
-                          min={0.1}
-                          max={2}
-                          step={0.1}
-                          value={animationDuration}
-                          onChange={(e) => setAnimationDuration(Number(e.target.value))}
-                          className="w-full"
-                        />
-                        <span className="w-10 text-right text-[12px] text-zinc-400">
-                          {animationDuration.toFixed(1)}s
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <FieldLabel>Zpoždění</FieldLabel>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="range"
-                          min={0}
-                          max={1.5}
-                          step={0.1}
-                          value={animationDelay}
-                          onChange={(e) => setAnimationDelay(Number(e.target.value))}
-                          className="w-full"
-                        />
-                        <span className="w-10 text-right text-[12px] text-zinc-400">
-                          {animationDelay.toFixed(1)}s
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Barvy a povrchy"
-                  subtitle="Akcent, pozadí, ohraničení, stín a kompozice"
-                  icon="solar:stars-line-duotone"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel>Akcent</FieldLabel>
-                      <SelectField value={accentColorPreset} onChange={setAccentColorPreset}>
-                        <option value="auto">Auto</option>
-                        <option value="cyan">Cyan</option>
-                        <option value="blue">Blue</option>
-                        <option value="indigo">Indigo</option>
-                        <option value="violet">Violet</option>
-                        <option value="purple">Purple</option>
-                        <option value="fuchsia">Fuchsia</option>
-                        <option value="amber">Amber</option>
-                        <option value="emerald">Emerald</option>
-                        <option value="rose">Rose</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Pozadí</FieldLabel>
-                      <SelectField value={backgroundColorPreset} onChange={setBackgroundColorPreset}>
-                        <option value="auto">Auto</option>
-                        <option value="neutral">Neutral</option>
-                        <option value="slate">Slate</option>
-                        <option value="zinc">Zinc</option>
-                        <option value="stone">Stone</option>
-                        <option value="dark-navy">Dark navy</option>
-                        <option value="warm-black">Warm black</option>
-                        <option value="charcoal">Charcoal</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Ohraničení</FieldLabel>
-                      <SelectField value={borderColorPreset} onChange={setBorderColorPreset}>
-                        <option value="auto">Auto</option>
-                        <option value="subtle">Subtle</option>
-                        <option value="neutral">Neutral</option>
-                        <option value="soft-white">Soft white</option>
-                        <option value="cool-gray">Cool gray</option>
-                        <option value="glass-cyan">Glass cyan</option>
-                        <option value="violet">Violet</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Stín</FieldLabel>
-                      <SelectField value={shadowPreset} onChange={setShadowPreset}>
-                        <option value="none">Žádný</option>
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                        <option value="xl">XL</option>
-                        <option value="glow">Glow</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Kompozice</FieldLabel>
-                      <SelectField value={framingPreset} onChange={setFramingPreset}>
-                        <option value="auto">Auto</option>
-                        <option value="full-screen">Full screen</option>
-                        <option value="card">Card</option>
-                        <option value="browser">Browser</option>
-                        <option value="device">Device</option>
-                        <option value="editorial-frame">Editorial frame</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Styl tlačítek</FieldLabel>
-                      <SelectField value={buttonStyle} onChange={setButtonStyle}>
-                        <option value="auto">Auto</option>
-                        <option value="soft-pill">Soft pill</option>
-                        <option value="glass">Glass</option>
-                        <option value="solid-premium">Solid premium</option>
-                        <option value="outline-elegant">Outline elegant</option>
-                        <option value="gradient-glow">Gradient glow</option>
-                      </SelectField>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <ColorInputRow
-                      label="Primární barva"
-                      value={exactPrimaryHex}
-                      onChange={setExactPrimaryHex}
-                    />
-                    <ColorInputRow
-                      label="Sekundární barva"
-                      value={exactSecondaryHex}
-                      onChange={setExactSecondaryHex}
-                    />
-                    <ColorInputRow
-                      label="Barva pozadí"
-                      value={exactBackgroundHex}
-                      onChange={setExactBackgroundHex}
-                    />
-                    <ColorInputRow
-                      label="Barva textu"
-                      value={exactTextHex}
-                      onChange={setExactTextHex}
-                    />
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel>Preferovaná CTA barva</FieldLabel>
-                      <input
-                        value={preferredPrimaryColor}
-                        onChange={(e) => setPreferredPrimaryColor(e.target.value)}
-                        placeholder="Např. electric cyan"
-                        className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel>Preferované pozadí</FieldLabel>
-                      <input
-                        value={preferredBackgroundColor}
-                        onChange={(e) => setPreferredBackgroundColor(e.target.value)}
-                        placeholder="Např. dark navy"
-                        className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Obchodní cíl a tón"
-                  subtitle="Co má web splnit a jak má působit"
-                  icon="solar:chart-square-linear"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel>Obchodní cíl</FieldLabel>
-                      <SelectField value={businessGoal} onChange={setBusinessGoal}>
-                        <option value="auto">Auto</option>
-                        <option value="leads">Získat poptávky</option>
-                        <option value="sales">Prodat produkt</option>
-                        <option value="registrations">Získat registrace</option>
-                        <option value="trust">Zvýšit důvěru</option>
-                        <option value="presentation">Reprezentovat značku</option>
-                      </SelectField>
-                    </div>
-                    <div>
-                      <FieldLabel>Tón textů</FieldLabel>
-                      <SelectField value={toneOfVoice} onChange={setToneOfVoice}>
-                        <option value="professional">Profesionální</option>
-                        <option value="premium">Prémiový</option>
-                        <option value="direct">Přímý a prodejní</option>
-                        <option value="friendly">Přátelský</option>
-                        <option value="luxury">Luxusní</option>
-                        <option value="technical">Technologický</option>
-                      </SelectField>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <FieldLabel>Pro koho je web určený</FieldLabel>
-                      <input
-                        value={targetAudience}
-                        onChange={(e) => setTargetAudience(e.target.value)}
-                        placeholder="Např. startupy, menší firmy, prémiová klientela, developeři…"
-                        className="h-10 w-full rounded-[12px] border border-white/10 bg-[#0B0B10] px-3 text-[13px] text-white outline-none placeholder:text-zinc-500"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <FieldLabel>Kontaktní prvky</FieldLabel>
-                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                        {CONTACT_CHOICES.map((item) => (
-                          <ChipOption
-                            key={item}
-                            active={contactPreferences.includes(item)}
-                            label={item}
-                            onClick={() => toggleContactPreference(item)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </SettingCard>
-
-                <SettingCard
-                  title="Strategie generování"
-                  subtitle="Jak silně má Zyvia ovlivnit výsledek a brief"
-                  icon="solar:magic-stick-3-linear"
-                >
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                    <ChipOption
-                      active={promptEnhancerMode === "balanced"}
-                      label="Vyvážené"
-                      onClick={() => setPromptEnhancerMode("balanced")}
-                    />
-                    <ChipOption
-                      active={promptEnhancerMode === "conversion"}
-                      label="Konverzní"
-                      onClick={() => setPromptEnhancerMode("conversion")}
-                    />
-                    <ChipOption
-                      active={promptEnhancerMode === "premium-brand"}
-                      label="Prémiová značka"
-                      onClick={() => setPromptEnhancerMode("premium-brand")}
-                    />
-                    <ChipOption
-                      active={promptEnhancerMode === "wow-creative"}
-                      label="Wow kreativní"
-                      onClick={() => setPromptEnhancerMode("wow-creative")}
-                    />
-                  </div>
-                </SettingCard>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 border-t border-white/8 px-5 py-4 md:px-6">
-              <div className="text-[12px] text-zinc-500">
-                Toto nastavení se uloží pro generování, enhance prompt i další editor flow.
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setCreativeSetupOpen(false)}
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(124,92,255,1), rgba(90,209,255,0.92))",
-                  boxShadow:
-                    "0 10px 30px rgba(124,92,255,0.24), 0 0 40px rgba(90,209,255,0.1)",
-                }}
-              >
-                Použít nastavení návrhu
-                <Icon icon="solar:check-circle-linear" width={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      
       {enhanceModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
           <div
