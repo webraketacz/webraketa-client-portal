@@ -1404,10 +1404,13 @@ function resolveCreativeDirection(
   prefs: GenerationPreferences,
   fingerprint?: ReferenceLayoutFingerprint | null,
   screenshotAnalysis?: ReferenceScreenshotAnalysis | null,
-  referenceBlueprint?: ReferenceBlueprint | null
+  referenceBlueprint?: ReferenceBlueprint | null,
+  options?: { inputMode?: InputMode }
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
+  const isReferenceLockedMode =
+    options?.inputMode === "screenshot" || options?.inputMode === "url";
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1544,7 +1547,7 @@ function resolveCreativeDirection(
     imageMode: industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
     layoutPreference:
-      !isReferenceLockedMode && prefs.layoutPreference && prefs.layoutPreference !== "auto"
+      prefs.layoutPreference && prefs.layoutPreference !== "auto"
         ? prefs.layoutPreference
         : blueprintHeroType === "editorial"
         ? "editorial"
@@ -1554,7 +1557,7 @@ function resolveCreativeDirection(
         ? "split"
         : industryDefaults.layoutPreference,
     visualStyle:
-      !isReferenceLockedMode && prefs.visualStyle && prefs.visualStyle !== "auto"
+      prefs.visualStyle && prefs.visualStyle !== "auto"
         ? prefs.visualStyle
         : referenceBlueprint?.layout?.navStyle === "editorial"
         ? "editorial"
@@ -1563,7 +1566,7 @@ function resolveCreativeDirection(
         : industryDefaults.visualStyle,
     animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
-      !isReferenceLockedMode && prefs.fontMood && prefs.fontMood !== "auto"
+      prefs.fontMood && prefs.fontMood !== "auto"
         ? prefs.fontMood
         : /serif|editorial/i.test(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
@@ -1575,30 +1578,25 @@ function resolveCreativeDirection(
         ? "tech"
         : industryDefaults.fontMood,
     iconStyle:
-      !isReferenceLockedMode && prefs.iconStyle && prefs.iconStyle !== "auto"
+      prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
         : industryDefaults.iconStyle,
     designReference:
-      !isReferenceLockedMode && prefs.designReference && prefs.designReference !== "auto"
+      prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
         : industryDefaults.designReference,
-    buttonStyle: !isReferenceLockedMode ? prefs.buttonStyle || "auto" : "auto",
-    promptEnhancerMode: !isReferenceLockedMode
-      ? prefs.promptEnhancerMode || "premium-brand"
-      : "balanced",
+    buttonStyle: prefs.buttonStyle || "auto",
+    promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
     preferredPrimaryColor:
-      (!isReferenceLockedMode ? prefs.preferredPrimaryColor?.trim() : "") ||
+      prefs.preferredPrimaryColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[0] ||
       "",
     preferredBackgroundColor:
-      (!isReferenceLockedMode ? prefs.preferredBackgroundColor?.trim() : "") ||
+      prefs.preferredBackgroundColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[1] ||
       "",
-    contactItems:
-      !isReferenceLockedMode && Array.isArray(prefs.contactItems)
-        ? prefs.contactItems
-        : [],
-    clientAnswers: !isReferenceLockedMode ? prefs.clientAnswers || {} : {},
+    contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
+    clientAnswers: prefs.clientAnswers || {},
     layoutSeed,
   };
 }
@@ -2423,7 +2421,6 @@ It must not feel like a recycled template.
 MOST IMPORTANT PRIORITY:
 If the client explicitly described a style, fonts, mood, contact details, content or visual direction,
 those explicit client instructions OVERRIDE automatic defaults.
-For screenshot and URL modes, the uploaded reference structure overrides hidden creative presets.
 
 CLIENT EXPLICIT ANSWERS:
 - Contact details: ${params.preferences.clientAnswers.contactDetails || "neuvedeno"}
@@ -2501,9 +2498,6 @@ ${renderInputModeContext({
 })}
 
 REFERENCE BLUEPRINT ENFORCEMENT:
-- when inputMode is "screenshot" or "url", the uploaded reference is the primary source of truth
-- when inputMode is "screenshot" or "url", ignore generic business defaults and do not improvise a safer alternative layout
-- when inputMode is "screenshot" or "url", do not let hidden creative preferences override reference structure
 - when a reference blueprint exists, it overrides generic design instincts
 - preserve the reference section order family and spacing family
 - preserve the reference hero family, nav weight, CTA density and footer density
@@ -2809,18 +2803,13 @@ export async function POST(req: Request) {
       ? (body.chatHistory as ChatHistoryItem[])
       : [];
 
-    const incomingPreferences =
+    const rawPreferences =
       body?.generationPreferences &&
       typeof body.generationPreferences === "object"
         ? (body.generationPreferences as GenerationPreferences)
         : body?.landingPreferences && typeof body.landingPreferences === "object"
         ? (body.landingPreferences as GenerationPreferences)
         : {};
-
-    const rawPreferences: GenerationPreferences =
-      inputMode === "screenshot" || inputMode === "url"
-        ? {}
-        : incomingPreferences;
 
     const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
@@ -2961,7 +2950,8 @@ export async function POST(req: Request) {
       rawPreferences,
       layoutFingerprint,
       screenshotAnalysis,
-      referenceBlueprint
+      referenceBlueprint,
+      { inputMode }
     );
 
     console.log(
