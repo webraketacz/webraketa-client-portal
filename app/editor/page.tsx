@@ -616,6 +616,33 @@ function createDefaultPreferences(prompt = ""): GenerationPreferences {
   };
 }
 
+
+function createReferenceLockedPreferences(
+  sourcePrompt = ""
+): GenerationPreferences {
+  return {
+    speedMode: "premium",
+    layoutPreference: "auto",
+    visualStyle: "auto",
+    animationLevel: "subtle",
+    fontMood: "auto",
+    iconStyle: "auto",
+    designReference: "auto",
+    buttonStyle: "auto",
+    promptEnhancerMode: "balanced",
+    preferredPrimaryColor: "",
+    preferredBackgroundColor: "",
+    contactItems: [],
+    clientAnswers: {
+      contactDetails: "",
+      styleNotes: "",
+      offerNotes: "",
+      extras: "",
+    },
+    sourcePrompt,
+  };
+}
+
 function mergeStoredPreferences(
   base: GenerationPreferences,
   incoming: unknown
@@ -2067,8 +2094,21 @@ export default function AiEditorPage() {
 
     if (bootPrompt) {
       setPrompt(bootPrompt);
+      const bootInputMode =
+        storedInputMode === "prompt" ||
+        storedInputMode === "url" ||
+        storedInputMode === "screenshot" ||
+        storedInputMode === "html"
+          ? storedInputMode
+          : "prompt";
+
       setGenerationPreferences((prev) =>
-        mergeStoredPreferences(createDefaultPreferences(bootPrompt), prev)
+        mergeStoredPreferences(
+          bootInputMode === "screenshot" || bootInputMode === "url"
+            ? createReferenceLockedPreferences(bootPrompt)
+            : createDefaultPreferences(bootPrompt),
+          prev
+        )
       );
       setMessages((prev) => [
         ...prev,
@@ -2085,9 +2125,21 @@ export default function AiEditorPage() {
 
     try {
       const parsedPrefs = JSON.parse(storedLandingPreferences);
+      const bootInputMode =
+        storedInputMode === "prompt" ||
+        storedInputMode === "url" ||
+        storedInputMode === "screenshot" ||
+        storedInputMode === "html"
+          ? storedInputMode
+          : "prompt";
+
       setGenerationPreferences((prev) =>
         mergeStoredPreferences(
-          initialPrompt ? createDefaultPreferences(initialPrompt) : prev,
+          bootInputMode === "screenshot" || bootInputMode === "url"
+            ? createReferenceLockedPreferences(initialPrompt)
+            : initialPrompt
+            ? createDefaultPreferences(initialPrompt)
+            : prev,
           parsedPrefs
         )
       );
@@ -2127,7 +2179,11 @@ export default function AiEditorPage() {
       })();
 
       const nextPrefs = mergeStoredPreferences(
-        autostartPrompt ? createDefaultPreferences(autostartPrompt) : generationPreferences,
+        resolvedInputMode === "screenshot" || resolvedInputMode === "url"
+          ? createReferenceLockedPreferences(autostartPrompt)
+          : autostartPrompt
+          ? createDefaultPreferences(autostartPrompt)
+          : generationPreferences,
         parsedPrefsSafe
       );
 
@@ -2330,10 +2386,20 @@ export default function AiEditorPage() {
       return;
     }
 
+    const isReferenceLockedMode =
+      requestInput.inputMode === "screenshot" || requestInput.inputMode === "url";
+
     const effectivePreferences = {
-      ...(forcedPreferences || generationPreferences),
+      ...(isReferenceLockedMode
+        ? createReferenceLockedPreferences(finalPrompt)
+        : forcedPreferences || generationPreferences),
       sourcePrompt: finalPrompt,
     };
+
+    const screenshotDataUrl =
+      requestInput.inputMode === "screenshot"
+        ? requestInput.attachments.find((item) => item.kind === "screenshot")?.dataUrl || ""
+        : "";
 
     setLoading(true);
     setError(null);
@@ -2366,6 +2432,7 @@ export default function AiEditorPage() {
           referenceUrl: requestInput.referenceUrl,
           referenceHtml: requestInput.referenceHtml,
           attachments: requestInput.attachments,
+          screenshotDataUrl,
           generationPreferences: effectivePreferences,
           landingPreferences: effectivePreferences,
           chatHistory: getChatHistoryPayload(),
