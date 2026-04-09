@@ -42,9 +42,6 @@ const client = new OpenAI({
 
 const WEB_MODEL = process.env.OPENAI_WEB_MODEL || "gpt-5.4";
 
-// Zyvia build marker (forces Vercel redeploy)
-const ZYVIA_BUILD_VERSION = "production-fidelity-v2";
-
 type ChatHistoryItem = {
   role: "system" | "user" | "assistant";
   text: string;
@@ -67,12 +64,11 @@ type BrandLogoAsset = {
 type AttachmentInput = {
   id?: string;
   name?: string;
-  kind: "screenshot" | "image" | "file";
+  kind?: "screenshot" | "file";
   dataUrl?: string;
-  url?: string;
-  base64?: string;
-  mimeType?: string;
 };
+
+type ReferenceMode = "strict" | "guided" | "free";
 
 type SpeedMode = "fast" | "balanced" | "premium";
 
@@ -142,8 +138,6 @@ type DesignReference =
 
 type InputMode = "prompt" | "url" | "screenshot" | "html";
 
-type ReferenceMode = "strict" | "guided" | "free";
-
 type IndustryKind =
   | "fintech"
   | "saas"
@@ -185,7 +179,6 @@ type GenerationPreferences = {
   preferredBackgroundColor?: string;
   contactItems?: string[];
   clientAnswers?: ClientAnswers;
-  sourcePrompt?: string;
 };
 
 type GeneratedWebsiteBundle = {
@@ -348,6 +341,76 @@ type ReferenceBlueprint = {
   renderingInstructions: string[];
 };
 
+function createReferenceBlueprint(
+  screenshotAnalysis: ReferenceScreenshotAnalysis
+): ReferenceBlueprint {
+  const normalizedHeroType =
+    screenshotAnalysis.aboveTheFoldType === "cover-hero"
+      ? "cover"
+      : screenshotAnalysis.aboveTheFoldType === "split-hero"
+      ? "split"
+      : screenshotAnalysis.aboveTheFoldType === "editorial-cover"
+      ? "editorial"
+      : screenshotAnalysis.aboveTheFoldType === "grid-hero"
+      ? "grid"
+      : "unknown";
+
+  const normalizedNavStyle =
+    screenshotAnalysis.navVisualWeight === "minimal"
+      ? "minimal"
+      : screenshotAnalysis.navVisualWeight === "heavy"
+      ? "corporate"
+      : "unknown";
+
+  const mustKeep = screenshotAnalysis.mustKeepMotifs || [];
+  const mustAvoid = screenshotAnalysis.forbiddenMistakes || [];
+
+  return {
+    screenshotCoverage: {
+      hasHero: true,
+      hasUpper: false,
+      hasMid: false,
+      hasLower: false,
+      hasFooter: false,
+    },
+    brandAbstraction: {
+      tone: screenshotAnalysis.colorDirection || "derived-from-screenshot",
+      typographyMood: screenshotAnalysis.compositionSummary || "derived-from-screenshot",
+      colorPalette: screenshotAnalysis.colorDirection ? [screenshotAnalysis.colorDirection] : [],
+      backgroundStyle: screenshotAnalysis.colorDirection || "derived-from-screenshot",
+      accentStyle: screenshotAnalysis.colorDirection || "derived-from-screenshot",
+    },
+    layout: {
+      heroType: normalizedHeroType,
+      navStyle: normalizedNavStyle,
+      sectionOrder: [
+        normalizedHeroType !== "unknown" ? normalizedHeroType : "hero",
+        screenshotAnalysis.firstSectionAfterHero || "content",
+      ],
+      density: "balanced",
+      containerStyle: "derived-from-screenshot",
+      spacingRhythm: screenshotAnalysis.compositionSummary || "derived-from-screenshot",
+    },
+    hero: {
+      alignment: screenshotAnalysis.heroContentAlignment || "unknown",
+      hasStatsBandAfterHero: screenshotAnalysis.firstSectionAfterHero === "stats-band",
+      dominantSubject: screenshotAnalysis.dominantVisualSubject || "unknown",
+      motifs: mustKeep,
+      forbiddenDrift: mustAvoid,
+    },
+    fidelityLocks: {
+      mustKeep,
+      mustAvoid,
+    },
+    sectionBlueprints: [],
+    renderingInstructions: [
+      "Follow the screenshot composition as closely as possible.",
+      "Preserve the screenshot spacing rhythm, hero family, card family and tonal direction.",
+      "Do not drift into a generic business layout that breaks the uploaded reference.",
+    ],
+  };
+}
+
 function nowMs() {
   return Date.now();
 }
@@ -443,34 +506,20 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .slice(0, 8)
     .filter((item) => item && typeof item === "object")
     .map((item) => {
-      const candidate = item as Partial<AttachmentInput>;
-      const kind =
-        candidate.kind === "screenshot" ||
-        candidate.kind === "image" ||
-        candidate.kind === "file"
-          ? candidate.kind
-          : "file";
-
+      const candidate = item as AttachmentInput;
       const dataUrl =
-        typeof candidate.dataUrl === "string" &&
-        candidate.dataUrl.startsWith("data:image/")
+        typeof candidate.dataUrl === "string" && candidate.dataUrl.startsWith("data:image/")
           ? candidate.dataUrl.slice(0, 1_500_000)
           : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
         name: typeof candidate.name === "string" ? candidate.name : undefined,
-        kind,
+        kind:
+          candidate.kind === "screenshot" || candidate.kind === "file"
+            ? candidate.kind
+            : undefined,
         dataUrl,
-        url: typeof candidate.url === "string" ? candidate.url : undefined,
-        base64:
-          typeof candidate.base64 === "string"
-            ? candidate.base64.slice(0, 1_500_000)
-            : undefined,
-        mimeType:
-          typeof candidate.mimeType === "string"
-            ? candidate.mimeType
-            : undefined,
       };
     });
 }
@@ -1442,11 +1491,19 @@ function resolveCreativeDirection(
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
   const referenceMode = options?.referenceMode || "free";
-  const hasCustomCreativeSettings = Boolean(options?.hasCustomCreativeSettings);
+  const isFreePrompt = referenceMode === "free";
 
-  const isStrict = referenceMode === "strict";
-  const isGuided = referenceMode === "guided";
-  const isFree = referenceMode === "free";
+  const baseDirection = isFreePrompt
+    ? industryDefaults
+    : {
+        imageMode:
+          screenshotAnalysis?.dominantVisualSubject === "ui" ? "abstract-interface" : "mixed",
+        layoutPreference: "auto" as LayoutPreference,
+        visualStyle: "auto" as VisualStyle,
+        fontMood: "auto" as FontMood,
+        iconStyle: "auto" as IconStyle,
+        designReference: "auto" as DesignReference,
+      };
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1573,66 +1630,6 @@ function resolveCreativeDirection(
       ? layoutSeedPool.luxury
       : layoutSeedPool.generic;
 
-  const strictSignal = [
-    referenceBlueprint?.brandAbstraction?.tone || "",
-    referenceBlueprint?.brandAbstraction?.typographyMood || "",
-    screenshotAnalysis?.colorDirection || "",
-    screenshotAnalysis?.compositionSummary || "",
-    ...(referenceBlueprint?.hero?.motifs || []),
-    ...(referenceBlueprint?.fidelityLocks?.mustKeep || []),
-  ].join(" ");
-
-  const strictLayoutPreference =
-    blueprintHeroType === "editorial"
-      ? "editorial"
-      : blueprintHeroType === "cover"
-      ? "story"
-      : blueprintHeroType === "split" && !hardAvoidSplit
-      ? "split"
-      : referenceBlueprint?.layout?.density === "dense"
-      ? "grid"
-      : fingerprint?.navStyle === "editorial"
-      ? "editorial"
-      : "auto";
-
-  const strictVisualStyle =
-    /luxury|editorial|calm|ritual|recovery|warm|beige|serif|spa/i.test(strictSignal)
-      ? "luxury"
-      : screenshotAnalysis?.dominantVisualSubject === "ui"
-      ? "premium"
-      : "editorial";
-
-  const strictFontMood =
-    /serif|editorial|luxury/i.test(
-      referenceBlueprint?.brandAbstraction?.typographyMood || ""
-    )
-      ? "editorial"
-      : /tech|interface|product/i.test(
-          referenceBlueprint?.brandAbstraction?.typographyMood || ""
-        )
-      ? "tech"
-      : "geometric";
-
-  const strictDesignReference =
-    strictVisualStyle === "luxury"
-      ? "luxury-editorial"
-      : screenshotAnalysis?.dominantVisualSubject === "ui"
-      ? "signal-orchestration"
-      : industryDefaults.designReference;
-
-  const strictImageMode =
-    screenshotAnalysis?.dominantVisualSubject === "ui"
-      ? "abstract-interface"
-      : screenshotAnalysis?.dominantVisualSubject === "architecture"
-      ? "architecture"
-      : screenshotAnalysis?.dominantVisualSubject === "product"
-      ? "product"
-      : screenshotAnalysis?.dominantVisualSubject === "food"
-      ? "food"
-      : industryDefaults.imageMode;
-
-  const shouldUseCreativeOverrides = isFree || (isGuided && hasCustomCreativeSettings);
-
   const layoutSeed = makeDeterministicChoice(
     `${prompt}-${blueprintHeroType}-${referenceBlueprint?.layout?.navStyle || ""}-seed`,
     seedChoices
@@ -1640,41 +1637,30 @@ function resolveCreativeDirection(
 
   return {
     industry,
-    imageMode: isStrict ? strictImageMode : industryDefaults.imageMode,
+    imageMode: baseDirection.imageMode || industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
     layoutPreference:
-      shouldUseCreativeOverrides && prefs.layoutPreference && prefs.layoutPreference !== "auto"
+      prefs.layoutPreference && prefs.layoutPreference !== "auto"
         ? prefs.layoutPreference
-        : isStrict
-        ? strictLayoutPreference
         : blueprintHeroType === "editorial"
         ? "editorial"
         : blueprintHeroType === "cover"
         ? "story"
         : blueprintHeroType === "split" && !hardAvoidSplit
         ? "split"
-        : industryDefaults.layoutPreference,
+        : baseDirection.layoutPreference !== "auto" ? baseDirection.layoutPreference : industryDefaults.layoutPreference,
     visualStyle:
-      shouldUseCreativeOverrides && prefs.visualStyle && prefs.visualStyle !== "auto"
+      prefs.visualStyle && prefs.visualStyle !== "auto"
         ? prefs.visualStyle
-        : isStrict
-        ? strictVisualStyle
         : referenceBlueprint?.layout?.navStyle === "editorial"
         ? "editorial"
         : referenceBlueprint?.layout?.density === "dense"
         ? "premium"
-        : industryDefaults.visualStyle,
-    animationLevel:
-      shouldUseCreativeOverrides && prefs.animationLevel
-        ? prefs.animationLevel
-        : isStrict
-        ? "subtle"
-        : fallbackAnimation,
+        : baseDirection.visualStyle !== "auto" ? baseDirection.visualStyle : industryDefaults.visualStyle,
+    animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
-      shouldUseCreativeOverrides && prefs.fontMood && prefs.fontMood !== "auto"
+      prefs.fontMood && prefs.fontMood !== "auto"
         ? prefs.fontMood
-        : isStrict
-        ? strictFontMood
         : /serif|editorial/i.test(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
@@ -1683,38 +1669,28 @@ function resolveCreativeDirection(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
         ? "tech"
-        : industryDefaults.fontMood,
+        : baseDirection.fontMood !== "auto" ? baseDirection.fontMood : industryDefaults.fontMood,
     iconStyle:
-      shouldUseCreativeOverrides && prefs.iconStyle && prefs.iconStyle !== "auto"
+      prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
-        : isStrict
-        ? "minimal"
-        : industryDefaults.iconStyle,
+        : baseDirection.iconStyle !== "auto" ? baseDirection.iconStyle : industryDefaults.iconStyle,
     designReference:
-      shouldUseCreativeOverrides && prefs.designReference && prefs.designReference !== "auto"
+      prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
-        : isStrict
-        ? strictDesignReference
-        : industryDefaults.designReference,
-    buttonStyle:
-      shouldUseCreativeOverrides && prefs.buttonStyle ? prefs.buttonStyle : "auto",
-    promptEnhancerMode:
-      shouldUseCreativeOverrides && prefs.promptEnhancerMode
-        ? prefs.promptEnhancerMode
-        : "premium-brand",
+        : baseDirection.designReference !== "auto" ? baseDirection.designReference : industryDefaults.designReference,
+    buttonStyle: prefs.buttonStyle || "auto",
+    promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
     preferredPrimaryColor:
-      (shouldUseCreativeOverrides ? prefs.preferredPrimaryColor?.trim() : "") ||
+      prefs.preferredPrimaryColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[0] ||
       "",
     preferredBackgroundColor:
-      (shouldUseCreativeOverrides ? prefs.preferredBackgroundColor?.trim() : "") ||
+      prefs.preferredBackgroundColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[1] ||
       "",
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
     clientAnswers: prefs.clientAnswers || {},
-    layoutSeed: isStrict
-      ? `strict-reference:${blueprintHeroType}:${referenceBlueprint?.layout?.navStyle || "unknown"}`
-      : layoutSeed,
+    layoutSeed,
   };
 }
 
@@ -2494,9 +2470,10 @@ HTML MODE RULES:
 - do not simply echo raw HTML patterns without refinement
 
 SCREENSHOT MODE RULES:
-- use screenshots as the main source of composition, mood and hierarchy
-- infer structure from the screenshot
-- reproduce the visual direction in a cleaner and more production-ready way
+- use screenshots as the main source of composition, mood, hierarchy and section rhythm
+- preserve screenshot layout family, card family, hero family and spacing family as closely as possible
+- do not switch to a different website category or composition logic
+- reproduce the visual direction in a cleaner and more production-ready way without losing fidelity
 `);
 
   return lines.join("\n");
@@ -2544,7 +2521,7 @@ REFERENCE EXECUTION MODE:
 REFERENCE MODE RULES:
 - STRICT: reference is the dominant source of truth; do not drift into industry-default design
 - GUIDED: reference stays primary; custom creative settings may refine but never replace the reference
-- FREE: prompt and creative direction may lead the design more freely
+- FREE: prompt and creative direction may lead the design freely
 
 OVERRIDE PRIORITY:
 - screenshot/url/html reference first
@@ -2593,24 +2570,11 @@ ${
 
 ${
   params.referenceMode === "strict"
-    ? `STRICT SCREENSHOT FIDELITY MODE:
-- the uploaded screenshot is the PRIMARY TRUTH
-- do NOT redesign the composition into a different website category
-- do NOT replace editorial / luxury / atmospheric layouts with generic SaaS or corporate layouts
-- preserve hero family, section family, card family, spacing family and CTA hierarchy
-- preserve dark/light structure, typography mood and visual density
-- preserve section order family and overall rhythm
-- allowed changes are only brand text, content text, assets and mild color normalization
-- think: "rebuild the same design system for a new brand"
-- do NOT think: "generate a new website in a similar industry"
-
-STRICT FIDELITY LOCKS:
-- preserve hero proportions and placement logic
-- preserve card count rhythm where visible
-- preserve neutral space / whitespace rhythm
-- preserve whether sections feel airy, balanced or dense
-- preserve whether the design is calm editorial, luxury, product-led or interface-led
-- preserve the screenshot's composition philosophy even if industry defaults suggest something else`
+    ? `STRICT FIDELITY MODE:
+- do not reinterpret the reference into a different site category
+- preserve layout family, spacing rhythm, section family, hero family and CTA density
+- preserve color direction and typography mood inferred from the reference
+- if the reference suggests calm editorial luxury, never output a loud corporate SaaS layout`
     : `SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
 - Image mode: ${params.preferences.imageMode}
@@ -2660,10 +2624,6 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference typography mood and color direction closely
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
-- in STRICT screenshot mode, blueprint fidelity wins over layoutPreference, visualStyle, designReference and industry defaults
-- if the screenshot implies calm editorial luxury, keep calm editorial luxury
-- if the screenshot implies beige / warm / dark premium recovery aesthetics, do not switch to blue SaaS gradients
-- if the screenshot implies stacked cards, framed image panels, pricing tables or FAQ accordions, keep those section families
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must use stable wrappers and predictable layout primitives
@@ -2984,19 +2944,17 @@ export async function POST(req: Request) {
       body?.referenceMode === "guided" ||
       body?.referenceMode === "free"
         ? body.referenceMode
-        : inputMode === "screenshot"
-        ? "strict"
-        : inputMode === "url" || inputMode === "html"
-        ? "guided"
-        : "free";
-
-    const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
+        : inputMode === "prompt"
+        ? "free"
+        : "strict";
 
     const screenshotDataUrl =
       typeof body?.screenshotDataUrl === "string" &&
       body.screenshotDataUrl.startsWith("data:image/")
         ? body.screenshotDataUrl.slice(0, 1_500_000)
         : attachments.find((item) => item.kind === "screenshot")?.dataUrl || null;
+
+    const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
     const hasPrompt = rawPrompt.length >= 8;
     const hasUrlReference = inputMode === "url" && referenceUrl.length > 0;
@@ -3032,11 +2990,7 @@ export async function POST(req: Request) {
         : inputMode === "html" && referenceHtml.trim()
         ? "Vytvoř nový web podle dodaného HTML souboru."
         : inputMode === "screenshot"
-        ? [
-            "Vytvoř nový web podle dodaného screenshotu.",
-            "Screenshot je PRIMÁRNÍ zdroj layoutu, hierarchie, kompozice, rytmu sekcí, typografie a vizuálního směru.",
-            "Výsledek musí být co nejbližší screenshotu a nesmí sklouznout do generického webu podle oboru.",
-          ].join(" ")
+        ? "Vytvoř nový web podle dodaného screenshotu."
         : "");
 
     const referenceSummary =
@@ -3082,15 +3036,21 @@ export async function POST(req: Request) {
     }
 
     const screenshotAnalysis =
-      (inputMode === "url" && heroShot?.dataUrl) ||
-      (inputMode === "screenshot" && screenshotDataUrl)
+      inputMode === "url" && heroShot
         ? await createVisionReferenceAnalysis({
             requestId,
             model: WEB_MODEL,
-            screenshotDataUrl:
-              inputMode === "url" ? heroShot!.dataUrl : screenshotDataUrl!,
+            screenshotDataUrl: heroShot.dataUrl,
             referenceSummary,
             fingerprint: layoutFingerprint,
+          })
+        : inputMode === "screenshot" && screenshotDataUrl
+        ? await createVisionReferenceAnalysis({
+            requestId,
+            model: WEB_MODEL,
+            screenshotDataUrl,
+            referenceSummary: null,
+            fingerprint: null,
           })
         : null;
 
@@ -3106,7 +3066,7 @@ export async function POST(req: Request) {
             fingerprint: layoutFingerprint,
           })
         : inputMode === "screenshot" && screenshotAnalysis
-        ? createScreenshotReferenceBlueprint(screenshotAnalysis)
+        ? createReferenceBlueprint(screenshotAnalysis)
         : null;
 
     if (inputMode === "url" && referenceUrl && !referenceBlueprint) {
@@ -3140,11 +3100,7 @@ export async function POST(req: Request) {
 
     const resolvedPreferences = resolveCreativeDirection(
       promptForDirection,
-      referenceMode === "free"
-        ? rawPreferences
-        : hasCustomCreativeSettings
-        ? customCreativeSettings
-        : {},
+      referenceMode === "free" ? rawPreferences : customCreativeSettings,
       layoutFingerprint,
       screenshotAnalysis,
       referenceBlueprint,
