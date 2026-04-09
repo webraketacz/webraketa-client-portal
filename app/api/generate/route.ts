@@ -65,13 +65,13 @@ type BrandLogoAsset = {
 };
 
 type AttachmentInput = {
+  id?: string;
+  name?: string;
   kind: "screenshot" | "image" | "file";
   dataUrl?: string;
-  base64?: string;
   url?: string;
-  file?: string;
+  base64?: string;
   mimeType?: string;
-  name?: string;
 };
 
 type SpeedMode = "fast" | "balanced" | "premium";
