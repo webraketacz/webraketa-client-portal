@@ -2605,8 +2605,7 @@ REFERENCE BLUEPRINT:
             (section, index) =>
               `${index + 1}. ${section.id} | ${section.kind} | ${section.visualPattern} | density:${section.contentDensity}`
           )
-          .join("
-")
+          .join("\n")
       : "n/a";
 
   return `
