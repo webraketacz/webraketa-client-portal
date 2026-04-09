@@ -64,7 +64,7 @@ type BrandLogoAsset = {
 type AttachmentInput = {
   id?: string;
   name?: string;
-  kind?: "screenshot" | "file";
+  kind?: "screenshot" | "image" | "file";
   dataUrl?: string;
 };
 
@@ -366,9 +366,9 @@ function createScreenshotReferenceBlueprint(
     screenshotAnalysis.firstSectionAfterHero === "stats-band"
       ? "stats"
       : screenshotAnalysis.firstSectionAfterHero === "services"
-      ? "services"
+      ? "features"
       : screenshotAnalysis.firstSectionAfterHero === "gallery"
-      ? "gallery"
+      ? "content"
       : screenshotAnalysis.firstSectionAfterHero === "testimonials"
       ? "testimonials"
       : "content";
@@ -381,6 +381,78 @@ function createScreenshotReferenceBlueprint(
     ? screenshotAnalysis.forbiddenMistakes.filter(Boolean).slice(0, 12)
     : [];
 
+  const colorDirection = screenshotAnalysis.colorDirection || "";
+  const isLightReference =
+    /light|white|cream|beige|sand|warm neutral|soft neutral|ivory/i.test(
+      colorDirection
+    );
+  const isDarkReference =
+    /dark|black|navy|charcoal|midnight|deep blue/i.test(colorDirection);
+
+  const sectionOrder =
+    firstSection === "stats"
+      ? ["hero", "stats", "content", "content", "cta", "footer"]
+      : firstSection === "testimonials"
+      ? ["hero", "content", "testimonials", "cta", "footer"]
+      : ["hero", firstSection, "content", "content", "cta", "footer"];
+
+  const sectionBlueprints: ReferenceBlueprintSection[] = [
+    {
+      id: "hero",
+      kind: "hero",
+      purpose: "Primary above-the-fold composition rebuilt from the uploaded screenshot.",
+      visualPattern:
+        heroType === "cover"
+          ? "full-bleed image hero with editorial overlay copy"
+          : heroType === "editorial"
+          ? "editorial image-led hero with premium airy copy"
+          : heroType === "split"
+          ? "split hero that preserves screenshot proportions"
+          : "image-led hero reconstructed from screenshot",
+      contentDensity: isLightReference ? "airy" : "balanced",
+    },
+    {
+      id: "section-2",
+      kind: firstSection === "stats" ? "stats" : firstSection === "testimonials" ? "testimonials" : "content",
+      purpose: "First section after hero must preserve screenshot rhythm and content split.",
+      visualPattern:
+        firstSection === "stats"
+          ? "compact stats / key metrics band only if screenshot clearly implies it"
+          : "light or tonal split content block reconstructed from screenshot",
+      contentDensity: isLightReference ? "airy" : "balanced",
+    },
+    {
+      id: "section-3",
+      kind: "content",
+      purpose: "Secondary editorial content block that preserves alternating image/text rhythm.",
+      visualPattern:
+        isLightReference
+          ? "airy editorial property / hospitality content layout"
+          : "premium layered content layout matching screenshot family",
+      contentDensity: isLightReference ? "airy" : isDarkReference ? "balanced" : "balanced",
+    },
+    {
+      id: "section-4",
+      kind: "cta",
+      purpose: "Conversion block that fits the same visual family as the screenshot.",
+      visualPattern:
+        isLightReference
+          ? "quiet premium CTA with restrained contrast"
+          : "premium CTA block that still respects screenshot tone",
+      contentDensity: "balanced",
+    },
+    {
+      id: "footer",
+      kind: "footer",
+      purpose: "Footer that matches screenshot density and tonal finish.",
+      visualPattern:
+        isLightReference
+          ? "clean premium footer on light canvas or softly contrasted band"
+          : "footer that follows the screenshot dark/light ending logic",
+      contentDensity: "balanced",
+    },
+  ];
+
   return {
     screenshotCoverage: {
       hasHero: true,
@@ -390,21 +462,25 @@ function createScreenshotReferenceBlueprint(
       hasFooter: false,
     },
     brandAbstraction: {
-      tone: screenshotAnalysis.colorDirection || "derived-from-screenshot",
+      tone: colorDirection || "derived-from-screenshot",
       typographyMood:
         screenshotAnalysis.compositionSummary || "derived-from-screenshot",
-      colorPalette: screenshotAnalysis.colorDirection
-        ? [screenshotAnalysis.colorDirection]
-        : [],
-      backgroundStyle: screenshotAnalysis.colorDirection || "derived-from-screenshot",
-      accentStyle: screenshotAnalysis.colorDirection || "derived-from-screenshot",
+      colorPalette: colorDirection ? [colorDirection] : [],
+      backgroundStyle: isLightReference
+        ? "light-first"
+        : isDarkReference
+        ? "dark-first"
+        : colorDirection || "derived-from-screenshot",
+      accentStyle: colorDirection || "derived-from-screenshot",
     },
     layout: {
       heroType,
       navStyle,
-      sectionOrder: ["hero", firstSection, "content", "cta", "footer"],
-      density: "balanced",
-      containerStyle: "derived-from-screenshot",
+      sectionOrder,
+      density: isLightReference ? "airy" : isDarkReference ? "dense" : "balanced",
+      containerStyle: isLightReference
+        ? "airy editorial containers with generous white space"
+        : "derived-from-screenshot",
       spacingRhythm:
         screenshotAnalysis.compositionSummary || "derived-from-screenshot",
     },
@@ -418,13 +494,27 @@ function createScreenshotReferenceBlueprint(
       forbiddenDrift: mustAvoid,
     },
     fidelityLocks: {
-      mustKeep,
-      mustAvoid,
+      mustKeep: [
+        ...mustKeep,
+        isLightReference ? "keep the website predominantly light if the screenshot reads light-first" : "",
+        !isDarkReference ? "do not convert a light editorial screenshot into a dark SaaS/business website" : "",
+        "preserve the screenshot section order family",
+        "preserve the screenshot image-to-text rhythm",
+        "preserve the screenshot spacing density and compositional breathing room",
+      ].filter(Boolean),
+      mustAvoid: [
+        ...mustAvoid,
+        "generic dark corporate hero if the screenshot is light and editorial",
+        "invented stats bands unless the screenshot clearly implies them",
+        "turning image-led property or hospitality layouts into generic business cards",
+      ].filter(Boolean),
     },
-    sectionBlueprints: [],
+    sectionBlueprints,
     renderingInstructions: [
       "Follow the screenshot composition as closely as possible.",
       "Preserve the screenshot spacing rhythm, hero family, card family and tonal direction.",
+      "Keep section order, section polarity and image dominance aligned with the uploaded screenshot.",
+      "If the screenshot feels bright, airy and editorial, keep the final site bright, airy and editorial.",
       "Do not drift into a generic business layout that breaks the uploaded reference.",
     ],
   };
@@ -527,14 +617,24 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => {
       const candidate = item as AttachmentInput;
+      const kind =
+        candidate.kind === "screenshot" ||
+        candidate.kind === "image" ||
+        candidate.kind === "file"
+          ? candidate.kind
+          : "file";
+
+      const dataUrl =
+        typeof candidate.dataUrl === "string" &&
+        candidate.dataUrl.startsWith("data:image/")
+          ? candidate.dataUrl.slice(0, 1_500_000)
+          : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
         name: typeof candidate.name === "string" ? candidate.name : undefined,
-        kind:
-          candidate.kind === "screenshot" || candidate.kind === "file"
-            ? candidate.kind
-            : undefined,
+        kind,
+        dataUrl,
       };
     });
 }
@@ -1598,6 +1698,23 @@ function resolveCreativeDirection(
   };
 
   const blueprintHeroType = referenceBlueprint?.layout?.heroType || "unknown";
+  const isStrictScreenshotMode = Boolean(screenshotAnalysis && referenceBlueprint && !fingerprint);
+  const hasManualLayoutPreference =
+    Boolean(prefs.layoutPreference && prefs.layoutPreference !== "auto");
+  const hasManualVisualStyle =
+    Boolean(prefs.visualStyle && prefs.visualStyle !== "auto");
+  const hasManualFontMood =
+    Boolean(prefs.fontMood && prefs.fontMood !== "auto");
+  const hasManualDesignReference =
+    Boolean(prefs.designReference && prefs.designReference !== "auto");
+  const looksLightReference = /light-first|light|white|cream|beige|sand|airy editorial/i.test(
+    [
+      referenceBlueprint?.brandAbstraction?.backgroundStyle || "",
+      referenceBlueprint?.brandAbstraction?.tone || "",
+      screenshotAnalysis?.colorDirection || "",
+      screenshotAnalysis?.compositionSummary || "",
+    ].join(" ")
+  );
   const hardAvoidSplit =
     blueprintHeroType === "cover" ||
     blueprintHeroType === "editorial" ||
@@ -1637,7 +1754,7 @@ function resolveCreativeDirection(
     imageMode: industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
     layoutPreference:
-      prefs.layoutPreference && prefs.layoutPreference !== "auto"
+      hasManualLayoutPreference
         ? prefs.layoutPreference
         : blueprintHeroType === "editorial"
         ? "editorial"
@@ -1645,20 +1762,25 @@ function resolveCreativeDirection(
         ? "story"
         : blueprintHeroType === "split" && !hardAvoidSplit
         ? "split"
+        : isStrictScreenshotMode && looksLightReference
+        ? "editorial"
         : industryDefaults.layoutPreference,
     visualStyle:
-      prefs.visualStyle && prefs.visualStyle !== "auto"
+      hasManualVisualStyle
         ? prefs.visualStyle
-        : referenceBlueprint?.layout?.navStyle === "editorial"
+        : referenceBlueprint?.layout?.navStyle === "editorial" || looksLightReference
         ? "editorial"
         : referenceBlueprint?.layout?.density === "dense"
         ? "premium"
+        : isStrictScreenshotMode
+        ? "clean"
         : industryDefaults.visualStyle,
-    animationLevel: prefs.animationLevel || fallbackAnimation,
+    animationLevel:
+      prefs.animationLevel || (isStrictScreenshotMode ? "subtle" : fallbackAnimation),
     fontMood:
-      prefs.fontMood && prefs.fontMood !== "auto"
+      hasManualFontMood
         ? prefs.fontMood
-        : /serif|editorial/i.test(
+        : /serif|editorial|luxury|air|gallery/i.test(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
         ? "editorial"
@@ -1666,14 +1788,22 @@ function resolveCreativeDirection(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
         ? "tech"
+        : isStrictScreenshotMode && looksLightReference
+        ? "editorial"
         : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
+        : isStrictScreenshotMode
+        ? "minimal"
         : industryDefaults.iconStyle,
     designReference:
-      prefs.designReference && prefs.designReference !== "auto"
+      hasManualDesignReference
         ? prefs.designReference
+        : isStrictScreenshotMode && looksLightReference
+        ? "luxury-editorial"
+        : isStrictScreenshotMode
+        ? "clean-business"
         : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
     promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
@@ -1687,7 +1817,26 @@ function resolveCreativeDirection(
       "",
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
     clientAnswers: prefs.clientAnswers || {},
-    layoutSeed,
+    layoutSeed:
+      isStrictScreenshotMode
+        ? makeDeterministicChoice(
+            `${blueprintHeroType}-${referenceBlueprint?.layout?.density || ""}-${referenceBlueprint?.layout?.navStyle || ""}-strict-screenshot`,
+            hardAvoidSplit
+              ? [
+                  "full-bleed-editorial-property-cover",
+                  "bottom-left-copy-over-architecture-shot",
+                  "gallery-led-development-microsite",
+                  "editorial-project-cover-with-thin-dividers",
+                  "airy-serif-hero-with-gallery-rhythm",
+                ]
+              : [
+                  "framed-photo-window-hero",
+                  "story-led-split-panels",
+                  "offset-luxury-panels",
+                  "stacked-gallery-cover-hero",
+                ]
+          )
+        : layoutSeed,
   };
 }
 
@@ -2442,6 +2591,11 @@ function renderInputModeContext(params: {
     );
   }
 
+  if (params.inputMode === "screenshot") {
+    lines.push(renderScreenshotAnalysis(params.screenshotAnalysis));
+    lines.push(renderReferenceBlueprint(params.referenceBlueprint));
+  }
+
   lines.push(`
 PRIMARY SOURCE PRIORITY:
 - if input mode is "url", the fetched summary + multi-shot screenshots + reference blueprint are the PRIMARY source of layout and visual direction
@@ -2469,7 +2623,12 @@ HTML MODE RULES:
 SCREENSHOT MODE RULES:
 - use screenshots as the main source of composition, mood and hierarchy
 - infer structure from the screenshot
-- reproduce the visual direction in a cleaner and more production-ready way
+- preserve the screenshot light/dark polarity, section rhythm and hero family
+- preserve the screenshot image-to-text balance, visual weight and spacing density
+- if the screenshot looks bright and editorial, do NOT turn it into a dark corporate website
+- if the screenshot does not clearly show a stats band, do NOT invent one
+- user prompt in screenshot mode is only a secondary content layer unless it explicitly asks for a small change
+- reproduce the screenshot visual direction in a cleaner and more production-ready way, not in a different style
 `);
 
   return lines.join("\n");
@@ -2574,6 +2733,27 @@ ${getIndustrySpecificRules(
     params.preferences.imageMode
   )}
 
+${
+  params.inputMode === "screenshot"
+    ? `STRICT SCREENSHOT FIDELITY MODE:
+- the uploaded screenshot is the PRIMARY TRUTH
+- DO NOT redesign the screenshot into a different style family
+- DO NOT convert a bright editorial / real-estate / hospitality reference into a dark corporate or SaaS website
+- preserve the screenshot section order family
+- preserve the screenshot hero family, image dominance and section rhythm
+- preserve the screenshot light/dark polarity and spacing density
+- preserve the screenshot visual weight and text-to-image balance
+- preserve the screenshot card family and CTA family
+- preserve the screenshot navigation weight and overall atmosphere
+- use the user prompt only to adapt copy, branding and business details
+- settings and automatic industry defaults are WEAK hints only in screenshot mode
+- if the screenshot implies large photography, keep large photography
+- if the screenshot implies airy white sections, keep airy white sections
+- if the screenshot implies editorial real-estate / hospitality storytelling, keep that exact family
+- do not invent stats blocks, dark tech gradients or generic business cards unless the screenshot clearly supports them`
+    : ""
+}
+
 INPUT CONTEXT:
 ${renderInputModeContext({
   inputMode: params.inputMode,
@@ -2594,6 +2774,9 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference typography mood and color direction closely
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
+- when input mode is screenshot, the blueprint overrides industry defaults and generic premium recipes
+- when blueprint background is light-first, keep the site predominantly light
+- when blueprint section rhythm is airy/editorial, keep it airy/editorial
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must use stable wrappers and predictable layout primitives
