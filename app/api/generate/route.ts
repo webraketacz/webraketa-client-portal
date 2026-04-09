@@ -2726,7 +2726,7 @@ SELECTED CREATIVE DIRECTION:
       : "phone, email, office, CTA form"
   }
 
-${getDesignReferenceRecipe(params.preferences.designReference)}
+${getDesignReferenceRecipe(params.preferences.designReference ?? "auto")}
 
 ${getIndustrySpecificRules(
     params.preferences.industry,
