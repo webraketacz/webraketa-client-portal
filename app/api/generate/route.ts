@@ -1858,6 +1858,8 @@ function resolveCreativeDirection(
     seedChoices
   );
 
+  const isStrictScreenshotMode = inputMode === "screenshot";
+
   const resolvedIndustry =
     isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
       ? "real-estate"
