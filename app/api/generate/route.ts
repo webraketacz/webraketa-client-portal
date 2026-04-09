@@ -68,8 +68,6 @@ type AttachmentInput = {
   dataUrl?: string;
 };
 
-type ReferenceMode = "strict" | "guided" | "free";
-
 type SpeedMode = "fast" | "balanced" | "premium";
 
 type LayoutPreference =
@@ -341,7 +339,7 @@ type ReferenceBlueprint = {
   renderingInstructions: string[];
 };
 
-function createReferenceBlueprint(
+function createScreenshotReferenceBlueprint(
   screenshotAnalysis: ReferenceScreenshotAnalysis
 ): ReferenceBlueprint {
   const normalizedHeroType =
@@ -375,9 +373,13 @@ function createReferenceBlueprint(
     },
     brandAbstraction: {
       tone: screenshotAnalysis.colorDirection || "derived-from-screenshot",
-      typographyMood: screenshotAnalysis.compositionSummary || "derived-from-screenshot",
-      colorPalette: screenshotAnalysis.colorDirection ? [screenshotAnalysis.colorDirection] : [],
-      backgroundStyle: screenshotAnalysis.colorDirection || "derived-from-screenshot",
+      typographyMood:
+        screenshotAnalysis.compositionSummary || "derived-from-screenshot",
+      colorPalette: screenshotAnalysis.colorDirection
+        ? [screenshotAnalysis.colorDirection]
+        : [],
+      backgroundStyle:
+        screenshotAnalysis.colorDirection || "derived-from-screenshot",
       accentStyle: screenshotAnalysis.colorDirection || "derived-from-screenshot",
     },
     layout: {
@@ -389,11 +391,13 @@ function createReferenceBlueprint(
       ],
       density: "balanced",
       containerStyle: "derived-from-screenshot",
-      spacingRhythm: screenshotAnalysis.compositionSummary || "derived-from-screenshot",
+      spacingRhythm:
+        screenshotAnalysis.compositionSummary || "derived-from-screenshot",
     },
     hero: {
       alignment: screenshotAnalysis.heroContentAlignment || "unknown",
-      hasStatsBandAfterHero: screenshotAnalysis.firstSectionAfterHero === "stats-band",
+      hasStatsBandAfterHero:
+        screenshotAnalysis.firstSectionAfterHero === "stats-band",
       dominantSubject: screenshotAnalysis.dominantVisualSubject || "unknown",
       motifs: mustKeep,
       forbiddenDrift: mustAvoid,
@@ -506,19 +510,22 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .slice(0, 8)
     .filter((item) => item && typeof item === "object")
     .map((item) => {
-      const candidate = item as AttachmentInput;
+      const candidate = item as Partial<AttachmentInput>;
+      const kind =
+        candidate.kind === "screenshot" || candidate.kind === "file"
+          ? candidate.kind
+          : "file";
+
       const dataUrl =
-        typeof candidate.dataUrl === "string" && candidate.dataUrl.startsWith("data:image/")
+        typeof candidate.dataUrl === "string" &&
+        candidate.dataUrl.startsWith("data:image/")
           ? candidate.dataUrl.slice(0, 1_500_000)
           : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
         name: typeof candidate.name === "string" ? candidate.name : undefined,
-        kind:
-          candidate.kind === "screenshot" || candidate.kind === "file"
-            ? candidate.kind
-            : undefined,
+        kind,
         dataUrl,
       };
     });
@@ -1479,31 +1486,13 @@ function getIndustryDefaults(industry: IndustryKind) {
 
 function resolveCreativeDirection(
   prompt: string,
-  prefs: Partial<GenerationPreferences>,
+  prefs: GenerationPreferences,
   fingerprint?: ReferenceLayoutFingerprint | null,
   screenshotAnalysis?: ReferenceScreenshotAnalysis | null,
-  referenceBlueprint?: ReferenceBlueprint | null,
-  options?: {
-    referenceMode?: ReferenceMode;
-    hasCustomCreativeSettings?: boolean;
-  }
+  referenceBlueprint?: ReferenceBlueprint | null
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
-  const referenceMode = options?.referenceMode || "free";
-  const isFreePrompt = referenceMode === "free";
-
-  const baseDirection = isFreePrompt
-    ? industryDefaults
-    : {
-        imageMode:
-          screenshotAnalysis?.dominantVisualSubject === "ui" ? "abstract-interface" : "mixed",
-        layoutPreference: "auto" as LayoutPreference,
-        visualStyle: "auto" as VisualStyle,
-        fontMood: "auto" as FontMood,
-        iconStyle: "auto" as IconStyle,
-        designReference: "auto" as DesignReference,
-      };
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1637,7 +1626,7 @@ function resolveCreativeDirection(
 
   return {
     industry,
-    imageMode: baseDirection.imageMode || industryDefaults.imageMode,
+    imageMode: industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
@@ -1648,7 +1637,7 @@ function resolveCreativeDirection(
         ? "story"
         : blueprintHeroType === "split" && !hardAvoidSplit
         ? "split"
-        : baseDirection.layoutPreference !== "auto" ? baseDirection.layoutPreference : industryDefaults.layoutPreference,
+        : industryDefaults.layoutPreference,
     visualStyle:
       prefs.visualStyle && prefs.visualStyle !== "auto"
         ? prefs.visualStyle
@@ -1656,7 +1645,7 @@ function resolveCreativeDirection(
         ? "editorial"
         : referenceBlueprint?.layout?.density === "dense"
         ? "premium"
-        : baseDirection.visualStyle !== "auto" ? baseDirection.visualStyle : industryDefaults.visualStyle,
+        : industryDefaults.visualStyle,
     animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
       prefs.fontMood && prefs.fontMood !== "auto"
@@ -1669,15 +1658,15 @@ function resolveCreativeDirection(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
         ? "tech"
-        : baseDirection.fontMood !== "auto" ? baseDirection.fontMood : industryDefaults.fontMood,
+        : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
-        : baseDirection.iconStyle !== "auto" ? baseDirection.iconStyle : industryDefaults.iconStyle,
+        : industryDefaults.iconStyle,
     designReference:
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
-        : baseDirection.designReference !== "auto" ? baseDirection.designReference : industryDefaults.designReference,
+        : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
     promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
     preferredPrimaryColor:
@@ -2470,10 +2459,9 @@ HTML MODE RULES:
 - do not simply echo raw HTML patterns without refinement
 
 SCREENSHOT MODE RULES:
-- use screenshots as the main source of composition, mood, hierarchy and section rhythm
-- preserve screenshot layout family, card family, hero family and spacing family as closely as possible
-- do not switch to a different website category or composition logic
-- reproduce the visual direction in a cleaner and more production-ready way without losing fidelity
+- use screenshots as the main source of composition, mood and hierarchy
+- infer structure from the screenshot
+- reproduce the visual direction in a cleaner and more production-ready way
 `);
 
   return lines.join("\n");
@@ -2487,8 +2475,6 @@ function renderPrompt(params: {
   preferences: ReturnType<typeof resolveCreativeDirection>;
   brandLogo?: BrandLogoAsset | null;
   inputMode: InputMode;
-  referenceMode: ReferenceMode;
-  hasCustomCreativeSettings: boolean;
   referenceUrl?: string;
   referenceHtml?: string;
   referenceSummary?: ReferenceSiteSummary | null;
@@ -2513,22 +2499,6 @@ Return ONLY a structured JSON object matching the schema.
 PRIMARY GOAL:
 Create a premium commercial website that feels custom-designed for this exact business.
 It must not feel like a recycled template.
-
-REFERENCE EXECUTION MODE:
-- referenceMode = ${params.referenceMode}
-- hasCustomCreativeSettings = ${params.hasCustomCreativeSettings ? "yes" : "no"}
-
-REFERENCE MODE RULES:
-- STRICT: reference is the dominant source of truth; do not drift into industry-default design
-- GUIDED: reference stays primary; custom creative settings may refine but never replace the reference
-- FREE: prompt and creative direction may lead the design freely
-
-OVERRIDE PRIORITY:
-- screenshot/url/html reference first
-- then explicitly changed custom creative settings
-- then direct user prompt notes
-- then industry heuristics
-- then defaults
 
 MOST IMPORTANT PRIORITY:
 If the client explicitly described a style, fonts, mood, contact details, content or visual direction,
@@ -2568,14 +2538,7 @@ ${
     : `- if no real logo is provided, create an elegant text or monogram logo treatment`
 }
 
-${
-  params.referenceMode === "strict"
-    ? `STRICT FIDELITY MODE:
-- do not reinterpret the reference into a different site category
-- preserve layout family, spacing rhythm, section family, hero family and CTA density
-- preserve color direction and typography mood inferred from the reference
-- if the reference suggests calm editorial luxury, never output a loud corporate SaaS layout`
-    : `SELECTED CREATIVE DIRECTION:
+SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
 - Image mode: ${params.preferences.imageMode}
 - Speed mode: ${params.preferences.speedMode}
@@ -2601,8 +2564,7 @@ ${getDesignReferenceRecipe(params.preferences.designReference)}
 ${getIndustrySpecificRules(
     params.preferences.industry,
     params.preferences.imageMode
-  )}`
-}
+  )}
 
 INPUT CONTEXT:
 ${renderInputModeContext({
@@ -2931,29 +2893,6 @@ export async function POST(req: Request) {
         ? (body.landingPreferences as GenerationPreferences)
         : {};
 
-    const customCreativeSettings =
-      body?.customCreativeSettings &&
-      typeof body.customCreativeSettings === "object"
-        ? (body.customCreativeSettings as Partial<GenerationPreferences>)
-        : {};
-
-    const hasCustomCreativeSettings = Boolean(body?.hasCustomCreativeSettings);
-
-    const referenceMode: ReferenceMode =
-      body?.referenceMode === "strict" ||
-      body?.referenceMode === "guided" ||
-      body?.referenceMode === "free"
-        ? body.referenceMode
-        : inputMode === "prompt"
-        ? "free"
-        : "strict";
-
-    const screenshotDataUrl =
-      typeof body?.screenshotDataUrl === "string" &&
-      body.screenshotDataUrl.startsWith("data:image/")
-        ? body.screenshotDataUrl.slice(0, 1_500_000)
-        : attachments.find((item) => item.kind === "screenshot")?.dataUrl || null;
-
     const brandLogo = sanitizeBrandLogoAsset(body?.brandLogo);
 
     const hasPrompt = rawPrompt.length >= 8;
@@ -3035,22 +2974,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const screenshotDataUrl =
+      typeof body?.screenshotDataUrl === "string" &&
+      body.screenshotDataUrl.startsWith("data:image/")
+        ? body.screenshotDataUrl.slice(0, 1_500_000)
+        : attachments.find((item) => item.kind === "screenshot")?.dataUrl || null;
+
     const screenshotAnalysis =
-      inputMode === "url" && heroShot
+      (inputMode === "url" && heroShot?.dataUrl) ||
+      (inputMode === "screenshot" && screenshotDataUrl)
         ? await createVisionReferenceAnalysis({
             requestId,
             model: WEB_MODEL,
-            screenshotDataUrl: heroShot.dataUrl,
+            screenshotDataUrl:
+              inputMode === "url" ? heroShot!.dataUrl : screenshotDataUrl!,
             referenceSummary,
             fingerprint: layoutFingerprint,
-          })
-        : inputMode === "screenshot" && screenshotDataUrl
-        ? await createVisionReferenceAnalysis({
-            requestId,
-            model: WEB_MODEL,
-            screenshotDataUrl,
-            referenceSummary: null,
-            fingerprint: null,
           })
         : null;
 
@@ -3066,7 +3005,7 @@ export async function POST(req: Request) {
             fingerprint: layoutFingerprint,
           })
         : inputMode === "screenshot" && screenshotAnalysis
-        ? createReferenceBlueprint(screenshotAnalysis)
+        ? createScreenshotReferenceBlueprint(screenshotAnalysis)
         : null;
 
     if (inputMode === "url" && referenceUrl && !referenceBlueprint) {
@@ -3100,14 +3039,10 @@ export async function POST(req: Request) {
 
     const resolvedPreferences = resolveCreativeDirection(
       promptForDirection,
-      referenceMode === "free" ? rawPreferences : customCreativeSettings,
+      rawPreferences,
       layoutFingerprint,
       screenshotAnalysis,
-      referenceBlueprint,
-      {
-        referenceMode,
-        hasCustomCreativeSettings,
-      }
+      referenceBlueprint
     );
 
     console.log(
@@ -3128,8 +3063,6 @@ export async function POST(req: Request) {
         layoutFingerprint,
         attachmentCount: attachments.length,
         generationPreferences: resolvedPreferences,
-        referenceMode,
-        hasCustomCreativeSettings,
         hasBrandLogo: Boolean(brandLogo),
       })
     );
@@ -3148,8 +3081,6 @@ export async function POST(req: Request) {
         preferences: resolvedPreferences,
         brandLogo,
         inputMode,
-        referenceMode,
-        hasCustomCreativeSettings,
         referenceUrl,
         referenceHtml,
         referenceSummary,
