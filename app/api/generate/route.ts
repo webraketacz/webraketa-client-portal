@@ -1858,7 +1858,7 @@ function resolveCreativeDirection(
     seedChoices
   );
 
-  const isStrictScreenshotMode = inputMode === "screenshot";
+  const isStrictScreenshotMode = params.inputMode === "screenshot";
 
   const resolvedIndustry =
     isStrictScreenshotMode && screenshotArchitectureLike && looksLightReference
