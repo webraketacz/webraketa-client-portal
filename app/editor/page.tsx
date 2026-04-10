@@ -2134,14 +2134,12 @@ export default function AiEditorPage() {
           : "prompt";
 
       setGenerationPreferences((prev) =>
-        mergeStoredPreferences(
-          bootInputMode === "screenshot" || bootInputMode === "url"
-            ? createReferenceLockedPreferences(initialPrompt)
-            : initialPrompt
-            ? createDefaultPreferences(initialPrompt)
-            : prev,
-          parsedPrefs
-        )
+        bootInputMode === "screenshot" || bootInputMode === "url"
+          ? createReferenceLockedPreferences(initialPrompt)
+          : mergeStoredPreferences(
+              initialPrompt ? createDefaultPreferences(initialPrompt) : prev,
+              parsedPrefs
+            )
       );
     } catch {}
 
@@ -2178,14 +2176,15 @@ export default function AiEditorPage() {
         }
       })();
 
-      const nextPrefs = mergeStoredPreferences(
+      const nextPrefs =
         resolvedInputMode === "screenshot" || resolvedInputMode === "url"
           ? createReferenceLockedPreferences(autostartPrompt)
-          : autostartPrompt
-          ? createDefaultPreferences(autostartPrompt)
-          : generationPreferences,
-        parsedPrefsSafe
-      );
+          : mergeStoredPreferences(
+              autostartPrompt
+                ? createDefaultPreferences(autostartPrompt)
+                : generationPreferences,
+              parsedPrefsSafe
+            );
 
       if (
         resolvedInputMode === "url" ||
@@ -2448,7 +2447,8 @@ export default function AiEditorPage() {
 
       const detectedIndustry =
         (data.brief?.industry as IndustryKind | undefined) ||
-        inferIndustryKind(finalPrompt);
+        (isReferenceLockedMode ? null : inferIndustryKind(finalPrompt)) ||
+        "generic-business";
       const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
 
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
@@ -2458,7 +2458,7 @@ export default function AiEditorPage() {
       setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
 
-      if (data.generationPreferences) {
+      if (data.generationPreferences && !isReferenceLockedMode) {
         setGenerationPreferences((prev) =>
           mergeStoredPreferences(prev, {
             ...data.generationPreferences,
