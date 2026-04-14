@@ -2380,6 +2380,13 @@ SCREENSHOT MODE RULES:
 - use screenshots as the main source of composition, mood and hierarchy
 - infer structure from the screenshot
 - reproduce the visual direction in a cleaner and more production-ready way
+- preserve measured spacing, section rhythm and text scale from the screenshot
+- prefer smaller, controlled headlines over dramatic oversized display type
+- avoid adding extra top padding or oversized section gaps that are not visible in the screenshot
+- if the screenshot shows a combined hero shell where navigation lives inside the same framed card or hero wrapper, rebuild that same composition pattern
+- do not split navigation into a separate band if the screenshot keeps navigation visually integrated with the hero surface
+- if the screenshot shows a bordered or framed hero card, preserve that card logic and its inner spacing
+- if the screenshot shows CTA buttons with icons, preserve the icon-bearing button pattern and add tasteful hover motion that stays close to the reference style
 `);
 
   return lines.join("\n");
@@ -2502,6 +2509,11 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference section order family and spacing family
 - preserve the reference hero family, nav weight, CTA density and footer density
 - preserve the reference typography mood and color direction closely
+- preserve measured headline scale and do not upscale hero typography for drama
+- preserve compact spacing when the screenshot uses compact editorial rhythm
+- if the screenshot shows nav integrated inside the same hero shell or framed surface, keep nav integrated there instead of separating nav and hero
+- if the screenshot shows a bordered or frameless hero card wrapper, preserve that hero-shell logic and the same inner spacing family
+- if the screenshot shows icon-bearing CTA buttons, keep icon-bearing CTA buttons in a visually similar pattern and add subtle hover feedback
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
 
