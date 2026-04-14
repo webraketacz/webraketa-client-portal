@@ -2705,11 +2705,13 @@ ANIMATION AND WOW RULES:
 
 IMAGE RULES:
 - if a strict blueprint exists, asset queries must match the blueprint dominant subject and motifs
-- also return assetPlan with at most 4 realistic images
+- in screenshot mode, assetPlan must be an empty array
+- in screenshot mode, do not propose replacement stock imagery
+- in screenshot mode, do not invent new image slots unless strictly required by the screenshot composition
 - if an image is needed in html, use a normal <img> and add data-image-slot="<slot>"
 - slot values in html must exactly match assetPlan.slot values
 - queries must be concrete and in English
-- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
+- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory outside strict screenshot mode
 
 MANDATORY CSS IMPLEMENTATION DETAILS:
 - define a container utility in CSS
@@ -3089,7 +3091,7 @@ export async function POST(req: Request) {
       shouldAvoidSplitHero: screenshotAnalysis?.shouldAvoidSplitHero || false,
     });
 
-    const referenceBlueprint =
+    const rawReferenceBlueprint =
       inputMode === "url" && referenceUrl && referencePageShots.length > 0
         ? await createReferenceBlueprint({
             requestId,
@@ -3102,6 +3104,12 @@ export async function POST(req: Request) {
           })
         : null;
 
+    const referenceBlueprint =
+      rawReferenceBlueprint ||
+      (inputMode === "screenshot"
+        ? buildFallbackBlueprintFromScreenshotAnalysis(screenshotAnalysis)
+        : null);
+
     if (inputMode === "url" && referenceUrl && !referenceBlueprint) {
       return Response.json(
         {
@@ -3111,6 +3119,19 @@ export async function POST(req: Request) {
           inputMode,
           referenceUrl,
           shotIds: referencePageShots.map((item) => item.id),
+        },
+        { status: 422 }
+      );
+    }
+
+    if (inputMode === "screenshot" && !referenceBlueprint) {
+      return Response.json(
+        {
+          error:
+            "Screenshot reference blueprint nebyl vytvořen. Generování bylo zastaveno, aby nevznikl generický fallback.",
+          requestId,
+          inputMode,
+          hasScreenshotAnalysis: Boolean(screenshotAnalysis),
         },
         { status: 422 }
       );
