@@ -2473,6 +2473,16 @@ function renderInputModeContext(params: {
     );
   }
 
+  if (params.inputMode === "screenshot") {
+    lines.push(renderScreenshotAnalysis(params.screenshotAnalysis));
+    lines.push(renderReferenceBlueprint(params.referenceBlueprint));
+    lines.push(
+      `REFERENCE PAGE SHOT IDS: ${(params.referencePageShots || [])
+        .map((item) => item.id)
+        .join(", ") || "none"}`
+    );
+  }
+
   lines.push(`
 PRIMARY SOURCE PRIORITY:
 - if input mode is "url", the fetched summary + multi-shot screenshots + reference blueprint are the PRIMARY source of layout and visual direction
@@ -2498,9 +2508,16 @@ HTML MODE RULES:
 - do not simply echo raw HTML patterns without refinement
 
 SCREENSHOT MODE RULES:
-- use screenshots as the main source of composition, mood and hierarchy
-- infer structure from the screenshot
-- reproduce the visual direction in a cleaner and more production-ready way
+- use screenshots as the PRIMARY source of composition, hierarchy, spacing, hero shell logic and section order
+- infer structure from the screenshot, but do not reinterpret it into a different website family
+- preserve light/dark polarity, density, image-to-text balance and restraint of the reference
+- if the screenshot shows one dominant rounded hero card or framed shell, keep one dominant rounded hero card or framed shell
+- if navigation is visually integrated inside the same hero shell, keep it integrated there instead of creating a detached top header
+- if the hero uses bottom-left overlay copy, keep bottom-left overlay copy
+- if the hero uses small stat or KPI cards in the lower-right area, keep small stat or KPI cards in the lower-right area
+- if the first section after hero is a descriptive split text/image section, preserve that split family instead of replacing it with generic about/stats cards
+- do not enlarge headline scale or add extra top whitespace when the screenshot feels restrained
+- reproduce the visual direction in a cleaner and more production-ready way, not in a different style
 `);
 
   return lines.join("\n");
@@ -2617,6 +2634,26 @@ ${renderInputModeContext({
   referencePageShots: params.referencePageShots,
   attachments: params.attachments,
 })}
+
+${
+  params.inputMode === "screenshot"
+    ? `STRICT SCREENSHOT FIDELITY MODE:
+- the uploaded screenshot and reference blueprint are the PRIMARY visual truth
+- rebuild the same composition family for a new brand; do NOT reinterpret it into a safer generic business website
+- hero must follow the screenshot hero family exactly: one dominant image-led hero card / shell, not a detached text card beside empty space
+- when the reference blueprint says hero type = cover, keep a cover or image-led hero
+- when the reference blueprint says nav style = minimal, keep a light minimal nav and avoid heavy corporate header treatment
+- preserve the screenshot's measured top spacing, headline restraint and section rhythm
+- preserve integrated nav + hero shells when visible in one shared framed wrapper
+- preserve whether the first post-hero section is split text/image, gallery-led, services-led or stats-led
+- preserve CTA placement logic and do not add extra buttons above the fold
+- preserve the relative proportions of image area, copy block and floating stat cards
+- prefer structural mimicry over creative improvement
+- do NOT separate nav and hero when the screenshot keeps them unified
+- do NOT replace image-led sections with neutral placeholder cards or generic beige dashboard panels
+- do NOT create a generic about/stats/services landing page if the screenshot shows editorial or real-estate composition`
+    : ""
+}
 
 REFERENCE BLUEPRINT ENFORCEMENT:
 - when a reference blueprint exists, it overrides generic design instincts
@@ -2749,7 +2786,9 @@ FINAL QA:
 - strong hierarchy
 - strong CTA contrast
 - uploaded logo constrained by a logo shell
-- hero remains structurally stable`;
+- hero remains structurally stable
+- in screenshot mode, verify that hero family, section order family and spacing family still match the screenshot more than they match generic industry defaults
+- in screenshot mode, prefer one dominant image-led hero shell over detached header + empty canvas compositions`;
 }
 
 async function createStructuredObject<T>({
