@@ -65,6 +65,7 @@ type AttachmentInput = {
   id?: string;
   name?: string;
   kind?: "screenshot" | "file";
+  dataUrl?: string;
 };
 
 type SpeedMode = "fast" | "balanced" | "premium";
@@ -1419,7 +1420,8 @@ function resolveCreativeDirection(
   prefs: GenerationPreferences,
   fingerprint?: ReferenceLayoutFingerprint | null,
   screenshotAnalysis?: ReferenceScreenshotAnalysis | null,
-  referenceBlueprint?: ReferenceBlueprint | null
+  referenceBlueprint?: ReferenceBlueprint | null,
+  options?: { inputMode?: InputMode }
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
@@ -2816,13 +2818,14 @@ export async function POST(req: Request) {
       body.screenshotDataUrl.trim().length <= 1_500_000
         ? body.screenshotDataUrl.trim()
         : "";
+    const screenshotAttachment = attachments.find(
+      (item) => item.kind === "screenshot"
+    ) as AttachmentInput | undefined;
     const attachmentScreenshotDataUrl =
-      attachments.find(
-        (item) =>
-          item.kind === "screenshot" &&
-          typeof item.dataUrl === "string" &&
-          item.dataUrl.startsWith("data:image/")
-      )?.dataUrl || "";
+      typeof screenshotAttachment?.dataUrl === "string" &&
+      screenshotAttachment.dataUrl.startsWith("data:image/")
+        ? screenshotAttachment.dataUrl
+        : "";
     const screenshotDataUrl = bodyScreenshotDataUrl || attachmentScreenshotDataUrl;
 
     logDebug(requestId, "screenshot-payload", {
