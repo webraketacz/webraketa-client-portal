@@ -361,21 +361,6 @@ function logStep(
   );
 }
 
-function logDebug(
-  requestId: string,
-  label: string,
-  data: Record<string, unknown>
-) {
-  console.log(
-    JSON.stringify({
-      scope: "api-generate-debug",
-      requestId,
-      label,
-      ...data,
-    })
-  );
-}
-
 function normalizeText(value: string) {
   return value
     .toLowerCase()
@@ -450,8 +435,7 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => {
       const candidate = item as AttachmentInput;
-      const rawDataUrl =
-        typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
+      const rawDataUrl = typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
       const dataUrl =
         rawDataUrl.startsWith("data:image/") && rawDataUrl.length <= 1_500_000
           ? rawDataUrl
@@ -1432,7 +1416,10 @@ function resolveCreativeDirection(
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
-  const isStrictReferenceMode = options?.inputMode === "screenshot";
+  const isReferenceLockedMode =
+    options?.inputMode === "screenshot" ||
+    options?.inputMode === "url" ||
+    options?.inputMode === "html";
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1564,64 +1551,80 @@ function resolveCreativeDirection(
     seedChoices
   );
 
+  const referenceLockedImageMode =
+    referenceBlueprint?.hero?.dominantSubject === "architecture" ||
+    screenshotAnalysis?.dominantVisualSubject === "architecture" ||
+    fingerprint?.visualDominance === "architecture" ||
+    referenceBlueprint?.hero?.dominantSubject === "food" ||
+    screenshotAnalysis?.dominantVisualSubject === "food" ||
+    referenceBlueprint?.hero?.dominantSubject === "product" ||
+    screenshotAnalysis?.dominantVisualSubject === "product"
+      ? "photo-heavy"
+      : referenceBlueprint?.hero?.dominantSubject === "ui" ||
+        screenshotAnalysis?.dominantVisualSubject === "ui" ||
+        fingerprint?.visualDominance === "software-ui"
+      ? "ui-heavy"
+      : "mixed";
+
   return {
-    industry: isStrictReferenceMode ? ("generic-business" as IndustryKind) : industry,
-    imageMode: isStrictReferenceMode
-      ? screenshotAnalysis?.dominantVisualSubject === "architecture" ||
-        screenshotAnalysis?.dominantVisualSubject === "food" ||
-        screenshotAnalysis?.dominantVisualSubject === "product"
-        ? "photo-heavy"
-        : screenshotAnalysis?.dominantVisualSubject === "ui"
-        ? "ui-heavy"
-        : "mixed"
+    industry,
+    imageMode: isReferenceLockedMode
+      ? referenceLockedImageMode
       : industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
-    layoutPreference: isStrictReferenceMode
-      ? "auto"
-      : prefs.layoutPreference && prefs.layoutPreference !== "auto"
-      ? prefs.layoutPreference
-      : blueprintHeroType === "editorial"
-      ? "editorial"
-      : blueprintHeroType === "cover"
-      ? "story"
-      : blueprintHeroType === "split" && !hardAvoidSplit
-      ? "split"
-      : industryDefaults.layoutPreference,
-    visualStyle: isStrictReferenceMode
-      ? "auto"
-      : prefs.visualStyle && prefs.visualStyle !== "auto"
-      ? prefs.visualStyle
-      : referenceBlueprint?.layout?.navStyle === "editorial"
-      ? "editorial"
-      : referenceBlueprint?.layout?.density === "dense"
-      ? "premium"
-      : industryDefaults.visualStyle,
+    layoutPreference:
+      prefs.layoutPreference && prefs.layoutPreference !== "auto"
+        ? prefs.layoutPreference
+        : blueprintHeroType === "editorial"
+        ? "editorial"
+        : blueprintHeroType === "cover"
+        ? "story"
+        : blueprintHeroType === "split" && !hardAvoidSplit
+        ? "split"
+        : blueprintHeroType === "grid"
+        ? "grid"
+        : isReferenceLockedMode
+        ? "auto"
+        : industryDefaults.layoutPreference,
+    visualStyle:
+      prefs.visualStyle && prefs.visualStyle !== "auto"
+        ? prefs.visualStyle
+        : referenceBlueprint?.layout?.navStyle === "editorial"
+        ? "editorial"
+        : referenceBlueprint?.layout?.density === "dense"
+        ? "premium"
+        : isReferenceLockedMode
+        ? "auto"
+        : industryDefaults.visualStyle,
     animationLevel: prefs.animationLevel || fallbackAnimation,
-    fontMood: isStrictReferenceMode
-      ? "auto"
-      : prefs.fontMood && prefs.fontMood !== "auto"
-      ? prefs.fontMood
-      : /serif|editorial/i.test(
-          referenceBlueprint?.brandAbstraction?.typographyMood || ""
-        )
-      ? "editorial"
-      : /tech|interface|product/i.test(
-          referenceBlueprint?.brandAbstraction?.typographyMood || ""
-        )
-      ? "tech"
-      : industryDefaults.fontMood,
+    fontMood:
+      prefs.fontMood && prefs.fontMood !== "auto"
+        ? prefs.fontMood
+        : /serif|editorial/i.test(
+            referenceBlueprint?.brandAbstraction?.typographyMood || ""
+          )
+        ? "editorial"
+        : /tech|interface|product/i.test(
+            referenceBlueprint?.brandAbstraction?.typographyMood || ""
+          )
+        ? "tech"
+        : isReferenceLockedMode
+        ? "auto"
+        : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
         : industryDefaults.iconStyle,
-    designReference: isStrictReferenceMode
-      ? "auto"
-      : prefs.designReference && prefs.designReference !== "auto"
-      ? prefs.designReference
-      : industryDefaults.designReference,
+    designReference:
+      prefs.designReference && prefs.designReference !== "auto"
+        ? prefs.designReference
+        : isReferenceLockedMode
+        ? "auto"
+        : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
     promptEnhancerMode:
-      prefs.promptEnhancerMode || (isStrictReferenceMode ? "balanced" : "premium-brand"),
+      prefs.promptEnhancerMode ||
+      (isReferenceLockedMode ? "balanced" : "premium-brand"),
     preferredPrimaryColor:
       prefs.preferredPrimaryColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[0] ||
@@ -1632,7 +1635,7 @@ function resolveCreativeDirection(
       "",
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
     clientAnswers: prefs.clientAnswers || {},
-    layoutSeed: isStrictReferenceMode ? "reference-blueprint" : layoutSeed,
+    layoutSeed,
   };
 }
 
@@ -1999,7 +2002,47 @@ function inferSectionOrderFromBlueprint(
   summary: ReferenceSiteSummary | null,
   analysis: ReferenceScreenshotAnalysis | null
 ) {
-  const sequence = summary ? detectSectionSequence(summary) : ["hero", "features", "cta", "footer"];
+  if (analysis) {
+    if (
+      analysis.aboveTheFoldType === "cover-hero" &&
+      analysis.heroContentAlignment === "bottom-left" &&
+      analysis.dominantVisualSubject === "architecture"
+    ) {
+      if (analysis.firstSectionAfterHero === "services") {
+        return [
+          "hero",
+          "intro-split",
+          "image-feature-dark",
+          "card-grid-3",
+          "centered-cta",
+          "media-text-split",
+          "contact-split",
+          "footer",
+        ];
+      }
+
+      if (analysis.firstSectionAfterHero === "gallery") {
+        return [
+          "hero",
+          "gallery-intro",
+          "image-feature-dark",
+          "card-grid-3",
+          "centered-cta",
+          "media-text-split",
+          "contact-split",
+          "footer",
+        ];
+      }
+    }
+
+    if (analysis.firstSectionAfterHero === "stats-band") {
+      return ["hero", "stats", "content", "cta", "footer"];
+    }
+  }
+
+  const sequence = summary
+    ? detectSectionSequence(summary)
+    : ["hero", "features", "cta", "footer"];
 
   if (analysis?.firstSectionAfterHero === "stats-band" && !sequence.includes("stats")) {
     sequence.splice(1, 0, "stats");
@@ -2010,92 +2053,6 @@ function inferSectionOrderFromBlueprint(
   }
 
   return uniqStrings(sequence, 10);
-}
-
-
-function buildFallbackBlueprintFromScreenshotAnalysis(
-  analysis: ReferenceScreenshotAnalysis | null
-): ReferenceBlueprint | null {
-  if (!analysis) return null;
-
-  const sectionOrder = inferSectionOrderFromBlueprint(null, analysis);
-
-  return {
-    screenshotCoverage: {
-      hasHero: true,
-      hasUpper: false,
-      hasMid: false,
-      hasLower: false,
-      hasFooter: false,
-    },
-    brandAbstraction: {
-      tone: analysis.compositionSummary || "reference-locked",
-      typographyMood:
-        analysis.dominantVisualSubject === "architecture" ? "editorial restrained" : "reference-locked",
-      colorPalette: analysis.colorDirection ? [analysis.colorDirection] : [],
-      backgroundStyle: analysis.shouldKeepFullWidthHero ? "reference-derived" : "neutral",
-      accentStyle: "reference-derived",
-    },
-    layout: {
-      heroType:
-        analysis.aboveTheFoldType === "cover-hero"
-          ? "cover"
-          : analysis.aboveTheFoldType === "editorial-cover"
-          ? "editorial"
-          : analysis.aboveTheFoldType === "split-hero"
-          ? "split"
-          : analysis.aboveTheFoldType === "grid-hero"
-          ? "grid"
-          : "unknown",
-      navStyle:
-        analysis.navVisualWeight === "minimal"
-          ? "minimal"
-          : analysis.navVisualWeight === "heavy"
-          ? "corporate"
-          : "unknown",
-      sectionOrder,
-      density: "balanced",
-      containerStyle: "reference-derived",
-      spacingRhythm: "reference-derived",
-    },
-    hero: {
-      alignment: analysis.heroContentAlignment || "unknown",
-      hasStatsBandAfterHero: analysis.firstSectionAfterHero === "stats-band",
-      dominantSubject: analysis.dominantVisualSubject || "unknown",
-      motifs: analysis.mustKeepMotifs || [],
-      forbiddenDrift: analysis.forbiddenMistakes || [],
-    },
-    fidelityLocks: {
-      mustKeep: analysis.mustKeepMotifs || [],
-      mustAvoid: analysis.forbiddenMistakes || [],
-    },
-    sectionBlueprints: sectionOrder.map((id) => ({
-      id,
-      kind:
-        id === "hero"
-          ? "hero"
-          : id === "stats"
-          ? "stats"
-          : id === "testimonials"
-          ? "testimonials"
-          : id === "faq"
-          ? "faq"
-          : id === "footer"
-          ? "footer"
-          : id === "cta"
-          ? "cta"
-          : "content",
-      purpose: id,
-      visualPattern: "reference-derived",
-      contentDensity: "balanced",
-    })),
-    renderingInstructions: [
-      "Use screenshot as the primary source of truth.",
-      "Do not introduce generic luxury or business defaults.",
-      "Keep the measured spacing and hierarchy restrained.",
-      "Preserve the hero family and navigation relationship from the screenshot.",
-    ],
-  };
 }
 
 async function createReferenceBlueprint(params: {
@@ -2246,6 +2203,9 @@ Return a strict blueprint for rebuilding:
 - preserve nav weight
 - preserve footer density
 - do not mention the original brand
+- sectionOrder must be specific, not generic; prefer concrete tokens like intro-split, image-feature-dark, card-grid-3, centered-cta, media-text-split, contact-split when the screenshots imply them
+- sectionBlueprints must describe the actual visual pattern of each section, not vague business labels
+- renderingInstructions should include spacing, typography, image hierarchy and hero/nav relationship guidance
 - this blueprint will be used to generate a fresh branded site with similar layout DNA
         `,
       },
@@ -2389,6 +2349,14 @@ REFERENCE BLUEPRINT:
 - unavailable`;
   }
 
+  const sectionBlueprintLines = (blueprint.sectionBlueprints || [])
+    .map(
+      (item) =>
+        `  - ${item.id}: ${item.kind} | pattern=${item.visualPattern} | density=${item.contentDensity} | purpose=${item.purpose}`
+    )
+    .join("
+");
+
   return `
 REFERENCE BLUEPRINT:
 - Typography mood: ${blueprint.brandAbstraction.typographyMood}
@@ -2407,6 +2375,9 @@ REFERENCE BLUEPRINT:
 - Hero motifs: ${blueprint.hero.motifs.join(" | ") || "n/a"}
 - Fidelity must keep: ${blueprint.fidelityLocks.mustKeep.join(" | ") || "n/a"}
 - Fidelity must avoid: ${blueprint.fidelityLocks.mustAvoid.join(" | ") || "n/a"}
+- Section blueprints:
+${sectionBlueprintLines || "  - n/a"}
+- Rendering instructions: ${(blueprint.renderingInstructions || []).join(" | ") || "n/a"}
 
 STRICT URL MODE RULES:
 - preserve the reference layout DNA as closely as possible
@@ -2419,6 +2390,44 @@ STRICT URL MODE RULES:
 `;
 }
 
+
+function renderStrictScreenshotRecipe(
+  analysis?: ReferenceScreenshotAnalysis | null,
+  blueprint?: ReferenceBlueprint | null
+) {
+  if (!analysis || !blueprint) return "";
+
+  const order = blueprint.layout.sectionOrder || [];
+  const isArchitectureCover =
+    analysis.aboveTheFoldType === "cover-hero" &&
+    analysis.heroContentAlignment === "bottom-left" &&
+    analysis.dominantVisualSubject === "architecture";
+
+  if (isArchitectureCover) {
+    return `
+STRICT SCREENSHOT SECTION RECIPE:
+- hero must be a single dominant image-led card or framed cover, not a text-first slab
+- navigation must visually live inside the hero wrapper if the screenshot implies one shared shell
+- hero headline must stay bottom-left over the image, not centered and not detached from the image
+- hero must use a dark-to-transparent legibility overlay where needed
+- keep one main CTA near the hero copy, with a similar icon-bearing treatment if visible in the reference
+- keep floating stat or ROI cards anchored on the right side of the hero when the reference implies them
+- after hero, follow this section order as closely as possible: ${order.join(" -> ") || "hero -> intro-split -> image-feature-dark -> card-grid-3 -> centered-cta -> media-text-split -> contact-split -> footer"}
+- intro-split means descriptive text block on the left and strong image card on the right
+- image-feature-dark means a large immersive darker image-led section, not a plain white card row
+- card-grid-3 means three editorial cards or unit-type cards with image-first hierarchy
+- centered-cta means a restrained center-aligned CTA block with generous whitespace
+- media-text-split means media left and explanatory text right
+- contact-split means contact information on the left and form on the right
+- footer must stay minimal and light, not oversized or app-like`;
+  }
+
+  return `
+STRICT SCREENSHOT SECTION RECIPE:
+- honor this blueprint section order closely: ${order.join(" -> ") || "n/a"}
+- do not substitute generic feature cards when the screenshot implies image-led editorial sections
+- preserve the hero family, the first post-hero section family and the footer family`;
+}
 
 function renderInputModeContext(params: {
   inputMode: InputMode;
@@ -2473,16 +2482,6 @@ function renderInputModeContext(params: {
     );
   }
 
-  if (params.inputMode === "screenshot") {
-    lines.push(renderScreenshotAnalysis(params.screenshotAnalysis));
-    lines.push(renderReferenceBlueprint(params.referenceBlueprint));
-    lines.push(
-      `REFERENCE PAGE SHOT IDS: ${(params.referencePageShots || [])
-        .map((item) => item.id)
-        .join(", ") || "none"}`
-    );
-  }
-
   lines.push(`
 PRIMARY SOURCE PRIORITY:
 - if input mode is "url", the fetched summary + multi-shot screenshots + reference blueprint are the PRIMARY source of layout and visual direction
@@ -2508,16 +2507,14 @@ HTML MODE RULES:
 - do not simply echo raw HTML patterns without refinement
 
 SCREENSHOT MODE RULES:
-- use screenshots as the PRIMARY source of composition, hierarchy, spacing, hero shell logic and section order
-- infer structure from the screenshot, but do not reinterpret it into a different website family
-- preserve light/dark polarity, density, image-to-text balance and restraint of the reference
-- if the screenshot shows one dominant rounded hero card or framed shell, keep one dominant rounded hero card or framed shell
-- if navigation is visually integrated inside the same hero shell, keep it integrated there instead of creating a detached top header
-- if the hero uses bottom-left overlay copy, keep bottom-left overlay copy
-- if the hero uses small stat or KPI cards in the lower-right area, keep small stat or KPI cards in the lower-right area
-- if the first section after hero is a descriptive split text/image section, preserve that split family instead of replacing it with generic about/stats cards
-- do not enlarge headline scale or add extra top whitespace when the screenshot feels restrained
-- reproduce the visual direction in a cleaner and more production-ready way, not in a different style
+- use screenshots as the PRIMARY source of composition, layout, spacing, hierarchy and visual rhythm
+- reconstruct the same composition family instead of generating a safer business website
+- preserve the screenshot's light/dark polarity, density, image-to-text balance and section order family
+- if the screenshot uses a framed hero shell or a unified hero card, preserve that same shell logic
+- if navigation is visually integrated inside the same hero shell, keep it integrated there instead of forcing a detached nav bar
+- preserve restrained typography and measured spacing; do not upscale headlines or add extra top whitespace
+- preserve CTA patterns including icon-bearing buttons when visible
+- the screenshot is the primary truth; the user prompt is only a secondary content layer unless it asks for a very small change
 `);
 
   return lines.join("\n");
@@ -2578,7 +2575,8 @@ OUTPUT RULES:
 - every major page block must use a semantic <section> tag
 - every major section must have data-section-id and data-section-type
 - data-section-id values must be stable, unique and human-readable
-- navigation must be its own section with data-section-id="navigation"
+- navigation should normally use data-section-id="navigation"
+- EXCEPTION: if screenshot mode clearly shows navigation integrated inside the same framed hero/card wrapper, keep it inside that hero wrapper with a nested <nav data-nav-role="integrated"> instead of forcing a detached standalone navigation section
 - footer must be its own section with data-section-id="footer"
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
@@ -2594,7 +2592,26 @@ ${
     : `- if no real logo is provided, create an elegant text or monogram logo treatment`
 }
 
-SELECTED CREATIVE DIRECTION:
+${
+  params.inputMode === "screenshot" || params.inputMode === "url" || params.inputMode === "html"
+    ? `REFERENCE-LOCKED EXECUTION CONTEXT:
+- input mode: ${params.inputMode}
+- detected industry is only a weak fallback hint: ${params.preferences.industry}
+- image mode: ${params.preferences.imageMode}
+- speed mode: ${params.preferences.speedMode}
+- layout seed: ${params.preferences.layoutSeed}
+- contact items to show: ${
+        params.preferences.contactItems.length
+          ? params.preferences.contactItems.join(", ")
+          : "phone, email, office, CTA form"
+      }
+- DO NOT let industry defaults, designReference presets or generic premium instincts replace the reference
+- DO NOT drift into a dark SaaS / generic agency / generic business site unless the reference itself clearly uses that family
+- when the reference is light, editorial, airy or real-estate-like, keep it light, editorial and airy
+- when the reference uses large photography and restrained text, keep large photography and restrained text
+- when the reference uses integrated navigation inside the hero shell, keep that integration
+- the reference controls composition first; prompt only adapts content, branding and factual business details`
+    : `SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
 - Image mode: ${params.preferences.imageMode}
 - Speed mode: ${params.preferences.speedMode}
@@ -2620,7 +2637,8 @@ ${getDesignReferenceRecipe(params.preferences.designReference)}
 ${getIndustrySpecificRules(
     params.preferences.industry,
     params.preferences.imageMode
-  )}
+  )}`
+}
 
 INPUT CONTEXT:
 ${renderInputModeContext({
@@ -2634,24 +2652,32 @@ ${renderInputModeContext({
   referencePageShots: params.referencePageShots,
   attachments: params.attachments,
 })}
+${params.inputMode === "screenshot" ? renderStrictScreenshotRecipe(params.screenshotAnalysis, params.referenceBlueprint) : ""}
 
 ${
   params.inputMode === "screenshot"
     ? `STRICT SCREENSHOT FIDELITY MODE:
-- the uploaded screenshot and reference blueprint are the PRIMARY visual truth
+- the uploaded screenshot is the PRIMARY visual truth
 - rebuild the same composition family for a new brand; do NOT reinterpret it into a safer generic business website
-- hero must follow the screenshot hero family exactly: one dominant image-led hero card / shell, not a detached text card beside empty space
-- when the reference blueprint says hero type = cover, keep a cover or image-led hero
-- when the reference blueprint says nav style = minimal, keep a light minimal nav and avoid heavy corporate header treatment
-- preserve the screenshot's measured top spacing, headline restraint and section rhythm
+- preserve the screenshot's measured top spacing, hero scale and section rhythm
 - preserve integrated nav + hero shells when visible in one shared framed wrapper
-- preserve whether the first post-hero section is split text/image, gallery-led, services-led or stats-led
-- preserve CTA placement logic and do not add extra buttons above the fold
-- preserve the relative proportions of image area, copy block and floating stat cards
+- preserve whether the hero is one framed card, a rounded bordered shell, or a frameless full-bleed cover
+- preserve the relative proportions of nav, headline, body copy, CTA, image blocks and floating stat cards
+- preserve restrained headline scale when the reference is calm editorial; do not enlarge typography for drama
+- preserve compact spacing if the screenshot is compact; do not add extra whitespace above the fold
+- when the screenshot CTA contains an icon, keep a visually similar icon-bearing CTA and add subtle hover feedback
 - prefer structural mimicry over creative improvement
-- do NOT separate nav and hero when the screenshot keeps them unified
-- do NOT replace image-led sections with neutral placeholder cards or generic beige dashboard panels
-- do NOT create a generic about/stats/services landing page if the screenshot shows editorial or real-estate composition`
+- do not separate nav and hero when the screenshot keeps them unified
+- if the screenshot is bright, warm, beige, editorial or real-estate-like, keep that exact polarity and atmosphere
+- do not invent dark gradients, SaaS cards, metrics dashboards or corporate feature grids unless the screenshot clearly shows them
+- do not replace image-led editorial sections with generic text cards or white feature boxes
+- do not invent your own section order if the screenshot implies a clear one
+- the result should feel like a faithful reconstruction of spacing, type hierarchy, card rhythm and section architecture`
+    : params.inputMode === "url"
+    ? `STRICT URL REFERENCE MODE:
+- the fetched reference summary, page shots and blueprint are the PRIMARY source of layout DNA
+- preserve section order family, hero family, nav density, spacing rhythm and footer density
+- do not collapse editorial or product-heavy references into a generic agency landing page`
     : ""
 }
 
@@ -2660,8 +2686,12 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference section order family and spacing family
 - preserve the reference hero family, nav weight, CTA density and footer density
 - preserve the reference typography mood and color direction closely
+- preserve the reference section archetypes, not only the business category
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
+- in screenshot mode, screenshot analysis and blueprint instructions override selected creative direction, designReference recipes and industry-specific rules
+- if the blueprint implies image-led editorial sections after hero, keep them image-led and editorial
+- if the blueprint implies a restrained luxurious bright layout, do not replace it with a safer neutral agency layout
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must use stable wrappers and predictable layout primitives
@@ -2684,7 +2714,9 @@ LOGO FIT RULES:
 
 SPACING AND COMPOSITION RULES:
 - spacing must feel deliberate and premium
-- desktop section spacing should usually land between 88px and 144px
+- in screenshot mode, match the reference spacing rhythm before improving anything
+- desktop section spacing should usually land between 88px and 144px, but if the screenshot is tighter use tighter spacing
+- do not add decorative whitespace above hero or between first sections if the reference is compact
 - tablet spacing should stay generous
 - mobile spacing must still breathe
 - every hero, overlay card, floating panel and text block must have explicit safe inner padding
@@ -2693,6 +2725,8 @@ SPACING AND COMPOSITION RULES:
   - desktop: clamp(24px, 4vw, 56px)
   - tablet: clamp(20px, 5vw, 40px)
   - mobile: clamp(16px, 5vw, 24px)
+- keep consistent vertical rhythm inside cards and between heading, body and CTA
+- do not let sections drift into unrelated max-widths; keep a coherent container system
 
 OPTICAL ALIGNMENT RULES:
 - text may not be only mathematically centered; it must also feel optically centered
@@ -2707,9 +2741,13 @@ HERO STABILITY RULES:
 
 TYPOGRAPHY RULES:
 - enforce clear H1 / H2 / H3 hierarchy
+- in screenshot mode, typography must visually echo the reference family as closely as possible
+- do not invent unrelated font personalities if the screenshot clearly implies a serif editorial family or a restrained modern sans family
+- preserve similar heading contrast, line-height and tracking to the reference
 - headings must not always use extreme weight
 - default body copy should usually live around weight 400 to 500
 - display headlines may be strong, but keep them refined
+- body text should stay readable and understated; avoid oversized body copy
 
 BUTTON AND CONTRAST RULES:
 - primary CTA must be clearly visible
@@ -2742,13 +2780,13 @@ ANIMATION AND WOW RULES:
 
 IMAGE RULES:
 - if a strict blueprint exists, asset queries must match the blueprint dominant subject and motifs
-- in screenshot mode, assetPlan must be an empty array
-- in screenshot mode, do not propose replacement stock imagery
-- in screenshot mode, do not invent new image slots unless strictly required by the screenshot composition
+- screenshot mode should prefer large image-led sections over decorative placeholder blocks
+- if the screenshot is architecture/interior-led, use architecture/interior imagery with similar calm premium mood
+- also return assetPlan with at most 4 realistic images
 - if an image is needed in html, use a normal <img> and add data-image-slot="<slot>"
 - slot values in html must exactly match assetPlan.slot values
 - queries must be concrete and in English
-- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory outside strict screenshot mode
+- if industry is food-product, ecommerce-product, restaurant, catering, car-dealer or resort, imagery is mandatory
 
 MANDATORY CSS IMPLEMENTATION DETAILS:
 - define a container utility in CSS
@@ -2787,8 +2825,9 @@ FINAL QA:
 - strong CTA contrast
 - uploaded logo constrained by a logo shell
 - hero remains structurally stable
-- in screenshot mode, verify that hero family, section order family and spacing family still match the screenshot more than they match generic industry defaults
-- in screenshot mode, prefer one dominant image-led hero shell over detached header + empty canvas compositions`;
+- if input mode is screenshot, the final result must resemble the screenshot more than it resembles any generic industry template
+- if input mode is screenshot, check section order, hero composition, spacing rhythm, typography family and image hierarchy against the reference before finalizing
+- if input mode is screenshot, reject generic feature-card drift and placeholder visual blocks`;
 }
 
 async function createStructuredObject<T>({
@@ -2966,24 +3005,11 @@ export async function POST(req: Request) {
       body.screenshotDataUrl.trim().length <= 1_500_000
         ? body.screenshotDataUrl.trim()
         : "";
-    const screenshotAttachment = attachments.find(
-      (item) => item.kind === "screenshot"
-    ) as AttachmentInput | undefined;
-    const attachmentScreenshotDataUrl =
-      typeof screenshotAttachment?.dataUrl === "string" &&
-      screenshotAttachment.dataUrl.startsWith("data:image/")
-        ? screenshotAttachment.dataUrl
-        : "";
-    const screenshotDataUrl = bodyScreenshotDataUrl || attachmentScreenshotDataUrl;
-
-    logDebug(requestId, "screenshot-payload", {
-      inputMode,
-      bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
-      attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
-      effectiveScreenshotPresent: Boolean(screenshotDataUrl),
-      bodyScreenshotLength: bodyScreenshotDataUrl.length,
-      attachmentScreenshotLength: attachmentScreenshotDataUrl.length,
-    });
+    const screenshotDataUrl =
+      bodyScreenshotDataUrl ||
+      attachments.find((item) => item.kind === "screenshot" && typeof item.dataUrl === "string")
+        ?.dataUrl ||
+      "";
 
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
@@ -3004,7 +3030,11 @@ export async function POST(req: Request) {
     const hasHtmlReference =
       inputMode === "html" && referenceHtml.trim().length > 0;
     const hasScreenshotReference =
-      inputMode === "screenshot" && Boolean(screenshotDataUrl);
+      inputMode === "screenshot" &&
+      Boolean(
+        screenshotDataUrl ||
+          attachments.some((item) => item.kind === "screenshot")
+      );
 
     if (
       !hasPrompt &&
@@ -3020,29 +3050,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (inputMode === "screenshot" && !screenshotDataUrl) {
-      logDebug(requestId, "screenshot-missing", {
-        inputMode,
-        bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
-        attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
-      });
-
-      return Response.json(
-        {
-          error:
-            "Screenshot mode requires a valid screenshotDataUrl or screenshot attachment.",
-          requestId,
-          debug: {
-            inputMode,
-            bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
-            attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
-            effectiveScreenshotPresent: false,
-          },
-        },
-        { status: 422 }
-      );
-    }
-
     const effectivePrompt =
       rawPrompt ||
       (inputMode === "url" && referenceUrl
@@ -3055,13 +3062,30 @@ export async function POST(req: Request) {
         : inputMode === "html" && referenceHtml.trim()
         ? "Vytvoř nový web podle dodaného HTML souboru."
         : inputMode === "screenshot"
-        ? "Vytvoř nový web podle dodaného screenshotu."
+        ? [
+            "Vytvoř nový web podle dodaného screenshotu.",
+            "Screenshot je hlavní zdroj layoutu, kompozice, spacingu, hierarchie, polarity světlé/tmavé a CTA vzorů.",
+            "Nevytvářej generický web podle oboru. Primárně se řiď screenshotem a prompt ber jen jako sekundární vrstvu pro nový brand a texty.",
+          ].join(" ")
         : "");
 
     const referenceSummary =
       inputMode === "url" && referenceUrl
         ? await fetchReferenceSiteSummary(referenceUrl, requestId)
         : null;
+
+    const uploadedScreenshotShots: ReferencePageShot[] =
+      inputMode === "screenshot" && screenshotDataUrl
+        ? [
+            {
+              id: "hero",
+              dataUrl: screenshotDataUrl,
+              scrollY: 0,
+              width: 0,
+              height: 0,
+            },
+          ]
+        : [];
 
     const layoutFingerprint =
       inputMode === "url"
@@ -3080,7 +3104,7 @@ export async function POST(req: Request) {
     const referencePageShots =
       inputMode === "url" && referenceUrl
         ? await captureReferencePageShots(referenceUrl, requestId)
-        : [];
+        : uploadedScreenshotShots;
 
     const heroShot = pickRepresentativeShot(referencePageShots, "hero");
     const midShot = pickRepresentativeShot(referencePageShots, "mid");
@@ -3101,7 +3125,7 @@ export async function POST(req: Request) {
     }
 
     const screenshotAnalysis =
-      inputMode === "url" && heroShot
+      heroShot && (inputMode === "url" || inputMode === "screenshot")
         ? await createVisionReferenceAnalysis({
             requestId,
             model: WEB_MODEL,
@@ -3109,45 +3133,25 @@ export async function POST(req: Request) {
             referenceSummary,
             fingerprint: layoutFingerprint,
           })
-        : inputMode === "screenshot" && screenshotDataUrl
-        ? await createVisionReferenceAnalysis({
-            requestId,
-            model: WEB_MODEL,
-            screenshotDataUrl,
-            referenceSummary,
-            fingerprint: layoutFingerprint,
-          })
         : null;
 
-    logDebug(requestId, "screenshot-analysis", {
-      inputMode,
-      created: Boolean(screenshotAnalysis),
-      aboveTheFoldType: screenshotAnalysis?.aboveTheFoldType || null,
-      heroContentAlignment: screenshotAnalysis?.heroContentAlignment || null,
-      dominantVisualSubject: screenshotAnalysis?.dominantVisualSubject || null,
-      firstSectionAfterHero: screenshotAnalysis?.firstSectionAfterHero || null,
-      shouldKeepFullWidthHero: screenshotAnalysis?.shouldKeepFullWidthHero || false,
-      shouldAvoidSplitHero: screenshotAnalysis?.shouldAvoidSplitHero || false,
-    });
-
-    const rawReferenceBlueprint =
-      inputMode === "url" && referenceUrl && referencePageShots.length > 0
+    const referenceBlueprint =
+      ((inputMode === "url" && referenceUrl) ||
+        (inputMode === "screenshot" && screenshotDataUrl)) &&
+      referencePageShots.length > 0
         ? await createReferenceBlueprint({
             requestId,
             model: WEB_MODEL,
-            referenceUrl,
+            referenceUrl:
+              inputMode === "url" && referenceUrl
+                ? referenceUrl
+                : "uploaded-screenshot-reference",
             referenceSummary,
             pageShots: referencePageShots,
             heroAnalysis: screenshotAnalysis,
             fingerprint: layoutFingerprint,
           })
         : null;
-
-    const referenceBlueprint =
-      rawReferenceBlueprint ||
-      (inputMode === "screenshot"
-        ? buildFallbackBlueprintFromScreenshotAnalysis(screenshotAnalysis)
-        : null);
 
     if (inputMode === "url" && referenceUrl && !referenceBlueprint) {
       return Response.json(
@@ -3162,30 +3166,6 @@ export async function POST(req: Request) {
         { status: 422 }
       );
     }
-
-    if (inputMode === "screenshot" && !referenceBlueprint) {
-      return Response.json(
-        {
-          error:
-            "Screenshot reference blueprint nebyl vytvořen. Generování bylo zastaveno, aby nevznikl generický fallback.",
-          requestId,
-          inputMode,
-          hasScreenshotAnalysis: Boolean(screenshotAnalysis),
-        },
-        { status: 422 }
-      );
-    }
-
-    logDebug(requestId, "reference-blueprint", {
-      inputMode,
-      created: Boolean(referenceBlueprint),
-      heroType: referenceBlueprint?.layout?.heroType || null,
-      navStyle: referenceBlueprint?.layout?.navStyle || null,
-      density: referenceBlueprint?.layout?.density || null,
-      sectionOrder: referenceBlueprint?.layout?.sectionOrder || [],
-      mustKeep: referenceBlueprint?.fidelityLocks?.mustKeep || [],
-      mustAvoid: referenceBlueprint?.fidelityLocks?.mustAvoid || [],
-    });
 
     const promptForDirection =
       effectivePrompt +
@@ -3210,26 +3190,6 @@ export async function POST(req: Request) {
       referenceBlueprint,
       { inputMode }
     );
-
-    const usedStrictScreenshotPrompt = inputMode === "screenshot";
-
-    logDebug(requestId, "prompt-branch", {
-      inputMode,
-      usedStrictScreenshotPrompt,
-      bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
-      attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
-      effectiveScreenshotPresent: Boolean(screenshotDataUrl),
-      hasReferenceSummary: Boolean(referenceSummary),
-      hasScreenshotAnalysis: Boolean(screenshotAnalysis),
-      hasReferenceBlueprint: Boolean(referenceBlueprint),
-      resolvedIndustry: resolvedPreferences.industry,
-      resolvedLayoutPreference: resolvedPreferences.layoutPreference,
-      resolvedVisualStyle: resolvedPreferences.visualStyle,
-      resolvedDesignReference: resolvedPreferences.designReference,
-      resolvedLayoutSeed: resolvedPreferences.layoutSeed,
-      promptForDirectionLength: promptForDirection.length,
-      effectivePromptLength: effectivePrompt.length,
-    });
 
     console.log(
       JSON.stringify({
@@ -3290,8 +3250,6 @@ export async function POST(req: Request) {
 
     const sanitizeStartedAt = nowMs();
     const safeRendered = sanitizeBundle(renderedBundle);
-    const finalAssetPlan =
-      inputMode === "screenshot" ? [] : safeRendered.assetPlan;
 
     const htmlWithBrandLogo = injectBrandLogoMarkup(
       safeRendered.html,
@@ -3299,7 +3257,7 @@ export async function POST(req: Request) {
     );
 
     logStep(requestId, "sanitize-bundle", sanitizeStartedAt, {
-      assetPlanCount: finalAssetPlan.length,
+      assetPlanCount: safeRendered.assetPlan.length,
       hasBrandLogo: Boolean(brandLogo),
     });
 
@@ -3312,7 +3270,7 @@ export async function POST(req: Request) {
       html: htmlWithBrandLogo,
       css: safeRendered.css,
       js: safeRendered.js,
-      assetPlan: finalAssetPlan,
+      assetPlan: safeRendered.assetPlan,
       brief: {
         industry: resolvedPreferences.industry,
         audience: "",
@@ -3331,26 +3289,6 @@ export async function POST(req: Request) {
       screenshotAnalysis,
       referenceBlueprint,
       referenceShotIds: referencePageShots.map((item) => item.id),
-      debug: {
-        inputMode,
-        screenshotSource: bodyScreenshotDataUrl
-          ? "body"
-          : attachmentScreenshotDataUrl
-          ? "attachment"
-          : "none",
-        bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
-        attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
-        effectiveScreenshotPresent: Boolean(screenshotDataUrl),
-        screenshotAnalysisCreated: Boolean(screenshotAnalysis),
-        referenceBlueprintCreated: Boolean(referenceBlueprint),
-        resolvedIndustry: resolvedPreferences.industry,
-        resolvedLayoutPreference: resolvedPreferences.layoutPreference,
-        resolvedVisualStyle: resolvedPreferences.visualStyle,
-        resolvedDesignReference: resolvedPreferences.designReference,
-        resolvedLayoutSeed: resolvedPreferences.layoutSeed,
-        usedStrictScreenshotPrompt,
-        referenceShotIds: referencePageShots.map((item) => item.id),
-      },
     });
   } catch (e: any) {
     console.error(
