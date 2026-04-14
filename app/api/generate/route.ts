@@ -1404,10 +1404,15 @@ function resolveCreativeDirection(
   prefs: GenerationPreferences,
   fingerprint?: ReferenceLayoutFingerprint | null,
   screenshotAnalysis?: ReferenceScreenshotAnalysis | null,
-  referenceBlueprint?: ReferenceBlueprint | null
+  referenceBlueprint?: ReferenceBlueprint | null,
+  options?: { inputMode?: InputMode }
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
+  const isReferenceLockedMode =
+    options?.inputMode === "screenshot" ||
+    options?.inputMode === "url" ||
+    options?.inputMode === "html";
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1539,9 +1544,26 @@ function resolveCreativeDirection(
     seedChoices
   );
 
+  const referenceLockedImageMode =
+    referenceBlueprint?.hero?.dominantSubject === "architecture" ||
+    screenshotAnalysis?.dominantVisualSubject === "architecture" ||
+    fingerprint?.visualDominance === "architecture" ||
+    referenceBlueprint?.hero?.dominantSubject === "food" ||
+    screenshotAnalysis?.dominantVisualSubject === "food" ||
+    referenceBlueprint?.hero?.dominantSubject === "product" ||
+    screenshotAnalysis?.dominantVisualSubject === "product"
+      ? "photo-heavy"
+      : referenceBlueprint?.hero?.dominantSubject === "ui" ||
+        screenshotAnalysis?.dominantVisualSubject === "ui" ||
+        fingerprint?.visualDominance === "software-ui"
+      ? "ui-heavy"
+      : "mixed";
+
   return {
     industry,
-    imageMode: industryDefaults.imageMode,
+    imageMode: isReferenceLockedMode
+      ? referenceLockedImageMode
+      : industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
@@ -1552,6 +1574,10 @@ function resolveCreativeDirection(
         ? "story"
         : blueprintHeroType === "split" && !hardAvoidSplit
         ? "split"
+        : blueprintHeroType === "grid"
+        ? "grid"
+        : isReferenceLockedMode
+        ? "auto"
         : industryDefaults.layoutPreference,
     visualStyle:
       prefs.visualStyle && prefs.visualStyle !== "auto"
@@ -1560,6 +1586,8 @@ function resolveCreativeDirection(
         ? "editorial"
         : referenceBlueprint?.layout?.density === "dense"
         ? "premium"
+        : isReferenceLockedMode
+        ? "auto"
         : industryDefaults.visualStyle,
     animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
@@ -1573,6 +1601,8 @@ function resolveCreativeDirection(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
         ? "tech"
+        : isReferenceLockedMode
+        ? "auto"
         : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
@@ -1581,9 +1611,13 @@ function resolveCreativeDirection(
     designReference:
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
+        : isReferenceLockedMode
+        ? "auto"
         : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
-    promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
+    promptEnhancerMode:
+      prefs.promptEnhancerMode ||
+      (isReferenceLockedMode ? "balanced" : "premium-brand"),
     preferredPrimaryColor:
       prefs.preferredPrimaryColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[0] ||
@@ -2374,17 +2408,14 @@ HTML MODE RULES:
 - do not simply echo raw HTML patterns without refinement
 
 SCREENSHOT MODE RULES:
-- use screenshots as the main source of composition, mood, hierarchy, section rhythm and spacing logic
-- infer structure from the screenshot
-- preserve the screenshot layout family, card family, hero family and spacing family as closely as possible
-- if navigation and hero live inside the same framed shell, bordered card, rounded wrapper or integrated hero container, KEEP them together in the same shell
-- do NOT split navigation into a separate bar if the screenshot keeps navigation visually integrated with the hero wrapper
-- preserve whether the hero is framed, bordered, rounded, transparent, glassy or edge-to-edge
-- preserve the screenshot's top spacing above hero content; do not add extra empty space above the fold
-- keep hero headline scale restrained when the screenshot uses restrained typography; do not upscale headlines for drama
-- keep section gaps tighter when the screenshot is compact or editorial
-- if the screenshot CTA includes an icon, render a similarly integrated icon treatment inside the CTA and add a subtle premium hover response
-- reproduce the visual direction in a cleaner and more production-ready way without changing the composition family
+- use screenshots as the PRIMARY source of composition, layout, spacing, hierarchy and visual rhythm
+- reconstruct the same composition family instead of generating a safer business website
+- preserve the screenshot's light/dark polarity, density, image-to-text balance and section order family
+- if the screenshot uses a framed hero shell or a unified hero card, preserve that same shell logic
+- if navigation is visually integrated inside the same hero shell, keep it integrated there instead of forcing a detached nav bar
+- preserve restrained typography and measured spacing; do not upscale headlines or add extra top whitespace
+- preserve CTA patterns including icon-bearing buttons when visible
+- the screenshot is the primary truth; the user prompt is only a secondary content layer unless it asks for a very small change
 `);
 
   return lines.join("\n");
@@ -2445,7 +2476,8 @@ OUTPUT RULES:
 - every major page block must use a semantic <section> tag
 - every major section must have data-section-id and data-section-type
 - data-section-id values must be stable, unique and human-readable
-- navigation must be its own section with data-section-id="navigation"
+- navigation should normally use data-section-id="navigation"
+- EXCEPTION: if screenshot mode clearly shows navigation integrated inside the same framed hero/card wrapper, keep it inside that hero wrapper with a nested <nav data-nav-role="integrated"> instead of forcing a detached standalone navigation section
 - footer must be its own section with data-section-id="footer"
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
@@ -2506,16 +2538,21 @@ ${
   params.inputMode === "screenshot"
     ? `STRICT SCREENSHOT FIDELITY MODE:
 - the uploaded screenshot is the PRIMARY visual truth
-- rebuild the same composition family for a new brand; do not reinterpret it into a different premium website type
-- preserve the measured above-the-fold spacing and avoid extra top whitespace
-- preserve smaller or medium hero headline scale when the reference is restrained
-- preserve integrated navigation inside the hero shell if the reference uses one shared wrapper
-- preserve framed hero cards, rounded borders, glass panels, edge lines and shell logic when visible
-- preserve compact editorial spacing between sections when the reference is compact
-- if the screenshot CTA includes an icon, keep a similar icon-bearing CTA with subtle premium hover feedback
+- rebuild the same composition family for a new brand; do NOT reinterpret it into a safer generic business website
+- preserve the screenshot's measured top spacing, hero scale and section rhythm
+- preserve integrated nav + hero shells when visible in one shared framed wrapper
+- preserve whether the hero is one framed card, a rounded bordered shell, or a frameless full-bleed cover
+- preserve the relative proportions of nav, headline, body copy, CTA, image blocks and floating stat cards
+- preserve restrained headline scale when the reference is calm editorial; do not enlarge typography for drama
+- preserve compact spacing if the screenshot is compact; do not add extra whitespace above the fold
+- when the screenshot CTA contains an icon, keep a visually similar icon-bearing CTA and add subtle hover feedback
 - prefer structural mimicry over creative improvement
-- do not separate nav and hero when the screenshot keeps them unified
-- do not upscale typography, padding or section gaps for dramatic effect`
+- do not separate nav and hero when the screenshot keeps them unified`
+    : params.inputMode === "url"
+    ? `STRICT URL REFERENCE MODE:
+- the fetched reference summary, page shots and blueprint are the PRIMARY source of layout DNA
+- preserve section order family, hero family, nav density, spacing rhythm and footer density
+- do not collapse editorial or product-heavy references into a generic agency landing page`
     : ""
 }
 
@@ -2526,11 +2563,6 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference typography mood and color direction closely
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
-- when input mode is "screenshot", the screenshot composition wins over generic premium defaults
-- when input mode is "screenshot", preserve restrained typography, tighter spacing and the original above-the-fold structure
-- when input mode is "screenshot" and nav is visually integrated into the hero shell, preserve that integrated nav+hero construction
-- when input mode is "screenshot", do not enlarge hero typography, top padding or section spacing beyond the reference's measured feel
-- when input mode is "screenshot" and a CTA uses an icon, preserve an icon-bearing CTA in a visually similar premium style
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must use stable wrappers and predictable layout primitives
@@ -2977,7 +3009,8 @@ export async function POST(req: Request) {
       rawPreferences,
       layoutFingerprint,
       screenshotAnalysis,
-      referenceBlueprint
+      referenceBlueprint,
+      { inputMode }
     );
 
     console.log(

@@ -2447,7 +2447,7 @@ export default function AiEditorPage() {
 
       const detectedIndustry =
         (data.brief?.industry as IndustryKind | undefined) ||
-        (isReferenceLockedMode ? null : inferIndustryKind(finalPrompt)) ||
+        (isReferenceLockedMode ? undefined : inferIndustryKind(finalPrompt)) ||
         "generic-business";
       const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
 
@@ -2465,6 +2465,8 @@ export default function AiEditorPage() {
             sourcePrompt: finalPrompt,
           })
         );
+      } else if (isReferenceLockedMode) {
+        setGenerationPreferences(createReferenceLockedPreferences(finalPrompt));
       }
 
       setReferenceSummaryDebug(data.referenceSummary ?? null);
@@ -2482,9 +2484,11 @@ export default function AiEditorPage() {
         {
           id: `assistant-followup-${Date.now() + 1}`,
           role: "assistant",
-          text: `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
-            detectedIndustry
-          )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,
+          text: isReferenceLockedMode
+            ? "Co chcete dál vyladit na této referenční rekonstrukci? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovou věrností vůči referenci."
+            : `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
+                detectedIndustry
+              )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,
         },
       ]);
 
