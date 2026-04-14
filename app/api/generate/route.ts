@@ -2354,8 +2354,7 @@ REFERENCE BLUEPRINT:
       (item) =>
         `  - ${item.id}: ${item.kind} | pattern=${item.visualPattern} | density=${item.contentDensity} | purpose=${item.purpose}`
     )
-    .join("
-");
+    .join("\n");
 
   return `
 REFERENCE BLUEPRINT:
