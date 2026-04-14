@@ -450,6 +450,12 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => {
       const candidate = item as AttachmentInput;
+      const rawDataUrl =
+        typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
+      const dataUrl =
+        rawDataUrl.startsWith("data:image/") && rawDataUrl.length <= 1_500_000
+          ? rawDataUrl
+          : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
@@ -458,6 +464,7 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
           candidate.kind === "screenshot" || candidate.kind === "file"
             ? candidate.kind
             : undefined,
+        dataUrl,
       };
     });
 }
@@ -1425,6 +1432,7 @@ function resolveCreativeDirection(
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
+  const isStrictReferenceMode = options?.inputMode === "screenshot";
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1557,50 +1565,63 @@ function resolveCreativeDirection(
   );
 
   return {
-    industry,
-    imageMode: industryDefaults.imageMode,
+    industry: isStrictReferenceMode ? ("generic-business" as IndustryKind) : industry,
+    imageMode: isStrictReferenceMode
+      ? screenshotAnalysis?.dominantVisualSubject === "architecture" ||
+        screenshotAnalysis?.dominantVisualSubject === "food" ||
+        screenshotAnalysis?.dominantVisualSubject === "product"
+        ? "photo-heavy"
+        : screenshotAnalysis?.dominantVisualSubject === "ui"
+        ? "ui-heavy"
+        : "mixed"
+      : industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
-    layoutPreference:
-      prefs.layoutPreference && prefs.layoutPreference !== "auto"
-        ? prefs.layoutPreference
-        : blueprintHeroType === "editorial"
-        ? "editorial"
-        : blueprintHeroType === "cover"
-        ? "story"
-        : blueprintHeroType === "split" && !hardAvoidSplit
-        ? "split"
-        : industryDefaults.layoutPreference,
-    visualStyle:
-      prefs.visualStyle && prefs.visualStyle !== "auto"
-        ? prefs.visualStyle
-        : referenceBlueprint?.layout?.navStyle === "editorial"
-        ? "editorial"
-        : referenceBlueprint?.layout?.density === "dense"
-        ? "premium"
-        : industryDefaults.visualStyle,
+    layoutPreference: isStrictReferenceMode
+      ? "auto"
+      : prefs.layoutPreference && prefs.layoutPreference !== "auto"
+      ? prefs.layoutPreference
+      : blueprintHeroType === "editorial"
+      ? "editorial"
+      : blueprintHeroType === "cover"
+      ? "story"
+      : blueprintHeroType === "split" && !hardAvoidSplit
+      ? "split"
+      : industryDefaults.layoutPreference,
+    visualStyle: isStrictReferenceMode
+      ? "auto"
+      : prefs.visualStyle && prefs.visualStyle !== "auto"
+      ? prefs.visualStyle
+      : referenceBlueprint?.layout?.navStyle === "editorial"
+      ? "editorial"
+      : referenceBlueprint?.layout?.density === "dense"
+      ? "premium"
+      : industryDefaults.visualStyle,
     animationLevel: prefs.animationLevel || fallbackAnimation,
-    fontMood:
-      prefs.fontMood && prefs.fontMood !== "auto"
-        ? prefs.fontMood
-        : /serif|editorial/i.test(
-            referenceBlueprint?.brandAbstraction?.typographyMood || ""
-          )
-        ? "editorial"
-        : /tech|interface|product/i.test(
-            referenceBlueprint?.brandAbstraction?.typographyMood || ""
-          )
-        ? "tech"
-        : industryDefaults.fontMood,
+    fontMood: isStrictReferenceMode
+      ? "auto"
+      : prefs.fontMood && prefs.fontMood !== "auto"
+      ? prefs.fontMood
+      : /serif|editorial/i.test(
+          referenceBlueprint?.brandAbstraction?.typographyMood || ""
+        )
+      ? "editorial"
+      : /tech|interface|product/i.test(
+          referenceBlueprint?.brandAbstraction?.typographyMood || ""
+        )
+      ? "tech"
+      : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
         ? prefs.iconStyle
         : industryDefaults.iconStyle,
-    designReference:
-      prefs.designReference && prefs.designReference !== "auto"
-        ? prefs.designReference
-        : industryDefaults.designReference,
+    designReference: isStrictReferenceMode
+      ? "auto"
+      : prefs.designReference && prefs.designReference !== "auto"
+      ? prefs.designReference
+      : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
-    promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
+    promptEnhancerMode:
+      prefs.promptEnhancerMode || (isStrictReferenceMode ? "balanced" : "premium-brand"),
     preferredPrimaryColor:
       prefs.preferredPrimaryColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[0] ||
@@ -1611,7 +1632,7 @@ function resolveCreativeDirection(
       "",
     contactItems: Array.isArray(prefs.contactItems) ? prefs.contactItems : [],
     clientAnswers: prefs.clientAnswers || {},
-    layoutSeed,
+    layoutSeed: isStrictReferenceMode ? "reference-blueprint" : layoutSeed,
   };
 }
 
@@ -1989,6 +2010,92 @@ function inferSectionOrderFromBlueprint(
   }
 
   return uniqStrings(sequence, 10);
+}
+
+
+function buildFallbackBlueprintFromScreenshotAnalysis(
+  analysis: ReferenceScreenshotAnalysis | null
+): ReferenceBlueprint | null {
+  if (!analysis) return null;
+
+  const sectionOrder = inferSectionOrderFromBlueprint(null, analysis);
+
+  return {
+    screenshotCoverage: {
+      hasHero: true,
+      hasUpper: false,
+      hasMid: false,
+      hasLower: false,
+      hasFooter: false,
+    },
+    brandAbstraction: {
+      tone: analysis.compositionSummary || "reference-locked",
+      typographyMood:
+        analysis.dominantVisualSubject === "architecture" ? "editorial restrained" : "reference-locked",
+      colorPalette: analysis.colorDirection ? [analysis.colorDirection] : [],
+      backgroundStyle: analysis.shouldKeepFullWidthHero ? "reference-derived" : "neutral",
+      accentStyle: "reference-derived",
+    },
+    layout: {
+      heroType:
+        analysis.aboveTheFoldType === "cover-hero"
+          ? "cover"
+          : analysis.aboveTheFoldType === "editorial-cover"
+          ? "editorial"
+          : analysis.aboveTheFoldType === "split-hero"
+          ? "split"
+          : analysis.aboveTheFoldType === "grid-hero"
+          ? "grid"
+          : "unknown",
+      navStyle:
+        analysis.navVisualWeight === "minimal"
+          ? "minimal"
+          : analysis.navVisualWeight === "heavy"
+          ? "corporate"
+          : "unknown",
+      sectionOrder,
+      density: "balanced",
+      containerStyle: "reference-derived",
+      spacingRhythm: "reference-derived",
+    },
+    hero: {
+      alignment: analysis.heroContentAlignment || "unknown",
+      hasStatsBandAfterHero: analysis.firstSectionAfterHero === "stats-band",
+      dominantSubject: analysis.dominantVisualSubject || "unknown",
+      motifs: analysis.mustKeepMotifs || [],
+      forbiddenDrift: analysis.forbiddenMistakes || [],
+    },
+    fidelityLocks: {
+      mustKeep: analysis.mustKeepMotifs || [],
+      mustAvoid: analysis.forbiddenMistakes || [],
+    },
+    sectionBlueprints: sectionOrder.map((id) => ({
+      id,
+      kind:
+        id === "hero"
+          ? "hero"
+          : id === "stats"
+          ? "stats"
+          : id === "testimonials"
+          ? "testimonials"
+          : id === "faq"
+          ? "faq"
+          : id === "footer"
+          ? "footer"
+          : id === "cta"
+          ? "cta"
+          : "content",
+      purpose: id,
+      visualPattern: "reference-derived",
+      contentDensity: "balanced",
+    })),
+    renderingInstructions: [
+      "Use screenshot as the primary source of truth.",
+      "Do not introduce generic luxury or business defaults.",
+      "Keep the measured spacing and hierarchy restrained.",
+      "Preserve the hero family and navigation relationship from the screenshot.",
+    ],
+  };
 }
 
 async function createReferenceBlueprint(params: {
@@ -3123,6 +3230,8 @@ export async function POST(req: Request) {
 
     const sanitizeStartedAt = nowMs();
     const safeRendered = sanitizeBundle(renderedBundle);
+    const finalAssetPlan =
+      inputMode === "screenshot" ? [] : safeRendered.assetPlan;
 
     const htmlWithBrandLogo = injectBrandLogoMarkup(
       safeRendered.html,
@@ -3130,7 +3239,7 @@ export async function POST(req: Request) {
     );
 
     logStep(requestId, "sanitize-bundle", sanitizeStartedAt, {
-      assetPlanCount: safeRendered.assetPlan.length,
+      assetPlanCount: finalAssetPlan.length,
       hasBrandLogo: Boolean(brandLogo),
     });
 
@@ -3143,7 +3252,7 @@ export async function POST(req: Request) {
       html: htmlWithBrandLogo,
       css: safeRendered.css,
       js: safeRendered.js,
-      assetPlan: safeRendered.assetPlan,
+      assetPlan: finalAssetPlan,
       brief: {
         industry: resolvedPreferences.industry,
         audience: "",
