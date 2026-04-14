@@ -2134,7 +2134,7 @@ export default function AiEditorPage() {
           : "prompt";
 
       setGenerationPreferences((prev) =>
-        bootInputMode === "screenshot" || bootInputMode === "url"
+        bootInputMode === "screenshot" || bootInputMode === "url" || bootInputMode === "html"
           ? createReferenceLockedPreferences(initialPrompt)
           : mergeStoredPreferences(
               initialPrompt ? createDefaultPreferences(initialPrompt) : prev,
@@ -2177,7 +2177,7 @@ export default function AiEditorPage() {
       })();
 
       const nextPrefs =
-        resolvedInputMode === "screenshot" || resolvedInputMode === "url"
+        resolvedInputMode === "screenshot" || resolvedInputMode === "url" || resolvedInputMode === "html"
           ? createReferenceLockedPreferences(autostartPrompt)
           : mergeStoredPreferences(
               autostartPrompt
@@ -2386,7 +2386,9 @@ export default function AiEditorPage() {
     }
 
     const isReferenceLockedMode =
-      requestInput.inputMode === "screenshot" || requestInput.inputMode === "url";
+      requestInput.inputMode === "screenshot" ||
+      requestInput.inputMode === "url" ||
+      requestInput.inputMode === "html";
 
     const effectivePreferences = {
       ...(isReferenceLockedMode
@@ -2485,7 +2487,7 @@ export default function AiEditorPage() {
           id: `assistant-followup-${Date.now() + 1}`,
           role: "assistant",
           text: isReferenceLockedMode
-            ? "Co chcete dál vyladit na této referenční rekonstrukci? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovou věrností vůči referenci."
+            ? "Co chcete dál vyladit na této referenční rekonstrukci? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem, spacingem nebo celkovou věrností vůči referenci."
             : `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
                 detectedIndustry
               )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,

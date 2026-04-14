@@ -65,6 +65,7 @@ type AttachmentInput = {
   id?: string;
   name?: string;
   kind?: "screenshot" | "file";
+  dataUrl?: string;
 };
 
 type SpeedMode = "fast" | "balanced" | "premium";
@@ -434,6 +435,11 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => {
       const candidate = item as AttachmentInput;
+      const rawDataUrl = typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
+      const dataUrl =
+        rawDataUrl.startsWith("data:image/") && rawDataUrl.length <= 1_500_000
+          ? rawDataUrl
+          : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
@@ -442,6 +448,7 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
           candidate.kind === "screenshot" || candidate.kind === "file"
             ? candidate.kind
             : undefined,
+        dataUrl,
       };
     });
 }
@@ -2493,7 +2500,26 @@ ${
     : `- if no real logo is provided, create an elegant text or monogram logo treatment`
 }
 
-SELECTED CREATIVE DIRECTION:
+${
+  params.inputMode === "screenshot" || params.inputMode === "url" || params.inputMode === "html"
+    ? `REFERENCE-LOCKED EXECUTION CONTEXT:
+- input mode: ${params.inputMode}
+- detected industry is only a weak fallback hint: ${params.preferences.industry}
+- image mode: ${params.preferences.imageMode}
+- speed mode: ${params.preferences.speedMode}
+- layout seed: ${params.preferences.layoutSeed}
+- contact items to show: ${
+        params.preferences.contactItems.length
+          ? params.preferences.contactItems.join(", ")
+          : "phone, email, office, CTA form"
+      }
+- DO NOT let industry defaults, designReference presets or generic premium instincts replace the reference
+- DO NOT drift into a dark SaaS / generic agency / generic business site unless the reference itself clearly uses that family
+- when the reference is light, editorial, airy or real-estate-like, keep it light, editorial and airy
+- when the reference uses large photography and restrained text, keep large photography and restrained text
+- when the reference uses integrated navigation inside the hero shell, keep that integration
+- the reference controls composition first; prompt only adapts content, branding and factual business details`
+    : `SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
 - Image mode: ${params.preferences.imageMode}
 - Speed mode: ${params.preferences.speedMode}
@@ -2519,7 +2545,8 @@ ${getDesignReferenceRecipe(params.preferences.designReference)}
 ${getIndustrySpecificRules(
     params.preferences.industry,
     params.preferences.imageMode
-  )}
+  )}`
+}
 
 INPUT CONTEXT:
 ${renderInputModeContext({
@@ -2547,7 +2574,9 @@ ${
 - preserve compact spacing if the screenshot is compact; do not add extra whitespace above the fold
 - when the screenshot CTA contains an icon, keep a visually similar icon-bearing CTA and add subtle hover feedback
 - prefer structural mimicry over creative improvement
-- do not separate nav and hero when the screenshot keeps them unified`
+- do not separate nav and hero when the screenshot keeps them unified
+- if the screenshot is bright, warm, beige, editorial or real-estate-like, keep that exact polarity and atmosphere
+- do not invent dark gradients, SaaS cards, metrics dashboards or corporate feature grids unless the screenshot clearly shows them`
     : params.inputMode === "url"
     ? `STRICT URL REFERENCE MODE:
 - the fetched reference summary, page shots and blueprint are the PRIMARY source of layout DNA
@@ -2563,6 +2592,7 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference typography mood and color direction closely
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
+- in screenshot mode, screenshot analysis and blueprint instructions override selected creative direction, designReference recipes and industry-specific rules
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must use stable wrappers and predictable layout primitives
@@ -2857,6 +2887,17 @@ export async function POST(req: Request) {
         : "";
 
     const attachments = sanitizeAttachments(body?.attachments);
+    const bodyScreenshotDataUrl =
+      typeof body?.screenshotDataUrl === "string" &&
+      body.screenshotDataUrl.trim().startsWith("data:image/") &&
+      body.screenshotDataUrl.trim().length <= 1_500_000
+        ? body.screenshotDataUrl.trim()
+        : "";
+    const screenshotDataUrl =
+      bodyScreenshotDataUrl ||
+      attachments.find((item) => item.kind === "screenshot" && typeof item.dataUrl === "string")
+        ?.dataUrl ||
+      "";
 
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
@@ -2878,7 +2919,10 @@ export async function POST(req: Request) {
       inputMode === "html" && referenceHtml.trim().length > 0;
     const hasScreenshotReference =
       inputMode === "screenshot" &&
-      attachments.some((item) => item.kind === "screenshot");
+      Boolean(
+        screenshotDataUrl ||
+          attachments.some((item) => item.kind === "screenshot")
+      );
 
     if (
       !hasPrompt &&
@@ -2906,13 +2950,30 @@ export async function POST(req: Request) {
         : inputMode === "html" && referenceHtml.trim()
         ? "Vytvoř nový web podle dodaného HTML souboru."
         : inputMode === "screenshot"
-        ? "Vytvoř nový web podle dodaného screenshotu."
+        ? [
+            "Vytvoř nový web podle dodaného screenshotu.",
+            "Screenshot je hlavní zdroj layoutu, kompozice, spacingu, hierarchie, polarity světlé/tmavé a CTA vzorů.",
+            "Nevytvářej generický web podle oboru. Primárně se řiď screenshotem a prompt ber jen jako sekundární vrstvu pro nový brand a texty.",
+          ].join(" ")
         : "");
 
     const referenceSummary =
       inputMode === "url" && referenceUrl
         ? await fetchReferenceSiteSummary(referenceUrl, requestId)
         : null;
+
+    const uploadedScreenshotShots: ReferencePageShot[] =
+      inputMode === "screenshot" && screenshotDataUrl
+        ? [
+            {
+              id: "hero",
+              dataUrl: screenshotDataUrl,
+              scrollY: 0,
+              width: 0,
+              height: 0,
+            },
+          ]
+        : [];
 
     const layoutFingerprint =
       inputMode === "url"
@@ -2931,7 +2992,7 @@ export async function POST(req: Request) {
     const referencePageShots =
       inputMode === "url" && referenceUrl
         ? await captureReferencePageShots(referenceUrl, requestId)
-        : [];
+        : uploadedScreenshotShots;
 
     const heroShot = pickRepresentativeShot(referencePageShots, "hero");
     const midShot = pickRepresentativeShot(referencePageShots, "mid");
@@ -2952,7 +3013,7 @@ export async function POST(req: Request) {
     }
 
     const screenshotAnalysis =
-      heroShot && inputMode === "url"
+      heroShot && (inputMode === "url" || inputMode === "screenshot")
         ? await createVisionReferenceAnalysis({
             requestId,
             model: WEB_MODEL,
@@ -2963,11 +3024,16 @@ export async function POST(req: Request) {
         : null;
 
     const referenceBlueprint =
-      inputMode === "url" && referenceUrl && referencePageShots.length > 0
+      ((inputMode === "url" && referenceUrl) ||
+        (inputMode === "screenshot" && screenshotDataUrl)) &&
+      referencePageShots.length > 0
         ? await createReferenceBlueprint({
             requestId,
             model: WEB_MODEL,
-            referenceUrl,
+            referenceUrl:
+              inputMode === "url" && referenceUrl
+                ? referenceUrl
+                : "uploaded-screenshot-reference",
             referenceSummary,
             pageShots: referencePageShots,
             heroAnalysis: screenshotAnalysis,
