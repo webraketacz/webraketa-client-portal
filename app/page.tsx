@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import {
   useEffect,
@@ -280,7 +280,6 @@ const CONTACT_CHOICES = [
   "Rezervace schůzky",
 ];
 
-
 const EMPTY_PREFERENCES: LandingPreferences = {
   visualStyle: "auto",
   fontMood: "auto",
@@ -323,8 +322,6 @@ const EMPTY_PREFERENCES: LandingPreferences = {
   exactTextHex: "",
 };
 
-
-
 async function fileToDataUrl(file: File): Promise<string> {
   return await new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -345,7 +342,6 @@ async function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
-
 
 function buildEnhancedPrompt(params: {
   prompt: string;
@@ -423,7 +419,7 @@ function buildEnhancedPrompt(params: {
       : sourceMode === "html" && sourceHtml.trim()
       ? "Jde o generování nebo redesign podle vloženého HTML. Zachovej silné části struktury, ale vizuál i UX výrazně vylepši."
       : sourceMode === "screenshot"
-      ? "Jde o generování podle screenshotu nebo vizuální reference. Vnímej layout, spacing, rytmus a hierarchii."
+      ? "Jde o generování podle screenshotu nebo vizuální reference. Screenshot je PRIMÁRNÍ zdroj pravdy pro layout, hierarchii, navigaci, rytmus sekcí, spacing, velikosti typografie, poměry bloků, umístění CTA, framing hero sekce a celkový vizuální směr. Nevytvářej generický web podle oboru. Pokud screenshot ukazuje navigaci uvnitř hero wrapperu nebo jednoho framed shellu, zachovej to stejně. Pokud screenshot ukazuje světlejší design, nepřeklápěj výsledek do tmavého business stylu."
       : "Jde o generování podle textového zadání.";
 
   const extraLines = [
@@ -936,7 +932,7 @@ export default function AiLandingPage() {
     }
 
     if (sourceMode === "screenshot") {
-      return "Vytvoř nový web podle dodaného screenshotu nebo vizuální reference. Zachovej co nejvíce layout, rytmus, kompozici a vizuální směr, ale výsledek udělej čistší, modernější a připravený pro nový brand.";
+      return "Vytvoř nový web podle přiložené screenshot reference. Screenshot je PRIMÁRNÍ zdroj layoutu, hierarchie, navigace, kompozice, velikostí nadpisů, spacingu, rytmu sekcí, umístění CTA, poměrů bloků a celkového vizuálního směru. Prosím o co nejvěrnější rekonstrukci screenshotu, je to můj design. Nevytvářej generický web podle oboru. Primárně se řiď screenshot referencí.";
     }
 
     return prompt.trim();
@@ -944,14 +940,63 @@ export default function AiLandingPage() {
 
   function startGenerating(customPrompt?: string) {
     const manualPrompt = (customPrompt ?? prompt).trim();
+    const validScreenshotAttachments = attachments.filter(
+      (item) =>
+        item.kind === "screenshot" &&
+        typeof item.dataUrl === "string" &&
+        item.dataUrl.startsWith("data:image/")
+    );
+    const screenshotDataUrl = validScreenshotAttachments[0]?.dataUrl ?? "";
+    const hasValidScreenshot = screenshotDataUrl.length > 0;
+    const resolvedSourceMode: SourceMode =
+      sourceMode === "screenshot" || hasValidScreenshot ? "screenshot" : sourceMode;
     const finalPrompt = manualPrompt || buildAutoPromptForSourceMode();
 
     if (!finalPrompt.trim()) return;
+    if (resolvedSourceMode === "screenshot" && !hasValidScreenshot) {
+      console.error("START_GENERATING_FAIL", {
+        sourceMode,
+        resolvedSourceMode,
+        attachmentsCount: attachments.length,
+        screenshotAttachments: attachments.map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          hasDataUrl:
+            typeof item.dataUrl === "string" &&
+            item.dataUrl.startsWith("data:image/"),
+          dataUrlLength:
+            typeof item.dataUrl === "string" ? item.dataUrl.length : 0,
+        })),
+      });
+      return;
+    }
 
     const landingPreferences =
-      sourceMode === "screenshot" || sourceMode === "url"
+      resolvedSourceMode === "screenshot" ||
+      resolvedSourceMode === "url" ||
+      resolvedSourceMode === "html"
         ? EMPTY_PREFERENCES
         : getLandingPreferences();
+
+    console.log("START_GENERATING_DEBUG", {
+      sourceMode,
+      resolvedSourceMode,
+      hasValidScreenshot,
+      screenshotDataUrlLength: screenshotDataUrl.length,
+      attachmentsCount: attachments.length,
+      screenshotAttachments: attachments.map((item) => ({
+        id: item.id,
+        kind: item.kind,
+        hasDataUrl:
+          typeof item.dataUrl === "string" &&
+          item.dataUrl.startsWith("data:image/"),
+        dataUrlLength:
+          typeof item.dataUrl === "string" ? item.dataUrl.length : 0,
+      })),
+      sourceUrlLength: sourceUrl.trim().length,
+      sourceHtmlLength: sourceHtml.length,
+      promptLength: finalPrompt.length,
+    });
 
     sessionStorage.setItem("ai_webgen_prompt", finalPrompt);
     sessionStorage.setItem("ai_webgen_autostart", "1");
@@ -959,15 +1004,21 @@ export default function AiLandingPage() {
     sessionStorage.setItem("ai_webgen_model", DEFAULT_MODEL);
     sessionStorage.setItem(
       "ai_webgen_attachments",
-      JSON.stringify(attachments)
+      JSON.stringify(
+        resolvedSourceMode === "screenshot"
+          ? validScreenshotAttachments
+          : attachments
+      )
     );
     sessionStorage.setItem(
       "ai_webgen_landing_preferences",
       JSON.stringify(landingPreferences)
     );
-    sessionStorage.setItem("ai_webgen_source_mode", sourceMode);
+    sessionStorage.setItem("ai_webgen_source_mode", resolvedSourceMode);
+    sessionStorage.setItem("ai_webgen_input_mode", resolvedSourceMode);
     sessionStorage.setItem("ai_webgen_source_url", sourceUrl.trim());
     sessionStorage.setItem("ai_webgen_source_html", sourceHtml);
+    sessionStorage.setItem("ai_webgen_screenshot_data_url", screenshotDataUrl);
 
     router.push("/editor");
   }
@@ -1413,7 +1464,6 @@ export default function AiLandingPage() {
         </main>
       </div>
 
-      
       {enhanceModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
           <div
