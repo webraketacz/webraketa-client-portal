@@ -65,7 +65,6 @@ type AttachmentInput = {
   id?: string;
   name?: string;
   kind?: "screenshot" | "file";
-  dataUrl?: string;
 };
 
 type SpeedMode = "fast" | "balanced" | "premium";
@@ -361,6 +360,21 @@ function logStep(
   );
 }
 
+function logDebug(
+  requestId: string,
+  label: string,
+  data: Record<string, unknown>
+) {
+  console.log(
+    JSON.stringify({
+      scope: "api-generate-debug",
+      requestId,
+      label,
+      ...data,
+    })
+  );
+}
+
 function normalizeText(value: string) {
   return value
     .toLowerCase()
@@ -435,11 +449,6 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => {
       const candidate = item as AttachmentInput;
-      const rawDataUrl = typeof candidate.dataUrl === "string" ? candidate.dataUrl.trim() : "";
-      const dataUrl =
-        rawDataUrl.startsWith("data:image/") && rawDataUrl.length <= 1_500_000
-          ? rawDataUrl
-          : undefined;
 
       return {
         id: typeof candidate.id === "string" ? candidate.id : undefined,
@@ -448,7 +457,6 @@ function sanitizeAttachments(value: unknown): AttachmentInput[] {
           candidate.kind === "screenshot" || candidate.kind === "file"
             ? candidate.kind
             : undefined,
-        dataUrl,
       };
     });
 }
@@ -1411,15 +1419,10 @@ function resolveCreativeDirection(
   prefs: GenerationPreferences,
   fingerprint?: ReferenceLayoutFingerprint | null,
   screenshotAnalysis?: ReferenceScreenshotAnalysis | null,
-  referenceBlueprint?: ReferenceBlueprint | null,
-  options?: { inputMode?: InputMode }
+  referenceBlueprint?: ReferenceBlueprint | null
 ) {
   const industry = inferIndustryKind(prompt);
   const industryDefaults = getIndustryDefaults(industry);
-  const isReferenceLockedMode =
-    options?.inputMode === "screenshot" ||
-    options?.inputMode === "url" ||
-    options?.inputMode === "html";
 
   const fallbackAnimation =
     industry === "fintech" || industry === "saas"
@@ -1551,26 +1554,9 @@ function resolveCreativeDirection(
     seedChoices
   );
 
-  const referenceLockedImageMode =
-    referenceBlueprint?.hero?.dominantSubject === "architecture" ||
-    screenshotAnalysis?.dominantVisualSubject === "architecture" ||
-    fingerprint?.visualDominance === "architecture" ||
-    referenceBlueprint?.hero?.dominantSubject === "food" ||
-    screenshotAnalysis?.dominantVisualSubject === "food" ||
-    referenceBlueprint?.hero?.dominantSubject === "product" ||
-    screenshotAnalysis?.dominantVisualSubject === "product"
-      ? "photo-heavy"
-      : referenceBlueprint?.hero?.dominantSubject === "ui" ||
-        screenshotAnalysis?.dominantVisualSubject === "ui" ||
-        fingerprint?.visualDominance === "software-ui"
-      ? "ui-heavy"
-      : "mixed";
-
   return {
     industry,
-    imageMode: isReferenceLockedMode
-      ? referenceLockedImageMode
-      : industryDefaults.imageMode,
+    imageMode: industryDefaults.imageMode,
     speedMode: prefs.speedMode || "premium",
     layoutPreference:
       prefs.layoutPreference && prefs.layoutPreference !== "auto"
@@ -1581,10 +1567,6 @@ function resolveCreativeDirection(
         ? "story"
         : blueprintHeroType === "split" && !hardAvoidSplit
         ? "split"
-        : blueprintHeroType === "grid"
-        ? "grid"
-        : isReferenceLockedMode
-        ? "auto"
         : industryDefaults.layoutPreference,
     visualStyle:
       prefs.visualStyle && prefs.visualStyle !== "auto"
@@ -1593,8 +1575,6 @@ function resolveCreativeDirection(
         ? "editorial"
         : referenceBlueprint?.layout?.density === "dense"
         ? "premium"
-        : isReferenceLockedMode
-        ? "auto"
         : industryDefaults.visualStyle,
     animationLevel: prefs.animationLevel || fallbackAnimation,
     fontMood:
@@ -1608,8 +1588,6 @@ function resolveCreativeDirection(
             referenceBlueprint?.brandAbstraction?.typographyMood || ""
           )
         ? "tech"
-        : isReferenceLockedMode
-        ? "auto"
         : industryDefaults.fontMood,
     iconStyle:
       prefs.iconStyle && prefs.iconStyle !== "auto"
@@ -1618,13 +1596,9 @@ function resolveCreativeDirection(
     designReference:
       prefs.designReference && prefs.designReference !== "auto"
         ? prefs.designReference
-        : isReferenceLockedMode
-        ? "auto"
         : industryDefaults.designReference,
     buttonStyle: prefs.buttonStyle || "auto",
-    promptEnhancerMode:
-      prefs.promptEnhancerMode ||
-      (isReferenceLockedMode ? "balanced" : "premium-brand"),
+    promptEnhancerMode: prefs.promptEnhancerMode || "premium-brand",
     preferredPrimaryColor:
       prefs.preferredPrimaryColor?.trim() ||
       referenceBlueprint?.brandAbstraction?.colorPalette?.[0] ||
@@ -2415,14 +2389,9 @@ HTML MODE RULES:
 - do not simply echo raw HTML patterns without refinement
 
 SCREENSHOT MODE RULES:
-- use screenshots as the PRIMARY source of composition, layout, spacing, hierarchy and visual rhythm
-- reconstruct the same composition family instead of generating a safer business website
-- preserve the screenshot's light/dark polarity, density, image-to-text balance and section order family
-- if the screenshot uses a framed hero shell or a unified hero card, preserve that same shell logic
-- if navigation is visually integrated inside the same hero shell, keep it integrated there instead of forcing a detached nav bar
-- preserve restrained typography and measured spacing; do not upscale headlines or add extra top whitespace
-- preserve CTA patterns including icon-bearing buttons when visible
-- the screenshot is the primary truth; the user prompt is only a secondary content layer unless it asks for a very small change
+- use screenshots as the main source of composition, mood and hierarchy
+- infer structure from the screenshot
+- reproduce the visual direction in a cleaner and more production-ready way
 `);
 
   return lines.join("\n");
@@ -2483,8 +2452,7 @@ OUTPUT RULES:
 - every major page block must use a semantic <section> tag
 - every major section must have data-section-id and data-section-type
 - data-section-id values must be stable, unique and human-readable
-- navigation should normally use data-section-id="navigation"
-- EXCEPTION: if screenshot mode clearly shows navigation integrated inside the same framed hero/card wrapper, keep it inside that hero wrapper with a nested <nav data-nav-role="integrated"> instead of forcing a detached standalone navigation section
+- navigation must be its own section with data-section-id="navigation"
 - footer must be its own section with data-section-id="footer"
 - add a fully working mobile hamburger navigation
 - include a CTA button in the main navigation
@@ -2500,26 +2468,7 @@ ${
     : `- if no real logo is provided, create an elegant text or monogram logo treatment`
 }
 
-${
-  params.inputMode === "screenshot" || params.inputMode === "url" || params.inputMode === "html"
-    ? `REFERENCE-LOCKED EXECUTION CONTEXT:
-- input mode: ${params.inputMode}
-- detected industry is only a weak fallback hint: ${params.preferences.industry}
-- image mode: ${params.preferences.imageMode}
-- speed mode: ${params.preferences.speedMode}
-- layout seed: ${params.preferences.layoutSeed}
-- contact items to show: ${
-        params.preferences.contactItems.length
-          ? params.preferences.contactItems.join(", ")
-          : "phone, email, office, CTA form"
-      }
-- DO NOT let industry defaults, designReference presets or generic premium instincts replace the reference
-- DO NOT drift into a dark SaaS / generic agency / generic business site unless the reference itself clearly uses that family
-- when the reference is light, editorial, airy or real-estate-like, keep it light, editorial and airy
-- when the reference uses large photography and restrained text, keep large photography and restrained text
-- when the reference uses integrated navigation inside the hero shell, keep that integration
-- the reference controls composition first; prompt only adapts content, branding and factual business details`
-    : `SELECTED CREATIVE DIRECTION:
+SELECTED CREATIVE DIRECTION:
 - Detected industry: ${params.preferences.industry}
 - Image mode: ${params.preferences.imageMode}
 - Speed mode: ${params.preferences.speedMode}
@@ -2545,8 +2494,7 @@ ${getDesignReferenceRecipe(params.preferences.designReference)}
 ${getIndustrySpecificRules(
     params.preferences.industry,
     params.preferences.imageMode
-  )}`
-}
+  )}
 
 INPUT CONTEXT:
 ${renderInputModeContext({
@@ -2561,30 +2509,6 @@ ${renderInputModeContext({
   attachments: params.attachments,
 })}
 
-${
-  params.inputMode === "screenshot"
-    ? `STRICT SCREENSHOT FIDELITY MODE:
-- the uploaded screenshot is the PRIMARY visual truth
-- rebuild the same composition family for a new brand; do NOT reinterpret it into a safer generic business website
-- preserve the screenshot's measured top spacing, hero scale and section rhythm
-- preserve integrated nav + hero shells when visible in one shared framed wrapper
-- preserve whether the hero is one framed card, a rounded bordered shell, or a frameless full-bleed cover
-- preserve the relative proportions of nav, headline, body copy, CTA, image blocks and floating stat cards
-- preserve restrained headline scale when the reference is calm editorial; do not enlarge typography for drama
-- preserve compact spacing if the screenshot is compact; do not add extra whitespace above the fold
-- when the screenshot CTA contains an icon, keep a visually similar icon-bearing CTA and add subtle hover feedback
-- prefer structural mimicry over creative improvement
-- do not separate nav and hero when the screenshot keeps them unified
-- if the screenshot is bright, warm, beige, editorial or real-estate-like, keep that exact polarity and atmosphere
-- do not invent dark gradients, SaaS cards, metrics dashboards or corporate feature grids unless the screenshot clearly shows them`
-    : params.inputMode === "url"
-    ? `STRICT URL REFERENCE MODE:
-- the fetched reference summary, page shots and blueprint are the PRIMARY source of layout DNA
-- preserve section order family, hero family, nav density, spacing rhythm and footer density
-- do not collapse editorial or product-heavy references into a generic agency landing page`
-    : ""
-}
-
 REFERENCE BLUEPRINT ENFORCEMENT:
 - when a reference blueprint exists, it overrides generic design instincts
 - preserve the reference section order family and spacing family
@@ -2592,7 +2516,6 @@ REFERENCE BLUEPRINT ENFORCEMENT:
 - preserve the reference typography mood and color direction closely
 - never collapse a dense product or editorial reference into a generic business landing page
 - use the blueprint mustKeep and mustAvoid instructions as hard fidelity locks
-- in screenshot mode, screenshot analysis and blueprint instructions override selected creative direction, designReference recipes and industry-specific rules
 
 HARD TECHNICAL LAYOUT CONSTRAINTS:
 - the page must use stable wrappers and predictable layout primitives
@@ -2893,11 +2816,23 @@ export async function POST(req: Request) {
       body.screenshotDataUrl.trim().length <= 1_500_000
         ? body.screenshotDataUrl.trim()
         : "";
-    const screenshotDataUrl =
-      bodyScreenshotDataUrl ||
-      attachments.find((item) => item.kind === "screenshot" && typeof item.dataUrl === "string")
-        ?.dataUrl ||
-      "";
+    const attachmentScreenshotDataUrl =
+      attachments.find(
+        (item) =>
+          item.kind === "screenshot" &&
+          typeof item.dataUrl === "string" &&
+          item.dataUrl.startsWith("data:image/")
+      )?.dataUrl || "";
+    const screenshotDataUrl = bodyScreenshotDataUrl || attachmentScreenshotDataUrl;
+
+    logDebug(requestId, "screenshot-payload", {
+      inputMode,
+      bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
+      attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
+      effectiveScreenshotPresent: Boolean(screenshotDataUrl),
+      bodyScreenshotLength: bodyScreenshotDataUrl.length,
+      attachmentScreenshotLength: attachmentScreenshotDataUrl.length,
+    });
 
     const chatHistory = Array.isArray(body?.chatHistory)
       ? (body.chatHistory as ChatHistoryItem[])
@@ -2918,11 +2853,7 @@ export async function POST(req: Request) {
     const hasHtmlReference =
       inputMode === "html" && referenceHtml.trim().length > 0;
     const hasScreenshotReference =
-      inputMode === "screenshot" &&
-      Boolean(
-        screenshotDataUrl ||
-          attachments.some((item) => item.kind === "screenshot")
-      );
+      inputMode === "screenshot" && Boolean(screenshotDataUrl);
 
     if (
       !hasPrompt &&
@@ -2938,6 +2869,29 @@ export async function POST(req: Request) {
       );
     }
 
+    if (inputMode === "screenshot" && !screenshotDataUrl) {
+      logDebug(requestId, "screenshot-missing", {
+        inputMode,
+        bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
+        attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
+      });
+
+      return Response.json(
+        {
+          error:
+            "Screenshot mode requires a valid screenshotDataUrl or screenshot attachment.",
+          requestId,
+          debug: {
+            inputMode,
+            bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
+            attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
+            effectiveScreenshotPresent: false,
+          },
+        },
+        { status: 422 }
+      );
+    }
+
     const effectivePrompt =
       rawPrompt ||
       (inputMode === "url" && referenceUrl
@@ -2950,30 +2904,13 @@ export async function POST(req: Request) {
         : inputMode === "html" && referenceHtml.trim()
         ? "Vytvoř nový web podle dodaného HTML souboru."
         : inputMode === "screenshot"
-        ? [
-            "Vytvoř nový web podle dodaného screenshotu.",
-            "Screenshot je hlavní zdroj layoutu, kompozice, spacingu, hierarchie, polarity světlé/tmavé a CTA vzorů.",
-            "Nevytvářej generický web podle oboru. Primárně se řiď screenshotem a prompt ber jen jako sekundární vrstvu pro nový brand a texty.",
-          ].join(" ")
+        ? "Vytvoř nový web podle dodaného screenshotu."
         : "");
 
     const referenceSummary =
       inputMode === "url" && referenceUrl
         ? await fetchReferenceSiteSummary(referenceUrl, requestId)
         : null;
-
-    const uploadedScreenshotShots: ReferencePageShot[] =
-      inputMode === "screenshot" && screenshotDataUrl
-        ? [
-            {
-              id: "hero",
-              dataUrl: screenshotDataUrl,
-              scrollY: 0,
-              width: 0,
-              height: 0,
-            },
-          ]
-        : [];
 
     const layoutFingerprint =
       inputMode === "url"
@@ -2992,7 +2929,7 @@ export async function POST(req: Request) {
     const referencePageShots =
       inputMode === "url" && referenceUrl
         ? await captureReferencePageShots(referenceUrl, requestId)
-        : uploadedScreenshotShots;
+        : [];
 
     const heroShot = pickRepresentativeShot(referencePageShots, "hero");
     const midShot = pickRepresentativeShot(referencePageShots, "mid");
@@ -3013,7 +2950,7 @@ export async function POST(req: Request) {
     }
 
     const screenshotAnalysis =
-      heroShot && (inputMode === "url" || inputMode === "screenshot")
+      inputMode === "url" && heroShot
         ? await createVisionReferenceAnalysis({
             requestId,
             model: WEB_MODEL,
@@ -3021,19 +2958,33 @@ export async function POST(req: Request) {
             referenceSummary,
             fingerprint: layoutFingerprint,
           })
+        : inputMode === "screenshot" && screenshotDataUrl
+        ? await createVisionReferenceAnalysis({
+            requestId,
+            model: WEB_MODEL,
+            screenshotDataUrl,
+            referenceSummary,
+            fingerprint: layoutFingerprint,
+          })
         : null;
 
+    logDebug(requestId, "screenshot-analysis", {
+      inputMode,
+      created: Boolean(screenshotAnalysis),
+      aboveTheFoldType: screenshotAnalysis?.aboveTheFoldType || null,
+      heroContentAlignment: screenshotAnalysis?.heroContentAlignment || null,
+      dominantVisualSubject: screenshotAnalysis?.dominantVisualSubject || null,
+      firstSectionAfterHero: screenshotAnalysis?.firstSectionAfterHero || null,
+      shouldKeepFullWidthHero: screenshotAnalysis?.shouldKeepFullWidthHero || false,
+      shouldAvoidSplitHero: screenshotAnalysis?.shouldAvoidSplitHero || false,
+    });
+
     const referenceBlueprint =
-      ((inputMode === "url" && referenceUrl) ||
-        (inputMode === "screenshot" && screenshotDataUrl)) &&
-      referencePageShots.length > 0
+      inputMode === "url" && referenceUrl && referencePageShots.length > 0
         ? await createReferenceBlueprint({
             requestId,
             model: WEB_MODEL,
-            referenceUrl:
-              inputMode === "url" && referenceUrl
-                ? referenceUrl
-                : "uploaded-screenshot-reference",
+            referenceUrl,
             referenceSummary,
             pageShots: referencePageShots,
             heroAnalysis: screenshotAnalysis,
@@ -3054,6 +3005,17 @@ export async function POST(req: Request) {
         { status: 422 }
       );
     }
+
+    logDebug(requestId, "reference-blueprint", {
+      inputMode,
+      created: Boolean(referenceBlueprint),
+      heroType: referenceBlueprint?.layout?.heroType || null,
+      navStyle: referenceBlueprint?.layout?.navStyle || null,
+      density: referenceBlueprint?.layout?.density || null,
+      sectionOrder: referenceBlueprint?.layout?.sectionOrder || [],
+      mustKeep: referenceBlueprint?.fidelityLocks?.mustKeep || [],
+      mustAvoid: referenceBlueprint?.fidelityLocks?.mustAvoid || [],
+    });
 
     const promptForDirection =
       effectivePrompt +
@@ -3078,6 +3040,26 @@ export async function POST(req: Request) {
       referenceBlueprint,
       { inputMode }
     );
+
+    const usedStrictScreenshotPrompt = inputMode === "screenshot";
+
+    logDebug(requestId, "prompt-branch", {
+      inputMode,
+      usedStrictScreenshotPrompt,
+      bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
+      attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
+      effectiveScreenshotPresent: Boolean(screenshotDataUrl),
+      hasReferenceSummary: Boolean(referenceSummary),
+      hasScreenshotAnalysis: Boolean(screenshotAnalysis),
+      hasReferenceBlueprint: Boolean(referenceBlueprint),
+      resolvedIndustry: resolvedPreferences.industry,
+      resolvedLayoutPreference: resolvedPreferences.layoutPreference,
+      resolvedVisualStyle: resolvedPreferences.visualStyle,
+      resolvedDesignReference: resolvedPreferences.designReference,
+      resolvedLayoutSeed: resolvedPreferences.layoutSeed,
+      promptForDirectionLength: promptForDirection.length,
+      effectivePromptLength: effectivePrompt.length,
+    });
 
     console.log(
       JSON.stringify({
@@ -3177,6 +3159,26 @@ export async function POST(req: Request) {
       screenshotAnalysis,
       referenceBlueprint,
       referenceShotIds: referencePageShots.map((item) => item.id),
+      debug: {
+        inputMode,
+        screenshotSource: bodyScreenshotDataUrl
+          ? "body"
+          : attachmentScreenshotDataUrl
+          ? "attachment"
+          : "none",
+        bodyScreenshotPresent: Boolean(bodyScreenshotDataUrl),
+        attachmentScreenshotPresent: Boolean(attachmentScreenshotDataUrl),
+        effectiveScreenshotPresent: Boolean(screenshotDataUrl),
+        screenshotAnalysisCreated: Boolean(screenshotAnalysis),
+        referenceBlueprintCreated: Boolean(referenceBlueprint),
+        resolvedIndustry: resolvedPreferences.industry,
+        resolvedLayoutPreference: resolvedPreferences.layoutPreference,
+        resolvedVisualStyle: resolvedPreferences.visualStyle,
+        resolvedDesignReference: resolvedPreferences.designReference,
+        resolvedLayoutSeed: resolvedPreferences.layoutSeed,
+        usedStrictScreenshotPrompt,
+        referenceShotIds: referencePageShots.map((item) => item.id),
+      },
     });
   } catch (e: any) {
     console.error(
