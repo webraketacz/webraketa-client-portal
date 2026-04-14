@@ -2134,12 +2134,14 @@ export default function AiEditorPage() {
           : "prompt";
 
       setGenerationPreferences((prev) =>
-        bootInputMode === "screenshot" || bootInputMode === "url" || bootInputMode === "html"
-          ? createReferenceLockedPreferences(initialPrompt)
-          : mergeStoredPreferences(
-              initialPrompt ? createDefaultPreferences(initialPrompt) : prev,
-              parsedPrefs
-            )
+        mergeStoredPreferences(
+          bootInputMode === "screenshot" || bootInputMode === "url"
+            ? createReferenceLockedPreferences(initialPrompt)
+            : initialPrompt
+            ? createDefaultPreferences(initialPrompt)
+            : prev,
+          parsedPrefs
+        )
       );
     } catch {}
 
@@ -2176,15 +2178,14 @@ export default function AiEditorPage() {
         }
       })();
 
-      const nextPrefs =
-        resolvedInputMode === "screenshot" || resolvedInputMode === "url" || resolvedInputMode === "html"
+      const nextPrefs = mergeStoredPreferences(
+        resolvedInputMode === "screenshot" || resolvedInputMode === "url"
           ? createReferenceLockedPreferences(autostartPrompt)
-          : mergeStoredPreferences(
-              autostartPrompt
-                ? createDefaultPreferences(autostartPrompt)
-                : generationPreferences,
-              parsedPrefsSafe
-            );
+          : autostartPrompt
+          ? createDefaultPreferences(autostartPrompt)
+          : generationPreferences,
+        parsedPrefsSafe
+      );
 
       if (
         resolvedInputMode === "url" ||
@@ -2386,9 +2387,7 @@ export default function AiEditorPage() {
     }
 
     const isReferenceLockedMode =
-      requestInput.inputMode === "screenshot" ||
-      requestInput.inputMode === "url" ||
-      requestInput.inputMode === "html";
+      requestInput.inputMode === "screenshot" || requestInput.inputMode === "url";
 
     const effectivePreferences = {
       ...(isReferenceLockedMode
@@ -2397,10 +2396,51 @@ export default function AiEditorPage() {
       sourcePrompt: finalPrompt,
     };
 
-    const screenshotDataUrl =
+    const screenshotAttachment =
       requestInput.inputMode === "screenshot"
-        ? requestInput.attachments.find((item) => item.kind === "screenshot")?.dataUrl || ""
+        ? requestInput.attachments.find(
+            (item) =>
+              item.kind === "screenshot" &&
+              typeof item.dataUrl === "string" &&
+              item.dataUrl.startsWith("data:image/")
+          )
+        : undefined;
+
+    const screenshotDataUrl =
+      requestInput.inputMode === "screenshot" && screenshotAttachment
+        ? screenshotAttachment.dataUrl || ""
         : "";
+
+    const screenshotAttachmentsDebug = Array.isArray(requestInput.attachments)
+      ? requestInput.attachments.map((item) => ({
+          id: item?.id,
+          kind: item?.kind,
+          hasDataUrl:
+            typeof item?.dataUrl === "string" &&
+            item.dataUrl.startsWith("data:image/"),
+          dataUrlLength:
+            typeof item?.dataUrl === "string" ? item.dataUrl.length : 0,
+        }))
+      : [];
+
+    if (requestInput.inputMode === "screenshot" && !screenshotDataUrl) {
+      console.error("GENERATE_DEBUG_FAIL", {
+        inputMode: requestInput.inputMode,
+        hasScreenshotDataUrl: false,
+        screenshotDataUrlLength: 0,
+        attachmentsCount: Array.isArray(requestInput.attachments)
+          ? requestInput.attachments.length
+          : 0,
+        screenshotAttachments: screenshotAttachmentsDebug,
+        referenceUrl: requestInput.referenceUrl,
+        hasReferenceHtml: Boolean(requestInput.referenceHtml?.trim()),
+        isReferenceLockedMode,
+      });
+      setError(
+        "Screenshot režim je aktivní, ale editor neposílá žádný validní screenshot data:image/... do /api/generate."
+      );
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -2424,6 +2464,22 @@ export default function AiEditorPage() {
     startSmoothProgress("generate");
 
     try {
+      console.log("GENERATE_DEBUG", {
+        inputMode: requestInput.inputMode,
+        hasScreenshotDataUrl:
+          typeof screenshotDataUrl === "string" &&
+          screenshotDataUrl.startsWith("data:image/"),
+        screenshotDataUrlLength:
+          typeof screenshotDataUrl === "string" ? screenshotDataUrl.length : 0,
+        attachmentsCount: Array.isArray(requestInput.attachments)
+          ? requestInput.attachments.length
+          : 0,
+        screenshotAttachments: screenshotAttachmentsDebug,
+        referenceUrl: requestInput.referenceUrl,
+        hasReferenceHtml: Boolean(requestInput.referenceHtml?.trim()),
+        isReferenceLockedMode,
+      });
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2449,8 +2505,7 @@ export default function AiEditorPage() {
 
       const detectedIndustry =
         (data.brief?.industry as IndustryKind | undefined) ||
-        (isReferenceLockedMode ? undefined : inferIndustryKind(finalPrompt)) ||
-        "generic-business";
+        inferIndustryKind(finalPrompt);
       const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
 
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
@@ -2460,15 +2515,13 @@ export default function AiEditorPage() {
       setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
 
-      if (data.generationPreferences && !isReferenceLockedMode) {
+      if (data.generationPreferences) {
         setGenerationPreferences((prev) =>
           mergeStoredPreferences(prev, {
             ...data.generationPreferences,
             sourcePrompt: finalPrompt,
           })
         );
-      } else if (isReferenceLockedMode) {
-        setGenerationPreferences(createReferenceLockedPreferences(finalPrompt));
       }
 
       setReferenceSummaryDebug(data.referenceSummary ?? null);
@@ -2486,11 +2539,9 @@ export default function AiEditorPage() {
         {
           id: `assistant-followup-${Date.now() + 1}`,
           role: "assistant",
-          text: isReferenceLockedMode
-            ? "Co chcete dál vyladit na této referenční rekonstrukci? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem, spacingem nebo celkovou věrností vůči referenci."
-            : `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
-                detectedIndustry
-              )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,
+          text: `Co chcete dál vylepšit pro obor ${getIndustryDisplayName(
+            detectedIndustry
+          )}? Můžu pomoct třeba s hero sekcí, texty, CTA, galerií, kontaktem nebo celkovým prémiovým dojmem.`,
         },
       ]);
 
