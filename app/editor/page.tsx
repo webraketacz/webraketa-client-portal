@@ -2134,14 +2134,12 @@ export default function AiEditorPage() {
           : "prompt";
 
       setGenerationPreferences((prev) =>
-        mergeStoredPreferences(
-          bootInputMode === "screenshot" || bootInputMode === "url"
-            ? createReferenceLockedPreferences(initialPrompt)
-            : initialPrompt
-            ? createDefaultPreferences(initialPrompt)
-            : prev,
-          parsedPrefs
-        )
+        bootInputMode === "screenshot" || bootInputMode === "url"
+          ? createReferenceLockedPreferences(initialPrompt)
+          : mergeStoredPreferences(
+              initialPrompt ? createDefaultPreferences(initialPrompt) : prev,
+              parsedPrefs
+            )
       );
     } catch {}
 
@@ -2178,14 +2176,26 @@ export default function AiEditorPage() {
         }
       })();
 
-      const nextPrefs = mergeStoredPreferences(
-        resolvedInputMode === "screenshot" || resolvedInputMode === "url"
+      const nextPrefs =
+        resolvedInputMode === "screenshot" ||
+        resolvedInputMode === "url" ||
+        resolvedInputMode === "html"
           ? createReferenceLockedPreferences(autostartPrompt)
-          : autostartPrompt
-          ? createDefaultPreferences(autostartPrompt)
-          : generationPreferences,
-        parsedPrefsSafe
-      );
+          : mergeStoredPreferences(
+              autostartPrompt
+                ? createDefaultPreferences(autostartPrompt)
+                : generationPreferences,
+              parsedPrefsSafe
+            );
+
+      const parsedAttachmentsSafe = (() => {
+        try {
+          const parsed = JSON.parse(storedAttachments);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      })();
 
       if (
         resolvedInputMode === "url" ||
@@ -2194,7 +2204,12 @@ export default function AiEditorPage() {
       ) {
         setOtazkyDokonceny(true);
         setTimeout(() => {
-          void handleGenerate(autostartPrompt, nextPrefs);
+          void handleGenerate(autostartPrompt, nextPrefs, {
+            inputMode: resolvedInputMode,
+            referenceUrl: storedReferenceUrl,
+            referenceHtml: storedReferenceHtml,
+            attachments: parsedAttachmentsSafe,
+          });
         }, 250);
       } else {
         setTimeout(() => startQuestionFlow(autostartPrompt), 250);
@@ -2352,14 +2367,20 @@ export default function AiEditorPage() {
 
   async function handleGenerate(
     customPrompt?: string,
-    forcedPreferences?: GenerationPreferences
+    forcedPreferences?: GenerationPreferences,
+    overrideInput?: {
+      inputMode?: InputMode;
+      referenceUrl?: string;
+      referenceHtml?: string;
+      attachments?: AttachmentItem[];
+    }
   ) {
     const requestInput = getGenerationRequestInput({
       prompt: customPrompt ?? prompt,
-      inputMode,
-      referenceUrl,
-      referenceHtml,
-      attachments,
+      inputMode: overrideInput?.inputMode ?? inputMode,
+      referenceUrl: overrideInput?.referenceUrl ?? referenceUrl,
+      referenceHtml: overrideInput?.referenceHtml ?? referenceHtml,
+      attachments: overrideInput?.attachments ?? attachments,
     });
     const finalPrompt = requestInput.effectivePrompt;
 
@@ -2396,51 +2417,76 @@ export default function AiEditorPage() {
       sourcePrompt: finalPrompt,
     };
 
-    const screenshotAttachment =
-      requestInput.inputMode === "screenshot"
-        ? requestInput.attachments.find(
-            (item) =>
-              item.kind === "screenshot" &&
-              typeof item.dataUrl === "string" &&
-              item.dataUrl.startsWith("data:image/")
-          )
-        : undefined;
-
     const screenshotDataUrl =
-      requestInput.inputMode === "screenshot" && screenshotAttachment
-        ? screenshotAttachment.dataUrl || ""
+      requestInput.inputMode === "screenshot"
+        ? requestInput.attachments.find((item) => item.kind === "screenshot")?.dataUrl || ""
         : "";
 
-    const screenshotAttachmentsDebug = Array.isArray(requestInput.attachments)
-      ? requestInput.attachments.map((item) => ({
-          id: item?.id,
-          kind: item?.kind,
-          hasDataUrl:
-            typeof item?.dataUrl === "string" &&
-            item.dataUrl.startsWith("data:image/"),
-          dataUrlLength:
-            typeof item?.dataUrl === "string" ? item.dataUrl.length : 0,
-        }))
-      : [];
+    const validScreenshotDataUrl =
+      typeof screenshotDataUrl === "string" &&
+      screenshotDataUrl.startsWith("data:image/")
+        ? screenshotDataUrl
+        : "";
 
-    if (requestInput.inputMode === "screenshot" && !screenshotDataUrl) {
+    if (
+      requestInput.inputMode === "screenshot" &&
+      !(
+        validScreenshotDataUrl ||
+        requestInput.attachments.some(
+          (item) =>
+            item?.kind === "screenshot" &&
+            typeof item?.dataUrl === "string" &&
+            item.dataUrl.startsWith("data:image/")
+        )
+      )
+    ) {
       console.error("GENERATE_DEBUG_FAIL", {
         inputMode: requestInput.inputMode,
-        hasScreenshotDataUrl: false,
-        screenshotDataUrlLength: 0,
         attachmentsCount: Array.isArray(requestInput.attachments)
           ? requestInput.attachments.length
           : 0,
-        screenshotAttachments: screenshotAttachmentsDebug,
-        referenceUrl: requestInput.referenceUrl,
-        hasReferenceHtml: Boolean(requestInput.referenceHtml?.trim()),
-        isReferenceLockedMode,
+        screenshotAttachments: Array.isArray(requestInput.attachments)
+          ? requestInput.attachments.map((item) => ({
+              id: item?.id,
+              kind: item?.kind,
+              hasDataUrl:
+                typeof item?.dataUrl === "string" &&
+                item.dataUrl.startsWith("data:image/"),
+              dataUrlLength:
+                typeof item?.dataUrl === "string" ? item.dataUrl.length : 0,
+            }))
+          : [],
+        screenshotDataUrlPresent: Boolean(validScreenshotDataUrl),
+        screenshotDataUrlLength: validScreenshotDataUrl.length,
       });
       setError(
-        "Screenshot režim je aktivní, ale editor neposílá žádný validní screenshot data:image/... do /api/generate."
+        "Screenshot režim je aktivní, ale editor neposílá žádný validní screenshot do /api/generate."
       );
       return;
     }
+
+    console.log("GENERATE_DEBUG", {
+      inputMode: requestInput.inputMode,
+      hasScreenshotDataUrl: Boolean(validScreenshotDataUrl),
+      screenshotDataUrlLength: validScreenshotDataUrl.length,
+      attachmentsCount: Array.isArray(requestInput.attachments)
+        ? requestInput.attachments.length
+        : 0,
+      screenshotAttachments: Array.isArray(requestInput.attachments)
+        ? requestInput.attachments.map((item) => ({
+            id: item?.id,
+            kind: item?.kind,
+            hasDataUrl:
+              typeof item?.dataUrl === "string" &&
+              item.dataUrl.startsWith("data:image/"),
+            dataUrlLength:
+              typeof item?.dataUrl === "string" ? item.dataUrl.length : 0,
+          }))
+        : [],
+      referenceUrl: requestInput.referenceUrl,
+      hasReferenceHtml: Boolean(requestInput.referenceHtml),
+      isReferenceLockedMode,
+    });
 
     setLoading(true);
     setError(null);
@@ -2464,22 +2510,6 @@ export default function AiEditorPage() {
     startSmoothProgress("generate");
 
     try {
-      console.log("GENERATE_DEBUG", {
-        inputMode: requestInput.inputMode,
-        hasScreenshotDataUrl:
-          typeof screenshotDataUrl === "string" &&
-          screenshotDataUrl.startsWith("data:image/"),
-        screenshotDataUrlLength:
-          typeof screenshotDataUrl === "string" ? screenshotDataUrl.length : 0,
-        attachmentsCount: Array.isArray(requestInput.attachments)
-          ? requestInput.attachments.length
-          : 0,
-        screenshotAttachments: screenshotAttachmentsDebug,
-        referenceUrl: requestInput.referenceUrl,
-        hasReferenceHtml: Boolean(requestInput.referenceHtml?.trim()),
-        isReferenceLockedMode,
-      });
-
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2489,7 +2519,7 @@ export default function AiEditorPage() {
           referenceUrl: requestInput.referenceUrl,
           referenceHtml: requestInput.referenceHtml,
           attachments: requestInput.attachments,
-          screenshotDataUrl,
+          screenshotDataUrl: validScreenshotDataUrl,
           generationPreferences: effectivePreferences,
           landingPreferences: effectivePreferences,
           chatHistory: getChatHistoryPayload(),
@@ -2505,7 +2535,8 @@ export default function AiEditorPage() {
 
       const detectedIndustry =
         (data.brief?.industry as IndustryKind | undefined) ||
-        inferIndustryKind(finalPrompt);
+        (isReferenceLockedMode ? null : inferIndustryKind(finalPrompt)) ||
+        "generic-business";
       const nextSuggestions = getPostGenerateSuggestions(detectedIndustry);
 
       stopSmoothProgress(true, "Web byl úspěšně vygenerován");
@@ -2515,7 +2546,7 @@ export default function AiEditorPage() {
       setGeneratedIndustry(detectedIndustry);
       setPostGenerateSuggestions(nextSuggestions);
 
-      if (data.generationPreferences) {
+      if (data.generationPreferences && !isReferenceLockedMode) {
         setGenerationPreferences((prev) =>
           mergeStoredPreferences(prev, {
             ...data.generationPreferences,
